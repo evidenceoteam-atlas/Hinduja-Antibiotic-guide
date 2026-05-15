@@ -1,0 +1,123 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: atlas
+      POSTGRES_DB: atlas_antibiotic
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas_antibiotic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/auth-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  protocol-engine:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/protocol-engine
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  antibiogram-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/antibiogram-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  guideline-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/guideline-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  case-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/case-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  report-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/report-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  alert-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/alert-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  share-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/share-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  user-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: services/user-service
+    env_file: .env.example
+    depends_on: [postgres, redis]
+
+  gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - protocol-engine
+      - antibiogram-service
+      - guideline-service
+      - case-service
+      - report-service
+      - alert-service
+      - share-service
+      - user-service
+
+volumes:
+  postgres-data:
+

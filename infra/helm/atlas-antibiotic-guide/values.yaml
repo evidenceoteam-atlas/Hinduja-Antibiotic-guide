@@ -1,0 +1,18 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/your-org/hinduja-antibiotic-guide
+  tag: latest
+services:
+  - auth-service
+  - protocol-engine
+  - antibiogram-service
+  - guideline-service
+  - case-service
+  - report-service
+  - alert-service
+  - share-service
+  - user-service
+env:
+  APP_ENV: production
+  PROJECT_NAME: Hinduja Antibiotic Guide
+

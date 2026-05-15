@@ -1,0 +1,39 @@
+{{- range .Values.services }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ . }}
+spec:
+  replicas: {{ $.Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ . }}
+  template:
+    metadata:
+      labels:
+        app: {{ . }}
+    spec:
+      containers:
+        - name: {{ . }}
+          image: "{{ $.Values.image.repository }}/{{ . }}:{{ $.Values.image.tag }}"
+          ports:
+            - containerPort: 8000
+          env:
+            {{- range $key, $value := $.Values.env }}
+            - name: {{ $key }}
+              value: "{{ $value }}"
+            {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ . }}
+spec:
+  selector:
+    app: {{ . }}
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+{{- end }}
+

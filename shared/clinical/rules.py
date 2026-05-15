@@ -1,0 +1,133 @@
+from dataclasses import dataclass
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+
+class RiskAnswer(BaseModel):
+    key: str
+    value: bool
+
+
+class ProtocolEvaluationRequest(BaseModel):
+    infection_code: str = Field(examples=["UTI"])
+    setting: str = Field(pattern="^(ICU|Ward)$")
+    acquisition: str = Field(pattern="^(Community-acquired|Hospital-acquired)$")
+    risk_factors: list[RiskAnswer]
+    patient_context: dict[str, Any] = Field(default_factory=dict)
+
+
+class TherapyOption(BaseModel):
+    rank: int
+    antibiotic: str
+    dose: str
+    frequency: str
+    duration: str
+    coverage: list[str]
+    escalation_note: str | None = None
+
+
+class ProtocolEvaluationResult(BaseModel):
+    case_id: str | None = None
+    infection_code: str
+    setting: str
+    acquisition: str
+    risk_score: int
+    risk_type: str
+    risk_label: str
+    reasoning: list[str]
+    recommended_therapy: list[TherapyOption]
+    duration: str
+    pathogen_coverage: list[str]
+    id_consult_required: bool
+    stewardship_alerts: list[str]
+
+
+@dataclass(frozen=True)
+class Threshold:
+    min_score: int
+    risk_type: str
+    label: str
+
+
+class JsonRuleEvaluator:
+    """Evaluates JSON/YAML protocol rules without hardcoded clinical pathways."""
+
+    def __init__(self, rules: dict[str, Any]) -> None:
+        self.rules = rules
+        self.weights: dict[str, int] = rules.get("risk_weights", {})
+        self.thresholds = [
+            Threshold(**item)
+            for item in sorted(
+                rules.get("thresholds", []), key=lambda item: item["min_score"], reverse=True
+            )
+        ]
+
+    def evaluate(self, request: ProtocolEvaluationRequest) -> ProtocolEvaluationResult:
+        score = 0
+        reasoning: list[str] = []
+        answers = {answer.key: answer.value for answer in request.risk_factors}
+
+        for key, is_present in answers.items():
+            if is_present:
+                weight = self.weights.get(key, 0)
+                score += weight
+                reasoning.append(f"{key} present: +{weight}")
+            else:
+                reasoning.append(f"{key} absent: +0")
+
+        score += self._contextual_weight("setting", request.setting, reasoning)
+        score += self._contextual_weight("acquisition", request.acquisition, reasoning)
+
+        threshold = self._classify(score)
+        matrix = self.rules.get("recommendation_matrix", {})
+        therapy_payload = (
+            matrix.get(request.infection_code, {})
+            .get(request.setting, {})
+            .get(request.acquisition, {})
+            .get(threshold.risk_type)
+        )
+        if therapy_payload is None:
+            therapy_payload = self.rules["defaults"][threshold.risk_type]
+            reasoning.append("default recommendation pathway applied")
+
+        alerts = self._alerts(threshold.risk_type, therapy_payload)
+        return ProtocolEvaluationResult(
+            infection_code=request.infection_code,
+            setting=request.setting,
+            acquisition=request.acquisition,
+            risk_score=score,
+            risk_type=threshold.risk_type,
+            risk_label=threshold.label,
+            reasoning=reasoning,
+            recommended_therapy=[TherapyOption(**item) for item in therapy_payload["therapy"]],
+            duration=therapy_payload["duration"],
+            pathogen_coverage=therapy_payload["pathogen_coverage"],
+            id_consult_required=threshold.risk_type == "Type 3"
+            or bool(therapy_payload.get("id_consult_required")),
+            stewardship_alerts=alerts,
+        )
+
+    def _contextual_weight(self, dimension: str, value: str, reasoning: list[str]) -> int:
+        weight = self.rules.get("context_weights", {}).get(dimension, {}).get(value, 0)
+        if weight:
+            reasoning.append(f"{dimension}={value}: +{weight}")
+        return weight
+
+    def _classify(self, score: int) -> Threshold:
+        for threshold in self.thresholds:
+            if score >= threshold.min_score:
+                return threshold
+        return Threshold(min_score=0, risk_type="Type 1", label="Low Risk")
+
+    def _alerts(self, risk_type: str, therapy_payload: dict[str, Any]) -> list[str]:
+        alerts: list[str] = []
+        if risk_type == "Type 3":
+            alerts.append("Type 3 high-risk pathway requires stewardship review")
+        for therapy in therapy_payload.get("therapy", []):
+            antibiotic = therapy["antibiotic"].lower()
+            if "meropenem" in antibiotic or "imipenem" in antibiotic:
+                alerts.append(
+                    "Carbapenem recommendation requires antimicrobial stewardship notification"
+                )
+        return alerts

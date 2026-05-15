@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: fastapi-services
+    static_configs:
+      - targets:
+          - auth-service:8000
+          - protocol-engine:8000
+          - antibiogram-service:8000
+          - guideline-service:8000
+          - case-service:8000
+          - report-service:8000
+          - alert-service:8000
+          - share-service:8000
+          - user-service:8000
+
