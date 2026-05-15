@@ -39,3 +39,30 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.*
+
+# Alembic and local database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker / deployment
+.vercel/
