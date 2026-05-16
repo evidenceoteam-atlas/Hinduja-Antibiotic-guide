@@ -197,8 +197,10 @@ const paletteFor = (_dark: boolean): Palette => ({
 });
 
 const otpResendSeconds = 10;
+const otpLength = 6;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
+const otpPattern = new RegExp(`^\\d{${otpLength}}$`);
 
 const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
 const otpCooldownText = (remainingSeconds: number) =>
@@ -748,17 +750,20 @@ export default function App() {
       return;
     }
 
-    const currentDigits = otp.padEnd(6, " ").split("");
+    const currentDigits = otp.padEnd(otpLength, " ").split("");
     digits
-      .slice(0, 6 - index)
+      .slice(0, otpLength - index)
       .split("")
       .forEach((digit, offset) => {
         currentDigits[index + offset] = digit;
       });
 
-    const nextOtp = currentDigits.join("").replace(/\s/g, "").slice(0, 6);
+    const nextOtp = currentDigits
+      .join("")
+      .replace(/\s/g, "")
+      .slice(0, otpLength);
     setOtp(nextOtp);
-    const nextIndex = Math.min(index + digits.length, 5);
+    const nextIndex = Math.min(index + digits.length, otpLength - 1);
     otpRefs.current[nextIndex]?.focus();
   };
 
@@ -773,7 +778,7 @@ export default function App() {
   };
 
   const verifyOtp = async () => {
-    if (otp.length < 6) {
+    if (!otpPattern.test(otp)) {
       setLoginError("Enter the 6 digit OTP.");
       return;
     }
@@ -1117,7 +1122,7 @@ export default function App() {
         {otpTarget?.value || "your registered contact"}
       </Text>
       <View style={styles.otpRow}>
-        {[0, 1, 2, 3, 4, 5].map((index) => (
+        {Array.from({ length: otpLength }, (_, index) => (
           <TextInput
             key={index}
             ref={(ref) => {
@@ -1131,7 +1136,7 @@ export default function App() {
             accessibilityLabel={`OTP digit ${index + 1}`}
             keyboardType="number-pad"
             inputMode="numeric"
-            maxLength={index === 0 ? 6 : 1}
+            maxLength={index === 0 ? otpLength : 1}
             selectTextOnFocus
             style={styles.otpBox}
           />
