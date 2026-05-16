@@ -136,10 +136,7 @@ const questions = [
 
 type BottomTab = "Home" | "Guidelines" | "Duration" | "Alerts" | "Profile";
 type ProtocolDetailTab = "Notes" | "Warnings" | "ID Consult";
-type AuthChannel = "email" | "phone";
-
 type OtpTarget = {
-  channel: AuthChannel;
   value: string;
 };
 
@@ -1062,8 +1059,6 @@ export default function App() {
   const screen = routeStack[routeStack.length - 1];
   const [sessionReady, setSessionReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authChannel, setAuthChannel] = useState<AuthChannel>("email");
-  const [phone, setPhone] = useState("");
   const [otpTarget, setOtpTarget] = useState<OtpTarget | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState("");
@@ -1458,10 +1453,9 @@ export default function App() {
     setSignupError("");
     setAuthSuccess("");
 
-    const { error } =
-      target.channel === "email"
-        ? await supabase.auth.signInWithOtp({ email: target.value })
-        : await supabase.auth.signInWithOtp({ phone: target.value });
+    const { error } = await supabase.auth.signInWithOtp({
+      email: target.value,
+    });
 
     setAuthLoading(false);
 
@@ -1474,32 +1468,19 @@ export default function App() {
     setOtpTarget(target);
     setOtp("");
     setOtpTimer(otpResendSeconds);
-    setAuthSuccess(
-      `OTP sent to ${target.channel === "email" ? target.value : target.value}.`,
-    );
+    setAuthSuccess(`OTP sent to ${target.value}.`);
     go("otp");
   };
 
   const login = () => {
     const loginEmail = email.trim().toLowerCase();
-    const loginPhone = normalizePhone(phone.trim());
 
-    if (authChannel === "email") {
-      if (!emailPattern.test(loginEmail)) {
-        setLoginError("Enter a valid email address.");
-        return;
-      }
-
-      void sendOtp({ channel: "email", value: loginEmail });
+    if (!emailPattern.test(loginEmail)) {
+      setLoginError("Enter a valid hospital email address.");
       return;
     }
 
-    if (!phonePattern.test(loginPhone)) {
-      setLoginError("Enter phone number with country code, e.g. +91XXXXXXXXXX.");
-      return;
-    }
-
-    void sendOtp({ channel: "phone", value: loginPhone });
+    void sendOtp({ value: loginEmail });
   };
 
   const signup = () => {
@@ -1523,8 +1504,7 @@ export default function App() {
 
     setSignupError("");
     setEmail(newDoctorEmail);
-    setPhone(newDoctorPhone);
-    void sendOtp({ channel: "email", value: newDoctorEmail });
+    void sendOtp({ value: newDoctorEmail });
   };
 
   const back = () => {
@@ -1583,18 +1563,11 @@ export default function App() {
     setSignupError("");
     setAuthSuccess("");
 
-    const { error } =
-      otpTarget.channel === "email"
-        ? await supabase.auth.verifyOtp({
-            email: otpTarget.value,
-            token: otp,
-            type: "email",
-          })
-        : await supabase.auth.verifyOtp({
-            phone: otpTarget.value,
-            token: otp,
-            type: "sms",
-          });
+    const { error } = await supabase.auth.verifyOtp({
+      email: otpTarget.value,
+      token: otp,
+      type: "email",
+    });
 
     setAuthLoading(false);
 
@@ -1748,65 +1721,22 @@ export default function App() {
   const Login = () => (
     <View style={styles.centerScreen}>
       <LogoHeader />
-      <View style={styles.authModeRow}>
-        {(["email", "phone"] as AuthChannel[]).map((channel) => (
-          <TouchableOpacity
-            key={channel}
-            activeOpacity={0.82}
-            onPress={() => {
-              setAuthChannel(channel);
-              setLoginError("");
-              setAuthSuccess("");
-            }}
-            style={[
-              styles.authModeButton,
-              authChannel === channel && styles.authModeButtonActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.authModeText,
-                authChannel === channel && styles.authModeTextActive,
-              ]}
-            >
-              {channel === "email" ? "Email OTP" : "Phone OTP"}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
       <View style={styles.inputWrap}>
-        <Text style={styles.inputIcon}>{authChannel === "email" ? "✉" : "☎"}</Text>
-        {authChannel === "email" ? (
-          <TextInput
-            testID="login-email-input"
-            accessibilityLabel="Hospital email"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="doctor@hindujahospital.com"
-            placeholderTextColor="#94A3B8"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            autoComplete="email"
-            style={[styles.textInput, webTextInputReset]}
-          />
-        ) : (
-          <TextInput
-            testID="login-phone-input"
-            accessibilityLabel="Phone number with country code"
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="+91XXXXXXXXXX"
-            placeholderTextColor="#94A3B8"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="phone-pad"
-            textContentType="telephoneNumber"
-            autoComplete="tel"
-            style={[styles.textInput, webTextInputReset]}
-          />
-        )}
+        <Text style={styles.inputIcon}>✉</Text>
+        <TextInput
+          testID="login-email-input"
+          accessibilityLabel="Hospital email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="doctor@hindujahospital.com"
+          placeholderTextColor="#94A3B8"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          autoComplete="email"
+          style={[styles.textInput, webTextInputReset]}
+        />
       </View>
       <TouchableOpacity
         activeOpacity={0.82}
@@ -1831,7 +1761,7 @@ export default function App() {
         </View>
       ) : null}
       <PrimaryButton
-        label={authChannel === "email" ? "Send Email OTP" : "Send Phone OTP"}
+        label="Send Email OTP"
         onPress={login}
         loading={authLoading}
       />
@@ -3123,34 +3053,6 @@ const makeStyles = (p: Palette) =>
       lineHeight: 16,
       fontWeight: "800",
       textAlign: "center",
-    },
-    authModeRow: {
-      flexDirection: "row",
-      gap: 8,
-      marginBottom: 12,
-    },
-    authModeButton: {
-      flex: 1,
-      height: 42,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: p.border,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: p.card,
-    },
-    authModeButtonActive: {
-      backgroundColor: p.blue,
-      borderColor: p.blue,
-    },
-    authModeText: {
-      color: p.muted,
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "900",
-    },
-    authModeTextActive: {
-      color: "#FFFFFF",
     },
     primaryButton: {
       height: 54,
