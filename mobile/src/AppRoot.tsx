@@ -1024,11 +1024,23 @@ const contextualProtocolProfiles: Record<string, ProtocolProfile> = {
   },
 };
 
-const otpResendSeconds = 30;
+const otpResendSeconds = 60;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
 
 const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
+const otpCooldownText = (remainingSeconds: number) =>
+  `Resend available in ${remainingSeconds}s`;
+
+const friendlyAuthError = (message: string | undefined, fallback: string) => {
+  const normalized = (message ?? "").toLowerCase();
+
+  if (normalized.includes("rate limit") || normalized.includes("too many")) {
+    return "Please wait a few minutes before requesting another OTP.";
+  }
+
+  return fallback;
+};
 
 export default function App() {
   const dark = useColorScheme() === "dark";
@@ -1076,7 +1088,7 @@ export default function App() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [signupError, setSignupError] = useState("");
   const [otp, setOtp] = useState("");
-  const [otpTimer, setOtpTimer] = useState(otpResendSeconds);
+  const [otpTimer, setOtpTimer] = useState(0);
   const otpRefs = useRef<Array<TextInput | null>>([]);
   const [activeTab, setActiveTab] = useState<BottomTab>("Home");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1107,7 +1119,9 @@ export default function App() {
 
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
-        setLoginError(error.message);
+        setLoginError(
+          friendlyAuthError(error.message, "Unable to restore your session. Please login again."),
+        );
       }
 
       const hasSession = Boolean(data.session);
@@ -1213,7 +1227,7 @@ export default function App() {
   }, [activeTab, screen]);
 
   useEffect(() => {
-    if (screen !== "otp" || otpTimer <= 0) {
+    if (otpTimer <= 0) {
       return;
     }
 
@@ -1222,7 +1236,7 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [otpTimer, screen]);
+  }, [otpTimer]);
 
   const phoneWidth = Math.min(width - 28, 430);
   const contentMinHeight = Math.max(height - 24, 760);
@@ -1441,6 +1455,14 @@ export default function App() {
   };
 
   const sendOtp = async (target: OtpTarget) => {
+    if (otpTimer > 0) {
+      const message = otpCooldownText(otpTimer);
+      setLoginError("");
+      setSignupError("");
+      setAuthSuccess(message);
+      return;
+    }
+
     if (!isSupabaseConfigured) {
       setLoginError(
         "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
@@ -1452,6 +1474,7 @@ export default function App() {
     setLoginError("");
     setSignupError("");
     setAuthSuccess("");
+    setOtpTimer(otpResendSeconds);
 
     const { error } = await supabase.auth.signInWithOtp({
       email: target.value,
@@ -1460,8 +1483,12 @@ export default function App() {
     setAuthLoading(false);
 
     if (error) {
-      setLoginError(error.message);
-      setSignupError(error.message);
+      const message = friendlyAuthError(
+        error.message,
+        "Unable to send OTP. Please check your email address and try again.",
+      );
+      setLoginError(message);
+      setSignupError(message);
       return;
     }
 
@@ -1572,19 +1599,11 @@ export default function App() {
     setAuthLoading(false);
 
     if (error) {
-      setLoginError(error.message || "OTP failed or expired.");
+      setLoginError(
+        friendlyAuthError(error.message, "OTP failed or expired. Please request a new OTP."),
+      );
       return;
     }
-  };
-
-  const formatOtpTimer = (remainingSeconds: number) => {
-    const minutes = Math.floor(remainingSeconds / 60);
-    const seconds = remainingSeconds % 60;
-
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
-      2,
-      "0",
-    )}`;
   };
 
   const resendOtp = () => {
@@ -1607,7 +1626,7 @@ export default function App() {
     setAuthLoading(false);
 
     if (error) {
-      setLoginError(error.message);
+      setLoginError(friendlyAuthError(error.message, "Unable to logout. Please try again."));
       return;
     }
 
@@ -1760,10 +1779,14 @@ export default function App() {
           <Text style={styles.successText}>{authSuccess}</Text>
         </View>
       ) : null}
+      {otpTimer > 0 ? (
+        <Text style={styles.cooldownText}>{otpCooldownText(otpTimer)}</Text>
+      ) : null}
       <PrimaryButton
         label="Send Email OTP"
         onPress={login}
         loading={authLoading}
+        disabled={otpTimer > 0}
       />
       <TouchableOpacity
         activeOpacity={0.82}
@@ -1860,6 +1883,7 @@ export default function App() {
         label="Create Account with Email OTP"
         onPress={signup}
         loading={authLoading}
+        disabled={otpTimer > 0}
       />
       <TouchableOpacity
         activeOpacity={0.82}
@@ -1926,7 +1950,7 @@ export default function App() {
       >
         <Text style={styles.resendText}>
           {otpTimer > 0
-            ? `Resend OTP in ${formatOtpTimer(otpTimer)}`
+            ? otpCooldownText(otpTimer)
             : "Resend OTP"}
         </Text>
       </TouchableOpacity>
@@ -3053,6 +3077,14 @@ const makeStyles = (p: Palette) =>
       lineHeight: 16,
       fontWeight: "800",
       textAlign: "center",
+    },
+    cooldownText: {
+      color: p.muted,
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: "800",
+      textAlign: "center",
+      marginBottom: 8,
     },
     primaryButton: {
       height: 54,
