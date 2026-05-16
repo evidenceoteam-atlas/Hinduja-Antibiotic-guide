@@ -1024,7 +1024,7 @@ const contextualProtocolProfiles: Record<string, ProtocolProfile> = {
   },
 };
 
-const otpResendSeconds = 60;
+const otpResendSeconds = 10;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
 
@@ -1454,12 +1454,26 @@ export default function App() {
     go(result.target);
   };
 
+  const clearAuthMessages = () => {
+    setLoginError("");
+    setSignupError("");
+    setAuthSuccess("");
+  };
+
+  const updateLoginEmail = (value: string) => {
+    setEmail(value);
+    clearAuthMessages();
+  };
+
+  const updateSignupEmail = (value: string) => {
+    setSignupEmail(value);
+    clearAuthMessages();
+  };
+
   const sendOtp = async (target: OtpTarget) => {
     if (otpTimer > 0) {
-      const message = otpCooldownText(otpTimer);
       setLoginError("");
       setSignupError("");
-      setAuthSuccess(message);
       return;
     }
 
@@ -1746,7 +1760,7 @@ export default function App() {
           testID="login-email-input"
           accessibilityLabel="Hospital email"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={updateLoginEmail}
           placeholder="doctor@hindujahospital.com"
           placeholderTextColor="#94A3B8"
           autoCapitalize="none"
@@ -1842,7 +1856,7 @@ export default function App() {
         <TextInput
           testID="signup-email-input"
           value={signupEmail}
-          onChangeText={setSignupEmail}
+          onChangeText={updateSignupEmail}
           placeholder="doctor@hindujahospital.com"
           placeholderTextColor="#94A3B8"
           autoCapitalize="none"
