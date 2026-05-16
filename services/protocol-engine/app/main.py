@@ -12,7 +12,7 @@ from shared.clinical.rules import (
 )
 from shared.events.bus import EventBus
 from shared.schemas.common import ApiResponse
-from shared.schemas.mobile import DashboardCard, DashboardMetadata, ProtocolDetail
+from shared.schemas.mobile import DashboardCard, DashboardMetadata
 from shared.utils.health import register_health_routes
 from shared.utils.logging import configure_logging
 
@@ -63,7 +63,7 @@ async def protocols():
 
 @app.get("/api/v1/protocols/{infection_code}", response_model=ApiResponse[dict])
 async def protocol(infection_code: str):
-    if infection_code not in RULES["recommendation_matrix"]:
+    if infection_code not in RULES.get("recommendation_matrix", {}):
         raise HTTPException(status_code=404, detail="Protocol not found")
     return ApiResponse(
         message="Protocol loaded", data=RULES["recommendation_matrix"][infection_code]
@@ -96,25 +96,9 @@ async def result(case_id: str):
     )
 
 
-@app.get("/api/v1/protocols/{infection_code}/details", response_model=ApiResponse[ProtocolDetail])
+@app.get("/api/v1/protocols/{infection_code}/details", response_model=ApiResponse[dict])
 async def protocol_details(infection_code: str):
-    if infection_code != "UTI":
-        raise HTTPException(
-            status_code=404, detail="Detailed sensitivity sample currently seeded for UTI"
-        )
-    return ApiResponse(
-        message="Protocol details loaded",
-        data=ProtocolDetail(
-            tab="Sensitivity",
-            title="Local Sensitivity (Jan 2021 - Dec 2023)",
-            rows=[
-                {"antibiotic": "Cefoperazone-Sulbactam", "sensitivity_percent": 80},
-                {"antibiotic": "Imipenem", "sensitivity_percent": 80},
-                {"antibiotic": "Meropenem", "sensitivity_percent": 80},
-                {"antibiotic": "Piperacillin-Tazobactam", "sensitivity_percent": 80},
-                {"antibiotic": "Ceftazidime", "sensitivity_percent": 70},
-                {"antibiotic": "Colistin", "sensitivity_percent": 97},
-            ],
-            notes=["Colistin resistance observed in 3% isolates of Klebsiella."],
-        ),
+    raise HTTPException(
+        status_code=404,
+        detail="No approved source-linked protocol details available. Refer institutional guideline / ID specialist.",
     )

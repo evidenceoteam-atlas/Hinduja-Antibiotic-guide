@@ -10,15 +10,8 @@ app = FastAPI(title="Antibiogram Service", version="1.0.0", openapi_url="/api/v1
 register_health_routes(app, "antibiogram-service")
 Instrumentator().instrument(app).expose(app)
 
-ORGANISMS = [
-    {"code": "ecoli", "name": "E. coli"},
-    {"code": "klebsiella", "name": "Klebsiella spp."},
-]
-ANTIBIOTICS = [
-    {"name": "Cefoperazone-Sulbactam", "class": "Beta-lactam/beta-lactamase inhibitor"},
-    {"name": "Meropenem", "class": "Carbapenem"},
-    {"name": "Colistin", "class": "Polymyxin"},
-]
+ORGANISMS: list[dict] = []
+ANTIBIOTICS: list[dict] = []
 
 
 @app.get("/api/v1/organisms", response_model=ApiResponse[list[dict]])
@@ -34,27 +27,21 @@ async def antibiotics():
 @app.get("/api/v1/sensitivity", response_model=ApiResponse[list[dict]])
 async def sensitivity(organism: str = Query(default="ecoli"), department: str | None = None):
     return ApiResponse(
-        message="Sensitivity data loaded",
-        data=[
-            {
-                "organism": organism,
-                "antibiotic": "Cefoperazone-Sulbactam",
-                "sensitivity_percent": 80,
-            },
-            {"organism": organism, "antibiotic": "Meropenem", "sensitivity_percent": 80},
-            {"organism": organism, "antibiotic": "Colistin", "sensitivity_percent": 97},
-        ],
-        meta={"department": department, "period": "Jan 2021 - Dec 2023"},
+        message=(
+            "No approved source-linked sensitivity data available. Refer institutional "
+            "guideline / ID specialist."
+        ),
+        data=[],
+        meta={"department": department, "organism": organism},
     )
 
 
 @app.get("/api/v1/resistance-trends", response_model=ApiResponse[list[dict]])
 async def resistance_trends():
     return ApiResponse(
-        message="Resistance trends loaded",
-        data=[
-            {"month": "2023-10", "organism": "E. coli", "resistance_percent": 19},
-            {"month": "2023-11", "organism": "E. coli", "resistance_percent": 21},
-            {"month": "2023-12", "organism": "E. coli", "resistance_percent": 20},
-        ],
+        message=(
+            "No approved source-linked resistance trends available. Refer institutional "
+            "guideline / ID specialist."
+        ),
+        data=[],
     )

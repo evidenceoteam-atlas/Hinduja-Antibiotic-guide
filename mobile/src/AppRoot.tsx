@@ -49,21 +49,6 @@ type InfectionSite = {
   tone: string;
 };
 
-type TherapyOption = {
-  rank: number;
-  name: string;
-  dose: string;
-};
-
-type ProtocolProfile = {
-  therapies: Record<RiskType, TherapyOption[]>;
-  duration: string;
-  coverage: string[];
-  notes: string[];
-  warnings: string[];
-  idConsult: string[];
-};
-
 type SearchResult = {
   id: string;
   title: string;
@@ -74,6 +59,36 @@ type SearchResult = {
   riskType?: RiskType;
   detailTab?: ProtocolDetailTab;
   keywords: string;
+};
+
+type SourceRecommendation = {
+  id: string;
+  syndrome: string | null;
+  infection_site: string | null;
+  setting: string | null;
+  acquisition: string | null;
+  risk_type: string | null;
+  severity_category: string | null;
+  organism: string | null;
+  pathogen: string | null;
+  drug: string | null;
+  dose: string | null;
+  route: string | null;
+  frequency: string | null;
+  duration: string | null;
+  renal_adjustment: string | null;
+  hepatic_adjustment: string | null;
+  pregnancy_lactation_caution: string | null;
+  allergy_warning: string | null;
+  contraindication: string | null;
+  stewardship_note: string | null;
+  id_consult_trigger: string | null;
+  review_status: "approved";
+  source_filename: string;
+  page_number: number | null;
+  section_heading: string | null;
+  source_quote: string;
+  extracted_at: string;
 };
 
 type Palette = {
@@ -181,849 +196,6 @@ const paletteFor = (_dark: boolean): Palette => ({
   shadow: "#174B7C",
 });
 
-const protocolProfiles: Record<string, ProtocolProfile> = {
-  BSI: {
-    therapies: {
-      "Type 1": [
-        { rank: 1, name: "Ceftriaxone", dose: "2 g IV q24h" },
-        { rank: 2, name: "Ampicillin-Sulbactam", dose: "3 g IV q6h" },
-      ],
-      "Type 2": [
-        { rank: 1, name: "Piperacillin-Tazobactam", dose: "4.5 g IV q6h" },
-        { rank: 2, name: "Cefoperazone-Sulbactam", dose: "3 g IV q12h" },
-      ],
-      "Type 3": [
-        { rank: 1, name: "Meropenem", dose: "1 g IV q8h" },
-        { rank: 2, name: "Vancomycin", dose: "15-20 mg/kg IV q12h" },
-      ],
-    },
-    duration: "Uncomplicated bacteremia: 7-14 days after source control",
-    coverage: ["Enterobacterales", "Staphylococcus aureus", "Streptococci"],
-    notes: [
-      "Obtain two blood culture sets before antibiotics where feasible.",
-      "Review culture and source control status within 48-72 hours.",
-    ],
-    warnings: [
-      "Escalate early if septic shock, persistent fever, or suspected catheter-related infection.",
-      "Monitor renal function with glycopeptides and aminoglycosides.",
-    ],
-    idConsult: [
-      "Request ID review for Staphylococcus aureus bacteremia or persistent positive cultures.",
-      "Discuss catheter removal, echocardiography need, and de-escalation plan.",
-    ],
-  },
-  UTI: {
-    therapies: {
-      "Type 1": [
-        { rank: 1, name: "Ceftriaxone", dose: "1 g IV q24h" },
-        { rank: 2, name: "Amikacin", dose: "15 mg/kg IV q24h" },
-      ],
-      "Type 2": [
-        { rank: 1, name: "Cefoperazone-Sulbactam", dose: "3 g IV q12h" },
-        { rank: 2, name: "Piperacillin-Tazobactam", dose: "4.5 g IV q6h" },
-      ],
-      "Type 3": [
-        { rank: 1, name: "Meropenem", dose: "1 g IV q8h" },
-        { rank: 2, name: "Imipenem", dose: "500 mg IV q6h" },
-      ],
-    },
-    duration: "Pyelonephritis / urosepsis: 10-14 days",
-    coverage: ["E. coli", "Klebsiella spp.", "Proteus spp.", "Enterococcus"],
-    notes: [
-      "Send urine culture before antibiotics and de-escalate based on susceptibility.",
-      "Assess obstruction, catheter status, and need for source control.",
-    ],
-    warnings: [
-      "Avoid nephrotoxic combinations when renal function is impaired.",
-      "Carbapenem use should trigger stewardship review in low-risk cases.",
-    ],
-    idConsult: [
-      "Consult ID for recurrent ESBL UTI, septic shock, or complicated urinary source.",
-      "Review oral step-down options after clinical stabilization.",
-    ],
-  },
-  RTI: {
-    therapies: {
-      "Type 1": [
-        {
-          rank: 1,
-          name: "Ceftriaxone + Azithromycin",
-          dose: "2 g IV q24h + 500 mg q24h",
-        },
-        { rank: 2, name: "Amoxicillin-Clavulanate", dose: "1.2 g IV q8h" },
-      ],
-      "Type 2": [
-        { rank: 1, name: "Piperacillin-Tazobactam", dose: "4.5 g IV q6h" },
-        { rank: 2, name: "Cefoperazone-Sulbactam", dose: "3 g IV q12h" },
-      ],
-      "Type 3": [
-        {
-          rank: 1,
-          name: "Meropenem + Azithromycin",
-          dose: "1 g IV q8h + 500 mg q24h",
-        },
-        {
-          rank: 2,
-          name: "Add Vancomycin if MRSA risk",
-          dose: "15-20 mg/kg IV q12h",
-        },
-      ],
-    },
-    duration: "Pneumonia: 5-7 days if clinically stable",
-    coverage: [
-      "S. pneumoniae",
-      "H. influenzae",
-      "Atypicals",
-      "Gram-negative bacilli",
-    ],
-    notes: [
-      "Assess oxygen requirement, aspiration risk, and radiology before escalation.",
-      "Collect sputum and blood cultures in severe disease.",
-    ],
-    warnings: [
-      "Avoid unnecessary dual atypical coverage.",
-      "Review QT risk when using macrolides or fluoroquinolones.",
-    ],
-    idConsult: [
-      "Consult ID for ventilator-associated pneumonia, MDR risk, or non-resolving pneumonia.",
-      "Discuss de-escalation after respiratory culture results.",
-    ],
-  },
-  IAI: {
-    therapies: {
-      "Type 1": [
-        {
-          rank: 1,
-          name: "Ceftriaxone + Metronidazole",
-          dose: "2 g IV q24h + 500 mg IV q8h",
-        },
-        { rank: 2, name: "Amoxicillin-Clavulanate", dose: "1.2 g IV q8h" },
-      ],
-      "Type 2": [
-        { rank: 1, name: "Piperacillin-Tazobactam", dose: "4.5 g IV q6h" },
-        {
-          rank: 2,
-          name: "Cefoperazone-Sulbactam + Metronidazole",
-          dose: "3 g IV q12h + 500 mg q8h",
-        },
-      ],
-      "Type 3": [
-        { rank: 1, name: "Meropenem", dose: "1 g IV q8h" },
-        {
-          rank: 2,
-          name: "Add Vancomycin if enterococcal risk",
-          dose: "15-20 mg/kg IV q12h",
-        },
-      ],
-    },
-    duration:
-      "Intra-abdominal infection: 4-7 days after adequate source control",
-    coverage: ["Enterobacterales", "Anaerobes", "Enterococcus", "Streptococci"],
-    notes: [
-      "Source control is essential; coordinate surgical or radiology intervention early.",
-      "Reassess antibiotics after operative findings and cultures.",
-    ],
-    warnings: [
-      "Prolonged therapy without source control is unlikely to succeed.",
-      "Monitor for C. difficile risk with broad anaerobic coverage.",
-    ],
-    idConsult: [
-      "Consult ID for tertiary peritonitis, resistant organisms, or failed source control.",
-      "Discuss antifungal need only when risk factors are present.",
-    ],
-  },
-  CNS: {
-    therapies: {
-      "Type 1": [
-        {
-          rank: 1,
-          name: "Ceftriaxone + Vancomycin",
-          dose: "2 g IV q12h + 15-20 mg/kg q12h",
-        },
-        {
-          rank: 2,
-          name: "Add Acyclovir if encephalitis suspected",
-          dose: "10 mg/kg IV q8h",
-        },
-      ],
-      "Type 2": [
-        {
-          rank: 1,
-          name: "Ceftriaxone + Vancomycin + Ampicillin",
-          dose: "2 g q12h + 15-20 mg/kg q12h + 2 g q4h",
-        },
-        { rank: 2, name: "Acyclovir", dose: "10 mg/kg IV q8h when indicated" },
-      ],
-      "Type 3": [
-        {
-          rank: 1,
-          name: "Meropenem + Vancomycin",
-          dose: "2 g IV q8h + 15-20 mg/kg q12h",
-        },
-        {
-          rank: 2,
-          name: "Add Acyclovir",
-          dose: "10 mg/kg IV q8h if encephalitis possible",
-        },
-      ],
-    },
-    duration: "Meningitis: organism-directed, commonly 10-21 days",
-    coverage: [
-      "S. pneumoniae",
-      "N. meningitidis",
-      "Listeria",
-      "Gram-negative bacilli",
-    ],
-    notes: [
-      "Do not delay antibiotics for lumbar puncture in unstable patients.",
-      "Use CNS-penetrating doses and review CSF findings urgently.",
-    ],
-    warnings: [
-      "Check renal function for vancomycin and acyclovir dosing.",
-      "Urgent escalation needed for altered sensorium, seizures, or shock.",
-    ],
-    idConsult: [
-      "Mandatory ID consult for suspected meningitis, encephalitis, or healthcare-associated CNS infection.",
-      "Discuss adjunctive steroids and pathogen-directed duration.",
-    ],
-  },
-  SSTI: {
-    therapies: {
-      "Type 1": [
-        { rank: 1, name: "Cefazolin", dose: "2 g IV q8h" },
-        { rank: 2, name: "Amoxicillin-Clavulanate", dose: "1.2 g IV q8h" },
-      ],
-      "Type 2": [
-        { rank: 1, name: "Cefoperazone-Sulbactam", dose: "3 g IV q12h" },
-        {
-          rank: 2,
-          name: "Clindamycin",
-          dose: "600 mg IV q8h if toxin concern",
-        },
-      ],
-      "Type 3": [
-        {
-          rank: 1,
-          name: "Piperacillin-Tazobactam + Vancomycin",
-          dose: "4.5 g IV q6h + 15-20 mg/kg q12h",
-        },
-        {
-          rank: 2,
-          name: "Meropenem + Clindamycin",
-          dose: "1 g IV q8h + 600 mg IV q8h",
-        },
-      ],
-    },
-    duration:
-      "SSTI: 5-10 days; extend if necrotizing infection or poor source control",
-    coverage: [
-      "Streptococci",
-      "MSSA/MRSA risk",
-      "Anaerobes",
-      "Gram-negative bacilli",
-    ],
-    notes: [
-      "Assess abscess, necrotizing features, diabetic foot, and need for drainage.",
-      "Mark margins and reassess clinical response within 24-48 hours.",
-    ],
-    warnings: [
-      "Urgent surgical review for pain out of proportion, bullae, crepitus, or shock.",
-      "Avoid broad Gram-negative coverage for uncomplicated cellulitis.",
-    ],
-    idConsult: [
-      "Consult ID for necrotizing infection, diabetic foot, MRSA risk, or failed oral therapy.",
-      "Discuss debridement timing and culture-directed narrowing.",
-    ],
-  },
-  FN: {
-    therapies: {
-      "Type 1": [
-        { rank: 1, name: "Cefepime", dose: "2 g IV q8h" },
-        { rank: 2, name: "Piperacillin-Tazobactam", dose: "4.5 g IV q6h" },
-      ],
-      "Type 2": [
-        { rank: 1, name: "Piperacillin-Tazobactam", dose: "4.5 g IV q6h" },
-        { rank: 2, name: "Add Amikacin if unstable", dose: "15 mg/kg IV q24h" },
-      ],
-      "Type 3": [
-        { rank: 1, name: "Meropenem", dose: "1 g IV q8h" },
-        {
-          rank: 2,
-          name: "Add Vancomycin if catheter/MRSA risk",
-          dose: "15-20 mg/kg IV q12h",
-        },
-      ],
-    },
-    duration:
-      "Febrile neutropenia: until afebrile, clinically stable, and ANC recovery plan defined",
-    coverage: [
-      "Pseudomonas",
-      "Enterobacterales",
-      "Staphylococci",
-      "Fungal risk when prolonged",
-    ],
-    notes: [
-      "Administer empiric antibiotics within 60 minutes of presentation.",
-      "Risk-stratify with neutrophil count, expected duration, and hemodynamic status.",
-    ],
-    warnings: [
-      "Do not delay therapy while awaiting cultures.",
-      "Add antifungal therapy only for persistent fever with prolonged neutropenia risk.",
-    ],
-    idConsult: [
-      "Early ID consult is recommended for high-risk neutropenia or persistent fever.",
-      "Discuss antifungal triggers, catheter management, and de-escalation plan.",
-    ],
-  },
-};
-
-const drugDoseMap: Record<string, string> = {
-  Amikacin: "15 mg/kg IV q24h",
-  "Amoxicillin-Clavulanate": "1.2 g IV q8h",
-  "Ampicillin-Sulbactam": "3 g IV q6h",
-  Azithromycin: "500 mg OD",
-  Cefazolin: "2 g IV q8h",
-  Cefepime: "2 g IV q8h",
-  "Cefoperazone-Sulbactam": "3 g IV q12h",
-  "Cefoperazone-Sulbactam + Metronidazole": "3 g IV q12h + 500 mg IV q8h",
-  Ceftazidime: "2 g IV q8h",
-  "Ceftazidime-Avibactam + Aztreonam": "ID-guided CRE regimen",
-  Ceftriaxone: "1-2 g IV q24h",
-  "Ceftriaxone + Azithromycin": "1 g IV q12h + 500 mg OD",
-  "Ceftriaxone + Metronidazole": "2 g IV q24h + 500 mg IV q8h",
-  Clindamycin: "600-900 mg IV q8h",
-  "Colistin +/- IV Fosfomycin":
-    "Colistin 9 MU LD then 4.5 MU q12h +/- fosfomycin 12-16 g/day",
-  "Doxycycline/Macrolide": "Doxycycline 100 mg BD or macrolide",
-  Imipenem: "500 mg IV q6h",
-  Linezolid: "600 mg BD",
-  Metronidazole: "500 mg IV q8h",
-  Meropenem: "1 g IV q8h",
-  "Meropenem + Vancomycin":
-    "Meropenem 2 g IV q8h + vancomycin target trough 15-20 mcg/mL",
-  "Piperacillin-Tazobactam": "4.5 g IV q6-8h",
-  "Piperacillin-Tazobactam + Vancomycin":
-    "4.5 g IV q6h + 15-20 mg/kg IV q8-12h",
-  "Polymyxin-based combination therapy":
-    "Polymyxin B 15 lakh unit LD then 5 lakh units q8h; ID-guided combination",
-  Vancomycin: "25-30 mg/kg LD then 15 mg/kg IV q8-12h",
-};
-
-const makeTherapies = (names: string[]): TherapyOption[] =>
-  names.map((name, index) => ({
-    rank: index + 1,
-    name,
-    dose:
-      drugDoseMap[name] ?? "Refer hospital protocol dosing / renal adjustment",
-  }));
-
-const mapTherapies = (
-  type1: string[],
-  type2: string[],
-  type3: string[],
-): Record<RiskType, TherapyOption[]> => ({
-  "Type 1": makeTherapies(type1),
-  "Type 2": makeTherapies(type2),
-  "Type 3": makeTherapies(type3),
-});
-
-const profileKey = (
-  code: string,
-  selectedSetting: string,
-  selectedAcquisition: string,
-) => `${code}|${selectedSetting}|${selectedAcquisition}`;
-
-const contextualProtocolProfiles: Record<string, ProtocolProfile> = {
-  [profileKey("BSI", "ICU", "Community-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Imipenem", "Meropenem"],
-      [
-        "Ceftazidime-Avibactam + Aztreonam",
-        "Polymyxin-based combination therapy",
-      ],
-    ),
-    duration:
-      "BSI / CRBSI: 10-14 days; longer if endocarditis, persistent bacteremia, or source control delay",
-    coverage: [
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Pseudomonas spp.",
-      "Enterococcus spp.",
-      "Staphylococcus aureus",
-    ],
-    notes: [
-      "PDF local antibiogram: BSI ICU community-acquired pathway.",
-      "Send blood cultures before antibiotics and reassess after 48-72 hours.",
-    ],
-    warnings: [
-      "Ceftazidime-avibactam + aztreonam recommendation is committee/ID guided where susceptibility data are insufficient.",
-      "Use loading dose in sepsis or septic shock regardless of renal dysfunction.",
-    ],
-    idConsult: [
-      "ID consult advised for CRE/MDR concern, persistent bacteremia, S. aureus bacteremia, or Type 3 risk.",
-      "Discuss source control, de-escalation, and duration after cultures.",
-    ],
-  },
-  [profileKey("BSI", "ICU", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      [
-        "Ceftazidime-Avibactam + Aztreonam",
-        "Polymyxin-based combination therapy",
-      ],
-      [
-        "Ceftazidime-Avibactam + Aztreonam",
-        "Polymyxin-based combination therapy",
-      ],
-    ),
-    duration:
-      "Hospital-acquired BSI: 10-14 days after clearance/source control; organism-directed longer courses when indicated",
-    coverage: [
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Pseudomonas spp.",
-      "Acinetobacter baumannii",
-      "Enterococcus spp.",
-      "Staphylococcus aureus",
-    ],
-    notes: [
-      "PDF local antibiogram: BSI ICU hospital-acquired pathway.",
-      "Review devices/lines and remove infected catheter where appropriate.",
-    ],
-    warnings: [
-      "Hospital-acquired ICU BSI has high MDR/CRE concern; avoid static low-risk regimens.",
-      "Monitor renal function and antimicrobial levels for glycopeptides/polymyxins.",
-    ],
-    idConsult: [
-      "Same-day ID/stewardship review recommended for ICU hospital-acquired BSI.",
-      "Discuss CRE strategy, catheter management, repeat cultures, and de-escalation.",
-    ],
-  },
-  [profileKey("BSI", "Ward", "Community-acquired")]: {
-    therapies: mapTherapies(
-      ["Ceftriaxone", "Cefoperazone-Sulbactam"],
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      [
-        "Cefoperazone-Sulbactam",
-        "Piperacillin-Tazobactam",
-        "Imipenem",
-        "Meropenem",
-      ],
-    ),
-    duration:
-      "Ward community BSI: 7-14 days after source control and first negative culture where applicable",
-    coverage: [
-      "Salmonella group",
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Staphylococcus aureus",
-      "Streptococcus pneumoniae",
-    ],
-    notes: [
-      "PDF local antibiogram: BSI wards community-acquired pathway.",
-      "If urinary source is suspected, use the UTI-specific protocol branch.",
-    ],
-    warnings: [
-      "Do not treat likely contaminants unless repeated cultures support true BSI.",
-      "Avoid tigecycline for BSI due to poor bloodstream exposure.",
-    ],
-    idConsult: [
-      "ID consult for S. aureus BSI, endocarditis suspicion, persistent fever, or Type 3 risk.",
-      "Discuss repeat blood cultures and oral step-down only when appropriate.",
-    ],
-  },
-  [profileKey("BSI", "Ward", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Meropenem", "Imipenem"],
-      [
-        "Polymyxin-based combination therapy",
-        "Ceftazidime-Avibactam + Aztreonam",
-      ],
-    ),
-    duration:
-      "Ward hospital-acquired BSI: 10-14 days; tailor after cultures and source control",
-    coverage: [
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Pseudomonas aeruginosa",
-      "Enterococcus spp.",
-      "Staphylococcus aureus",
-    ],
-    notes: [
-      "PDF local antibiogram: BSI wards hospital-acquired pathway.",
-      "Assess hospital exposure, invasive device history, and prior antibiotics.",
-    ],
-    warnings: [
-      "Colistin resistance was reported in Klebsiella isolates in the local guide.",
-      "Reserve CZA/aztreonam or polymyxin combinations for MDR/CRE risk with ID input.",
-    ],
-    idConsult: [
-      "ID review for Type 3, suspected CRE, catheter-related BSI, or treatment failure.",
-      "Discuss escalation/de-escalation after susceptibility results.",
-    ],
-  },
-  [profileKey("UTI", "ICU", "Community-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Cefoperazone-Sulbactam", "Meropenem", "Imipenem"],
-      ["Colistin +/- IV Fosfomycin", "Ceftazidime-Avibactam + Aztreonam"],
-    ),
-    duration:
-      "Urosepsis / pyelonephritis: 10-14 days; emphysematous PN/perinephric abscess 3-4 weeks with source control",
-    coverage: [
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Pseudomonas spp.",
-      "Enterococcus spp.",
-    ],
-    notes: [
-      "PDF local antibiogram: UTI ICU community-acquired pathway.",
-      "Fosfomycin susceptibility is based on E. coli urinary CLSI breakpoints.",
-    ],
-    warnings: [
-      "Colistin resistance reported in Klebsiella isolates; use polymyxin/CZA paths with stewardship review.",
-      "Assess obstruction, catheter status, and need for source control.",
-    ],
-    idConsult: [
-      "ID consult for Type 3, CRE concern, septic shock, obstruction, or perinephric abscess.",
-      "Discuss de-escalation to culture-directed therapy.",
-    ],
-  },
-  [profileKey("UTI", "ICU", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Meropenem", "Imipenem"],
-      ["Colistin +/- IV Fosfomycin", "Ceftazidime-Avibactam + Aztreonam"],
-      ["Colistin +/- IV Fosfomycin", "Ceftazidime-Avibactam + Aztreonam"],
-    ),
-    duration:
-      "Hospital-acquired ICU UTI/urosepsis: 10-14 days; longer with abscess or delayed source control",
-    coverage: [
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Pseudomonas spp.",
-      "Enterococcus spp.",
-    ],
-    notes: [
-      "PDF local antibiogram: UTI ICU hospital-acquired pathway.",
-      "Replace old catheter before sending urine culture when catheter-associated UTI is suspected.",
-    ],
-    warnings: [
-      "Hospital-acquired ICU UTI carries MDR/ESBL/Pseudomonas risk.",
-      "CZA/aztreonam recommendation is AMSP/ID guided where susceptibility data are insufficient.",
-    ],
-    idConsult: [
-      "ID consult for ICU hospital-acquired UTI with Type 2/3 risk or resistant organism.",
-      "Discuss source control and culture-directed narrowing.",
-    ],
-  },
-  [profileKey("UTI", "Ward", "Community-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Cefoperazone-Sulbactam"],
-      ["Colistin +/- IV Fosfomycin", "Ceftazidime-Avibactam + Aztreonam"],
-    ),
-    duration: "Ward community UTI: pyelonephritis/urosepsis 10-14 days",
-    coverage: [
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Pseudomonas spp.",
-      "Enterococcus spp.",
-      "Proteus spp.",
-    ],
-    notes: [
-      "PDF local antibiogram: UTI wards community-acquired pathway.",
-      "Nitrofurantoin is for uncomplicated cystitis only, not pyelonephritis or urosepsis.",
-    ],
-    warnings: [
-      "Do not treat asymptomatic bacteriuria unless pregnant or before urological procedure.",
-      "Avoid unnecessary carbapenem use in low-risk ward UTI.",
-    ],
-    idConsult: [
-      "ID consult if recurrent ESBL UTI, Type 3 risk, or poor response.",
-      "Discuss oral step-down once stable and susceptibilities are available.",
-    ],
-  },
-  [profileKey("UTI", "Ward", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Imipenem", "Meropenem"],
-      ["Colistin +/- IV Fosfomycin", "Ceftazidime-Avibactam + Aztreonam"],
-    ),
-    duration:
-      "Ward hospital-acquired UTI: 10-14 days; adjust for source control and response",
-    coverage: [
-      "E. coli",
-      "Klebsiella pneumoniae",
-      "Pseudomonas spp.",
-      "Enterococcus spp.",
-      "Proteus spp.",
-    ],
-    notes: [
-      "PDF local antibiogram: UTI wards hospital-acquired pathway.",
-      "Fosfomycin interpretation follows urinary E. coli CLSI breakpoints.",
-    ],
-    warnings: [
-      "Colistin resistance was reported in local Klebsiella isolates.",
-      "Escalate only with MDR risk, sepsis, or culture evidence.",
-    ],
-    idConsult: [
-      "ID consult for Type 3 hospital-acquired UTI, CRE/ESBL risk, or renal dosing complexity.",
-      "Review de-escalation after culture results.",
-    ],
-  },
-  [profileKey("RTI", "ICU", "Community-acquired")]: {
-    therapies: mapTherapies(
-      [
-        "Cefoperazone-Sulbactam",
-        "Piperacillin-Tazobactam",
-        "Doxycycline/Macrolide",
-      ],
-      [
-        "Cefoperazone-Sulbactam",
-        "Piperacillin-Tazobactam",
-        "Doxycycline/Macrolide",
-      ],
-      ["Ceftazidime-Avibactam + Aztreonam", "Doxycycline/Macrolide"],
-    ),
-    duration:
-      "CAP: 5-7 days when stable; extend for complications or slow response",
-    coverage: [
-      "Klebsiella pneumoniae",
-      "Pseudomonas aeruginosa",
-      "E. coli",
-      "H. influenzae",
-      "S. pneumoniae",
-      "Atypicals",
-    ],
-    notes: [
-      "PDF local antibiogram: RTI ICU community-acquired pathway.",
-      "Doxycycline/macrolides remain effective for CAP pathogens.",
-    ],
-    warnings: [
-      "Stop antibiotics if viral etiology is confirmed and no secondary bacterial infection exists.",
-      "Add anaerobic cover only for aspiration, lung abscess, or empyema.",
-    ],
-    idConsult: [
-      "ID consult for ICU pneumonia with Type 3/MDR risk or invasive mold concern.",
-      "Discuss respiratory cultures and de-escalation.",
-    ],
-  },
-  [profileKey("RTI", "ICU", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      [
-        "Ceftazidime-Avibactam + Aztreonam",
-        "Polymyxin-based combination therapy",
-      ],
-    ),
-    duration:
-      "HCAP/VAP: usually 7 days; longer for bacteremia, immunosuppression, pyogenic complications, mold, or slow response",
-    coverage: [
-      "Klebsiella spp.",
-      "Pseudomonas aeruginosa",
-      "Acinetobacter baumannii",
-      "Stenotrophomonas maltophilia",
-      "Staphylococcus aureus",
-    ],
-    notes: [
-      "PDF local antibiogram: RTI ICU hospital-acquired pathway.",
-      "Reserve minocycline for MDR nosocomial infections.",
-    ],
-    warnings: [
-      "Hospital-acquired ICU RTI requires MDR/Pseudomonas assessment.",
-      "CZA/aztreonam or polymyxin combinations require ID/stewardship input.",
-    ],
-    idConsult: [
-      "ID consult for VAP/HAP with Type 3 risk, CRE, CRAB, or non-resolving pneumonia.",
-      "Discuss bronchoscopy/cultures and de-escalation.",
-    ],
-  },
-  [profileKey("RTI", "Ward", "Community-acquired")]: {
-    therapies: mapTherapies(
-      ["Ceftriaxone + Azithromycin", "Doxycycline/Macrolide"],
-      [
-        "Cefoperazone-Sulbactam",
-        "Piperacillin-Tazobactam",
-        "Doxycycline/Macrolide",
-      ],
-      [
-        "Cefoperazone-Sulbactam",
-        "Piperacillin-Tazobactam",
-        "Doxycycline/Macrolide",
-      ],
-    ),
-    duration:
-      "Ward CAP: 5-7 days when hemodynamically stable and afebrile for 48-72 hours",
-    coverage: [
-      "Klebsiella spp.",
-      "Pseudomonas spp.",
-      "H. influenzae",
-      "S. pneumoniae",
-      "Staphylococcus aureus",
-      "Atypicals",
-    ],
-    notes: [
-      "PDF local antibiogram: RTI wards community-acquired pathway.",
-      "Avoid fluoroquinolones for routine CAP when alternatives are appropriate.",
-    ],
-    warnings: [
-      "Do not continue antibiotics for confirmed viral disease without bacterial coinfection.",
-      "Use broad Gram-negative coverage only when structural lung disease, recent antibiotics, or immunosuppression are present.",
-    ],
-    idConsult: [
-      "ID consult for severe CAP, Type 3 risk, or poor clinical response.",
-      "Review culture-directed narrowing and duration.",
-    ],
-  },
-  [profileKey("RTI", "Ward", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Cefoperazone-Sulbactam", "Imipenem", "Meropenem"],
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-    ),
-    duration:
-      "Ward hospital-acquired RTI: usually 7 days; tailor to response and complications",
-    coverage: [
-      "Klebsiella spp.",
-      "Pseudomonas spp.",
-      "E. coli",
-      "Staphylococcus aureus",
-      "Acinetobacter spp.",
-    ],
-    notes: [
-      "PDF local antibiogram: RTI wards hospital-acquired pathway.",
-      "Obtain respiratory cultures before escalation when feasible.",
-    ],
-    warnings: [
-      "Colistin resistance was reported in Klebsiella isolates in the local guide.",
-      "Avoid static CAP regimens for hospital-acquired RTI.",
-    ],
-    idConsult: [
-      "ID consult for MDR/Pseudomonas risk, Type 3 risk, or treatment failure.",
-      "Discuss de-escalation and need for anaerobic coverage only when indicated.",
-    ],
-  },
-  [profileKey("IAI", "ICU", "Community-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      [
-        "Ceftazidime-Avibactam + Aztreonam",
-        "Metronidazole",
-        "Polymyxin-based combination therapy",
-      ],
-    ),
-    duration:
-      "Intra-abdominal sepsis: 5-14 days depending on source control and response",
-    coverage: [
-      "E. coli",
-      "Klebsiella spp.",
-      "Enterococcus spp.",
-      "Anaerobes",
-      "Candida risk",
-    ],
-    notes: [
-      "PDF local antibiogram: IAI ICU community-acquired pathway.",
-      "Ensure adequate source control; shorter courses suffice after source control unless abscess persists.",
-    ],
-    warnings: [
-      "Anaerobic cover is needed if ceftazidime-avibactam is used.",
-      "Tigecycline susceptibility is interpreted using E. coli EUCAST breakpoints in the guide.",
-    ],
-    idConsult: [
-      "ID consult for Type 3 risk, CRE concern, candidiasis risk, or failed source control.",
-      "Discuss antifungal indication and de-escalation after cultures.",
-    ],
-  },
-  [profileKey("IAI", "ICU", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam"],
-      ["Ceftazidime-Avibactam + Aztreonam", "Metronidazole"],
-      ["Ceftazidime-Avibactam + Aztreonam", "Metronidazole"],
-    ),
-    duration:
-      "ICU hospital-acquired IAI: 5-14 days; source control determines duration",
-    coverage: [
-      "E. coli",
-      "Klebsiella spp.",
-      "Enterococcus spp.",
-      "Anaerobes",
-      "Candida risk",
-    ],
-    notes: [
-      "PDF local antibiogram: IAI ICU hospital-acquired pathway.",
-      "Source control is mandatory; sterile necrotizing pancreatitis should not be treated.",
-    ],
-    warnings: [
-      "CZA/aztreonam recommendation is AMSP/ID guided where susceptibility data are insufficient.",
-      "Hospital-acquired ICU IAI has MDR and Enterococcus risk.",
-    ],
-    idConsult: [
-      "Same-day ID consult for ICU hospital-acquired IAI with Type 2/3 risk.",
-      "Discuss source control, antifungal triggers, and de-escalation.",
-    ],
-  },
-  [profileKey("IAI", "Ward", "Community-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"],
-      ["Imipenem", "Meropenem"],
-      ["Imipenem", "Meropenem"],
-    ),
-    duration:
-      "Ward community IAI: 5-14 days depending on source control and clinical response",
-    coverage: [
-      "E. coli",
-      "Klebsiella spp.",
-      "Enterococcus spp.",
-      "Pseudomonas spp.",
-      "Anaerobes",
-    ],
-    notes: [
-      "PDF local antibiogram: IAI wards community-acquired pathway.",
-      "Ensure adequate source control and reassess after cultures.",
-    ],
-    warnings: [
-      "Do not prolong antibiotics after adequate source control without clinical indication.",
-      "Tigecycline susceptibility follows E. coli EUCAST breakpoints in the local guide.",
-    ],
-    idConsult: [
-      "ID consult for Type 3 risk, abscess, resistant organism, or poor source control.",
-      "Discuss step-down and total duration.",
-    ],
-  },
-  [profileKey("IAI", "Ward", "Hospital-acquired")]: {
-    therapies: mapTherapies(
-      ["Cefoperazone-Sulbactam", "Imipenem", "Meropenem"],
-      ["Imipenem", "Meropenem"],
-      ["Cefoperazone-Sulbactam", "Imipenem", "Meropenem"],
-    ),
-    duration:
-      "Ward hospital-acquired IAI: 5-14 days; tailor to source control and response",
-    coverage: [
-      "E. coli",
-      "Klebsiella spp.",
-      "Enterococcus spp.",
-      "Anaerobes",
-      "Pseudomonas risk",
-    ],
-    notes: [
-      "PDF local antibiogram: IAI wards hospital-acquired pathway.",
-      "Review operative/radiology source control plan before extending therapy.",
-    ],
-    warnings: [
-      "Hospital-acquired IAI increases MDR/ESBL and Enterococcus risk.",
-      "Avoid unrelated UTI/RTI regimens for abdominal source.",
-    ],
-    idConsult: [
-      "ID consult for Type 3 risk, suspected CRE, candidiasis risk, or ongoing sepsis.",
-      "Discuss de-escalation and duration after source control.",
-    ],
-  },
-};
-
 const otpResendSeconds = 10;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
@@ -1039,6 +211,14 @@ const friendlyAuthError = (message: string | undefined, fallback: string) => {
 
   if (normalized.includes("rate limit") || normalized.includes("too many")) {
     return otpRequestReceivedMessage;
+  }
+
+  if (
+    normalized.includes("invalid") ||
+    normalized.includes("expired") ||
+    normalized.includes("token")
+  ) {
+    return "Invalid OTP. Please try again.";
   }
 
   return fallback;
@@ -1107,6 +287,13 @@ export default function App() {
   const [riskType, setRiskType] = useState<RiskType>("Type 2");
   const [protocolDetailTab, setProtocolDetailTab] =
     useState<ProtocolDetailTab>("Notes");
+  const [sourceRecommendations, setSourceRecommendations] = useState<
+    SourceRecommendation[]
+  >([]);
+  const [sourceRecommendationLoading, setSourceRecommendationLoading] =
+    useState(false);
+  const [sourceRecommendationError, setSourceRecommendationError] =
+    useState("");
   const isAuthScreen =
     screen === "login" || screen === "signup" || screen === "otp";
 
@@ -1130,6 +317,9 @@ export default function App() {
       setIsAuthenticated(hasSession);
       setRouteStack([hasSession ? "dashboard" : "login"]);
       setSessionReady(true);
+      if (hasSession) {
+        void loadApprovedSourceRecommendations();
+      }
     });
 
     const {
@@ -1143,6 +333,7 @@ export default function App() {
         setAuthSuccess("Login successful.");
         setLoginError("");
         setOtp("");
+        void loadApprovedSourceRecommendations();
       }
     });
 
@@ -1254,80 +445,20 @@ export default function App() {
       : riskType === "Type 2"
         ? palette.orange
         : palette.red;
-  const currentProtocol = useMemo(() => {
-    const contextProfile =
-      contextualProtocolProfiles[
-        profileKey(selectedSite.code, setting, acquisition)
-      ];
-    const profile =
-      contextProfile ??
-      protocolProfiles[selectedSite.code] ??
-      protocolProfiles.UTI;
-    const hasMdrRisk =
-      riskType === "Type 3" ||
-      acquisition === "Hospital-acquired" ||
-      riskAnswers[2] ||
-      riskAnswers[3] ||
-      riskAnswers[4];
-    const hasEsblRisk =
-      hasMdrRisk ||
-      riskAnswers[0] ||
-      riskAnswers[1] ||
-      ["UTI", "IAI", "BSI"].includes(selectedSite.code);
-    const hasPseudomonasRisk =
-      setting === "ICU" ||
-      acquisition === "Hospital-acquired" ||
-      riskAnswers[2] ||
-      ["RTI", "UTI", "IAI", "SSTI"].includes(selectedSite.code);
-    const contextNotes = [
-      `${setting} pathway selected for ${selectedSite.label}.`,
-      `${acquisition} protocol context applied.`,
-      `MDR/ESBL/Pseudomonas risk flags: MDR ${hasMdrRisk ? "yes" : "no"}, ESBL ${hasEsblRisk ? "yes" : "no"}, Pseudomonas ${hasPseudomonasRisk ? "yes" : "no"}.`,
-    ];
-    const contextWarnings = [
-      setting === "ICU"
-        ? "ICU admission: reassess severity, organ support, and cultures daily."
-        : "Ward admission: escalate promptly if hypotension, hypoxia, or clinical deterioration occurs.",
-      acquisition === "Hospital-acquired"
-        ? "Hospital-acquired infection: review prior cultures, device exposure, and MDR risk."
-        : "Community-acquired infection: avoid unnecessary broad-spectrum escalation if stable.",
-      riskType === "Type 3"
-        ? "Type 3 risk: stewardship alert and ID review are advised."
-        : "Use the narrowest effective agent once culture data are available.",
-      hasEsblRisk
-        ? "ESBL/MDR risk present: avoid ceftriaxone-only therapy unless cultures support susceptibility."
-        : "No ESBL/MDR flag from current answers; avoid unnecessary escalation.",
-      hasPseudomonasRisk
-        ? "Pseudomonas risk present: ensure selected regimen has antipseudomonal activity when clinically relevant."
-        : "No Pseudomonas flag from current pathway.",
-    ];
-    const contextIdConsult = [
-      `Share ${selectedSite.code}, ${setting}, ${acquisition}, and ${riskType} classification with ID team.`,
-      riskType === "Type 3" || setting === "ICU"
-        ? "Prioritize same-day ID consultation."
-        : "Consider ID consultation if cultures show resistance or response is poor.",
-      hasMdrRisk
-        ? "Review CRE/MDRO strategy with stewardship before using polymyxin or ceftazidime-avibactam + aztreonam."
-        : "Document planned 48-72 hour culture review.",
-    ];
-    const coverage = [...profile.coverage];
-
-    if (
-      hasPseudomonasRisk &&
-      !coverage.some((item) => item.includes("Pseudomonas"))
-    ) {
-      coverage.push("Pseudomonas risk");
+  const fieldMatches = (value: string | null, expected: string) => {
+    if (!value) {
+      return true;
     }
 
-    return {
-      therapies: profile.therapies[riskType],
-      duration: profile.duration,
-      coverage,
-      notes: [...profile.notes, ...contextNotes],
-      warnings: [...profile.warnings, ...contextWarnings],
-      idConsult: [...profile.idConsult, ...contextIdConsult],
-    };
-  }, [acquisition, riskAnswers, riskType, selectedSite, setting]);
+    const normalizedValue = value.toLowerCase();
+    const normalizedExpected = expected.toLowerCase();
+    return (
+      normalizedValue === normalizedExpected ||
+      normalizedValue.includes(normalizedExpected) ||
+      normalizedExpected.includes(normalizedValue)
+    );
+  };
+
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -1346,38 +477,46 @@ export default function App() {
     };
 
     sites.forEach((site) => {
-      const profile = protocolProfiles[site.code];
-      const contextProfiles = Object.entries(contextualProtocolProfiles)
-        .filter(([key]) => key.startsWith(`${site.code}|`))
-        .map(([, contextProfile]) => contextProfile);
       const aliases = infectionAliases[site.code] ?? [];
-      const therapyOptions = Object.entries(profile.therapies).flatMap(
-        ([risk, options]) =>
-          options.map((option) => ({ ...option, risk: risk as RiskType })),
-      );
-      const contextKeywords = contextProfiles
-        .flatMap((contextProfile) => [
-          contextProfile.duration,
-          ...contextProfile.coverage,
-          ...contextProfile.notes,
-          ...contextProfile.warnings,
-          ...contextProfile.idConsult,
-          ...Object.values(contextProfile.therapies)
-            .flat()
-            .map((option) => `${option.name} ${option.dose}`),
+      const sourceMatchesSite = (value: string | null) => {
+        if (!value) {
+          return false;
+        }
+
+        const normalizedValue = value.toLowerCase();
+        const normalizedSite = `${site.code} ${site.label}`.toLowerCase();
+        return (
+          normalizedValue.includes(site.code.toLowerCase()) ||
+          normalizedSite.includes(normalizedValue)
+        );
+      };
+      const sourceKeywords = sourceRecommendations
+        .filter(
+          (item) =>
+            sourceMatchesSite(item.infection_site) ||
+            sourceMatchesSite(item.syndrome),
+        )
+        .flatMap((item) => [
+          item.syndrome,
+          item.infection_site,
+          item.setting,
+          item.acquisition,
+          item.risk_type,
+          item.severity_category,
+          item.organism,
+          item.pathogen,
+          item.drug,
+          item.stewardship_note,
+          item.id_consult_trigger,
+          item.section_heading,
         ])
+        .filter(Boolean)
         .join(" ");
       const sharedKeywords = [
         site.code,
         site.label,
         ...aliases,
-        profile.duration,
-        ...profile.coverage,
-        ...profile.notes,
-        ...profile.warnings,
-        ...profile.idConsult,
-        ...therapyOptions.map((option) => option.name),
-        contextKeywords,
+        sourceKeywords,
       ].join(" ");
 
       pushIfMatch({
@@ -1400,23 +539,10 @@ export default function App() {
         detailTab: "Notes",
         keywords: sharedKeywords,
       });
-
-      therapyOptions.forEach((option) => {
-        pushIfMatch({
-          id: `${site.code}-${option.risk}-${option.rank}-${option.name}`,
-          title: option.name,
-          subtitle: `${site.code} · ${option.risk} · ${option.dose}`,
-          icon: "◉",
-          site,
-          target: "protocolResult",
-          riskType: option.risk,
-          keywords: `${sharedKeywords} ${option.name} ${option.dose}`,
-        });
-      });
     });
 
     return results.slice(0, 8);
-  }, [searchQuery]);
+  }, [searchQuery, sourceRecommendations]);
 
   const go = (next: Screen, mode: "push" | "replace" | "reset" = "push") => {
     setRouteStack((current) => {
@@ -1455,6 +581,64 @@ export default function App() {
 
     go(result.target);
   };
+
+  const loadApprovedSourceRecommendations = async () => {
+    if (!isSupabaseConfigured) {
+      return;
+    }
+
+    setSourceRecommendationLoading(true);
+    setSourceRecommendationError("");
+
+    const { data, error } = await supabase
+      .from("approved_clinical_recommendations_with_source")
+      .select("*")
+      .order("syndrome", { ascending: true });
+
+    setSourceRecommendationLoading(false);
+
+    if (error) {
+      setSourceRecommendations([]);
+      setSourceRecommendationError(
+        "No approved recommendation available. Refer institutional guideline / ID specialist.",
+      );
+      return;
+    }
+
+    setSourceRecommendations((data ?? []) as SourceRecommendation[]);
+  };
+
+  const selectedSourceRecommendations = useMemo(
+    () =>
+      sourceRecommendations.filter((item) => {
+        const syndrome = `${item.syndrome ?? ""} ${item.infection_site ?? ""}`;
+        const sourceInfection = syndrome.toLowerCase();
+        const selectedInfection =
+          `${selectedSite.code} ${selectedSite.label}`.toLowerCase();
+        const hasSourceInfection = sourceInfection.trim().length > 0;
+
+        return (
+          hasSourceInfection &&
+          (sourceInfection.includes(selectedSite.code.toLowerCase()) ||
+            selectedInfection.includes(sourceInfection.trim())) &&
+          fieldMatches(item.setting, setting) &&
+          fieldMatches(item.acquisition, acquisition) &&
+          fieldMatches(item.risk_type, riskType)
+        );
+      }),
+    [acquisition, riskType, selectedSite, setting, sourceRecommendations],
+  );
+
+  const failClosedMessage =
+    "No approved recommendation available. Refer institutional guideline / ID specialist.";
+  const sourceAlertNotes = selectedSourceRecommendations
+    .flatMap((item) => [
+      item.stewardship_note,
+      item.id_consult_trigger,
+      item.contraindication,
+      item.allergy_warning,
+    ])
+    .filter((note): note is string => Boolean(note));
 
   const clearAuthMessages = () => {
     setLoginError("");
@@ -2171,7 +1355,10 @@ export default function App() {
           <Text style={styles.infoCardTitle}>
             {selectedSite.label} · {setting} · {acquisition}
           </Text>
-          <Text style={styles.infoCardBody}>{currentProtocol.duration}</Text>
+          <Text style={styles.infoCardBody}>
+            {selectedSourceRecommendations.find((item) => item.duration)
+              ?.duration ?? failClosedMessage}
+          </Text>
         </View>
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Review Trigger</Text>
@@ -2187,36 +1374,27 @@ export default function App() {
     TabPage(
       "Alerts",
       <View>
-        <View
-          style={[styles.infoCard, riskType === "Type 3" && styles.actionAlert]}
-        >
-          <Text
-            style={[
-              styles.infoCardTitle,
-              riskType === "Type 3" && styles.actionTitleRed,
-            ]}
-          >
-            Stewardship Review
-          </Text>
-          <Text
-            style={[
-              styles.infoCardBody,
-              riskType === "Type 3" && styles.actionBodyRed,
-            ]}
-          >
-            {riskType === "Type 3"
-              ? "Type 3 high-risk case requires ID consult review."
-              : "No critical stewardship alerts at this time."}
-          </Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitle}>Stewardship Review</Text>
+          {sourceRecommendationLoading ? (
+            <ActivityIndicator color={palette.blue} />
+          ) : sourceAlertNotes.length === 0 ? (
+            <Text style={styles.infoCardBody}>
+              {sourceRecommendationError || failClosedMessage}
+            </Text>
+          ) : (
+            sourceAlertNotes.map((note) => (
+              <Text key={note} style={styles.infoCardBody}>
+                {note}
+              </Text>
+            ))
+          )}
           <TouchableOpacity
             activeOpacity={0.86}
-            style={[
-              styles.actionButton,
-              riskType === "Type 3" && styles.actionButtonRed,
-            ]}
+            style={styles.actionButton}
             onPress={() => go("stewardshipAlert")}
           >
-            <Text style={styles.actionButtonText}>Open Alert</Text>
+            <Text style={styles.actionButtonText}>Open Source Review</Text>
           </TouchableOpacity>
         </View>
       </View>,
@@ -2447,32 +1625,42 @@ export default function App() {
             {riskType} - {riskLabel}
           </Text>
         </View>
-        <Text style={styles.resultSection}>Recommended Empiric Therapy</Text>
-        {currentProtocol.therapies.map((item) => (
-          <View key={item.rank} style={styles.therapyCard}>
-            <Text style={styles.rank}>{item.rank}</Text>
-            <View>
-              <Text style={styles.therapyName}>{item.name}</Text>
-              <Text style={styles.therapyDose}>{item.dose}</Text>
+        <Text style={styles.resultSection}>Approved Source-Based Therapy</Text>
+        {sourceRecommendationLoading ? (
+          <View style={styles.noteBlue}>
+            <Text style={styles.noteText}>Loading approved source data...</Text>
+          </View>
+        ) : selectedSourceRecommendations.length === 0 ? (
+          <View style={[styles.noteBlue, styles.actionAlert]}>
+            <Text style={[styles.noteText, styles.actionBodyRed]}>
+              {sourceRecommendationError || failClosedMessage}
+            </Text>
+          </View>
+        ) : (
+          selectedSourceRecommendations.map((item, index) => (
+            <View key={item.id} style={styles.therapyCard}>
+              <Text style={styles.rank}>{index + 1}</Text>
+              <View>
+                <Text style={styles.therapyName}>
+                  {item.drug ?? "Drug not specified in source"}
+                </Text>
+                <Text style={styles.therapyDose}>
+                  {[
+                    item.dose,
+                    item.route,
+                    item.frequency,
+                    item.duration,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Dose/duration not specified in source"}
+                </Text>
+                <Text style={styles.detailText}>
+                  Source: {item.source_filename}
+                  {item.page_number ? `, page ${item.page_number}` : ""}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
-        <Text style={styles.detailLabel}>Duration</Text>
-        <Text style={styles.detailText}>{currentProtocol.duration}</Text>
-        <Text style={styles.detailLabel}>Pathogen Coverage (Common)</Text>
-        <View style={styles.pillRow}>
-          {currentProtocol.coverage.map((pill) => (
-            <Text key={pill} style={styles.pill}>
-              {pill}
-            </Text>
-          ))}
-        </View>
-        {riskType === "Type 3" && (
-          <View style={styles.alertStrip}>
-            <Text style={styles.alertStripText}>
-              Stewardship alert: ID consult advised.
-            </Text>
-          </View>
+          ))
         )}
         <PrimaryButton
           label="View Details"
@@ -2509,26 +1697,56 @@ export default function App() {
         </View>
         {protocolDetailTab === "Notes" && (
           <View>
-            <Text style={styles.detailsTitle}>Clinical / Protocol Notes</Text>
-            {currentProtocol.notes.map((note) => (
-              <View key={note} style={styles.noteBlue}>
-                <Text style={styles.noteText}>{note}</Text>
+            <Text style={styles.detailsTitle}>Source Evidence</Text>
+            {selectedSourceRecommendations.length === 0 ? (
+              <View style={[styles.noteBlue, styles.actionAlert]}>
+                <Text style={[styles.noteText, styles.actionBodyRed]}>
+                  {failClosedMessage}
+                </Text>
               </View>
-            ))}
+            ) : (
+              selectedSourceRecommendations.map((item) => (
+                <View key={item.id} style={styles.noteBlue}>
+                  <Text style={styles.noteText}>
+                    {item.source_quote || "Source quote missing"}
+                  </Text>
+                  <Text style={styles.detailText}>
+                    {item.source_filename}
+                    {item.page_number ? ` · page ${item.page_number}` : ""}
+                    {item.section_heading ? ` · ${item.section_heading}` : ""}
+                  </Text>
+                </View>
+              ))
+            )}
           </View>
         )}
         {protocolDetailTab === "Warnings" && (
           <View>
-            <Text style={styles.detailsTitle}>
-              Stewardship Alerts & Precautions
-            </Text>
-            {currentProtocol.warnings.map((warning) => (
-              <View key={warning} style={[styles.noteBlue, styles.actionAlert]}>
+            <Text style={styles.detailsTitle}>Source-Linked Warnings</Text>
+            {selectedSourceRecommendations.length === 0 ? (
+              <View style={[styles.noteBlue, styles.actionAlert]}>
                 <Text style={[styles.noteText, styles.actionBodyRed]}>
-                  {warning}
+                  {failClosedMessage}
                 </Text>
               </View>
-            ))}
+            ) : (
+              selectedSourceRecommendations.map((item) => (
+                <View key={item.id} style={[styles.noteBlue, styles.actionAlert]}>
+                  <Text style={[styles.noteText, styles.actionBodyRed]}>
+                    {[
+                      item.renal_adjustment,
+                      item.hepatic_adjustment,
+                      item.pregnancy_lactation_caution,
+                      item.allergy_warning,
+                      item.contraindication,
+                      item.stewardship_note,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "No warning specified in source"}
+                  </Text>
+                </View>
+              ))
+            )}
           </View>
         )}
         {protocolDetailTab === "ID Consult" && (
@@ -2536,18 +1754,29 @@ export default function App() {
             <Text style={styles.detailsTitle}>
               Infectious Disease Consult Guidance
             </Text>
-            {currentProtocol.idConsult.map((guidance) => (
-              <TouchableOpacity
-                key={guidance}
-                activeOpacity={0.86}
-                style={styles.listCard}
-                onPress={() => go("stewardshipAlert")}
-              >
-                <Text style={styles.listIcon}>□</Text>
-                <Text style={styles.listText}>{guidance}</Text>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-            ))}
+            {selectedSourceRecommendations.length === 0 ? (
+              <View style={[styles.noteBlue, styles.actionAlert]}>
+                <Text style={[styles.noteText, styles.actionBodyRed]}>
+                  {failClosedMessage}
+                </Text>
+              </View>
+            ) : (
+              selectedSourceRecommendations.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.86}
+                  style={styles.listCard}
+                  onPress={() => go("stewardshipAlert")}
+                >
+                  <Text style={styles.listIcon}>□</Text>
+                  <Text style={styles.listText}>
+                    {item.id_consult_trigger ??
+                      "ID consult trigger not specified in source"}
+                  </Text>
+                  <Text style={styles.chevron}>›</Text>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         )}
         <PrimaryButton label="Actions" onPress={() => go("actions")} />
@@ -2718,16 +1947,21 @@ export default function App() {
   const StewardshipAlert = () =>
     appShell(
       <View>
-        <View style={[styles.infoCard, styles.actionAlert]}>
-          <Text style={styles.actionIconRed}>!</Text>
-          <Text style={styles.actionTitleRed}>
-            {riskType === "Type 3"
-              ? "Type 3 (High Risk) Alert Triggered"
-              : "Stewardship Status"}
-          </Text>
-          <Text style={styles.actionBodyRed}>
-            Consider ID consult and review antibiotic policy.
-          </Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitle}>Source-Linked Stewardship</Text>
+          {sourceRecommendationLoading ? (
+            <ActivityIndicator color={palette.blue} />
+          ) : sourceAlertNotes.length === 0 ? (
+            <Text style={styles.infoCardBody}>
+              {sourceRecommendationError || failClosedMessage}
+            </Text>
+          ) : (
+            sourceAlertNotes.map((note) => (
+              <Text key={note} style={styles.infoCardBody}>
+                {note}
+              </Text>
+            ))
+          )}
         </View>
         <PrimaryButton
           label="View Protocol"

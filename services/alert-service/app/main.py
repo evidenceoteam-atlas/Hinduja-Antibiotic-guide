@@ -11,16 +11,7 @@ configure_logging("alert-service")
 app = FastAPI(title="Alert Service", version="1.0.0", openapi_url="/api/v1/openapi.json")
 register_health_routes(app, "alert-service")
 
-ALERTS = [
-    {
-        "id": "alert-demo-1",
-        "severity": "high",
-        "reason": (
-            "Type 3 high-risk alert triggered. Consider ID consult and review antibiotic policy."
-        ),
-        "status": "open",
-    }
-]
+ALERTS: list[dict] = []
 
 
 class AcknowledgePayload(BaseModel):

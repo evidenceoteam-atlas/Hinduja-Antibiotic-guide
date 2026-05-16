@@ -41,6 +41,7 @@ class ProtocolEvaluationResult(BaseModel):
     pathogen_coverage: list[str]
     id_consult_required: bool
     stewardship_alerts: list[str]
+    fail_closed_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -87,9 +88,26 @@ class JsonRuleEvaluator:
             .get(request.acquisition, {})
             .get(threshold.risk_type)
         )
-        if therapy_payload is None:
-            therapy_payload = self.rules["defaults"][threshold.risk_type]
-            reasoning.append("default recommendation pathway applied")
+        if therapy_payload is None or not self._is_approved_source_backed(therapy_payload):
+            reasoning.append("no approved source-backed recommendation available")
+            return ProtocolEvaluationResult(
+                infection_code=request.infection_code,
+                setting=request.setting,
+                acquisition=request.acquisition,
+                risk_score=score,
+                risk_type=threshold.risk_type,
+                risk_label=threshold.label,
+                reasoning=reasoning,
+                recommended_therapy=[],
+                duration="not specified in source",
+                pathogen_coverage=[],
+                id_consult_required=False,
+                stewardship_alerts=[],
+                fail_closed_reason=(
+                    "No approved recommendation available. Refer institutional guideline / "
+                    "ID specialist."
+                ),
+            )
 
         alerts = self._alerts(threshold.risk_type, therapy_payload)
         return ProtocolEvaluationResult(
@@ -122,12 +140,16 @@ class JsonRuleEvaluator:
 
     def _alerts(self, risk_type: str, therapy_payload: dict[str, Any]) -> list[str]:
         alerts: list[str] = []
-        if risk_type == "Type 3":
-            alerts.append("Type 3 high-risk pathway requires stewardship review")
-        for therapy in therapy_payload.get("therapy", []):
-            antibiotic = therapy["antibiotic"].lower()
-            if "meropenem" in antibiotic or "imipenem" in antibiotic:
-                alerts.append(
-                    "Carbapenem recommendation requires antimicrobial stewardship notification"
-                )
+        for alert in therapy_payload.get("stewardship_alerts", []):
+            alerts.append(str(alert))
         return alerts
+
+    def _is_approved_source_backed(self, therapy_payload: dict[str, Any]) -> bool:
+        if therapy_payload.get("review_status") != "approved":
+            return False
+        if not therapy_payload.get("source_reference"):
+            return False
+        for therapy in therapy_payload.get("therapy", []):
+            if not therapy.get("source_reference"):
+                return False
+        return True

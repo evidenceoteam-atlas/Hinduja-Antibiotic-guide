@@ -1,12 +1,17 @@
 # Seed Data
 
-Seeded clinical concepts are represented in `rules/hinduja_protocols.json` and mirrored by the API responses:
+The app must not ship static antibiotic recommendations as seed data.
 
-- Infection sites: BSI, UTI, RTI, intra-abdominal infection, CNS, SSTI, febrile neutropenia.
-- Settings: ICU, Ward.
-- Acquisition: Community-acquired, Hospital-acquired.
-- Risk factors: hospital contact, recent antibiotics, invasive device/procedure, multiple antibiotics, comorbidities/immunodeficiency, sepsis indicators.
-- Classifications: Type 1 low risk, Type 2 medium risk, Type 3 high risk.
-- UTI sample recommendation: Cefoperazone-Sulbactam, Meropenem, Imipenem.
-- Sensitivity sample: E. coli with local sensitivity values matching the protocol details screen.
+The remaining `rules/hinduja_protocols.json` file contains only non-treatment
+risk scoring configuration used to classify the workflow state. It intentionally
+contains no antibiotic names, doses, durations, organisms, renal adjustments, or
+fallback treatment pathways.
 
+Clinical recommendation rows must be imported from source guide files through
+the source-ingestion workflow in `docs/SOURCE_INGESTION.md`. Imported rows start
+as `pending_review`, must preserve their source quote, and are hidden from the
+doctor-facing app until a clinician approves them.
+
+For UI testing, use unapproved rows labelled `NON-CLINICAL DEMO`; they must not
+be promoted to `approved` unless they are replaced with source-verified clinical
+content.

@@ -4,7 +4,7 @@ from pathlib import Path
 from shared.clinical.rules import JsonRuleEvaluator, ProtocolEvaluationRequest, RiskAnswer
 
 
-def test_reference_screen_risk_assessment_produces_type_2_recommendation():
+def test_reference_screen_risk_assessment_fails_closed_without_source_backing():
     rules = json.loads(Path("rules/hinduja_protocols.json").read_text())
     request = ProtocolEvaluationRequest(
         infection_code="UTI",
@@ -23,11 +23,15 @@ def test_reference_screen_risk_assessment_produces_type_2_recommendation():
 
     assert result.risk_type == "Type 2"
     assert result.risk_label == "Medium Risk"
-    assert result.recommended_therapy[0].antibiotic == "Cefoperazone-Sulbactam"
-    assert result.pathogen_coverage == ["E. coli", "Klebsiella spp.", "Proteus spp.", "Others"]
+    assert result.recommended_therapy == []
+    assert result.pathogen_coverage == []
+    assert (
+        result.fail_closed_reason
+        == "No approved recommendation available. Refer institutional guideline / ID specialist."
+    )
 
 
-def test_type_3_triggers_stewardship_alert():
+def test_type_3_does_not_generate_stewardship_alert_without_approved_source():
     rules = json.loads(Path("rules/hinduja_protocols.json").read_text())
     request = ProtocolEvaluationRequest(
         infection_code="UTI",
@@ -44,5 +48,6 @@ def test_type_3_triggers_stewardship_alert():
     result = JsonRuleEvaluator(rules).evaluate(request)
 
     assert result.risk_type == "Type 3"
-    assert result.id_consult_required is True
-    assert result.stewardship_alerts
+    assert result.id_consult_required is False
+    assert result.stewardship_alerts == []
+    assert result.fail_closed_reason
