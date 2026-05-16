@@ -1031,12 +1031,14 @@ const phonePattern = /^\+[1-9]\d{7,14}$/;
 const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
 const otpCooldownText = (remainingSeconds: number) =>
   `Resend available in ${remainingSeconds}s`;
+const otpRequestReceivedMessage =
+  "OTP request received. Please check your email inbox or try again later.";
 
 const friendlyAuthError = (message: string | undefined, fallback: string) => {
   const normalized = (message ?? "").toLowerCase();
 
   if (normalized.includes("rate limit") || normalized.includes("too many")) {
-    return "Please wait a few minutes before requesting another OTP.";
+    return otpRequestReceivedMessage;
   }
 
   return fallback;
@@ -1471,12 +1473,6 @@ export default function App() {
   };
 
   const sendOtp = async (target: OtpTarget) => {
-    if (otpTimer > 0) {
-      setLoginError("");
-      setSignupError("");
-      return;
-    }
-
     if (!isSupabaseConfigured) {
       setLoginError(
         "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
@@ -1501,15 +1497,19 @@ export default function App() {
         error.message,
         "Unable to send OTP. Please check your email address and try again.",
       );
-      setLoginError(message);
-      setSignupError(message);
+      if (message === otpRequestReceivedMessage) {
+        setAuthSuccess(message);
+      } else {
+        setLoginError(message);
+        setSignupError(message);
+      }
       return;
     }
 
     setOtpTarget(target);
     setOtp("");
     setOtpTimer(otpResendSeconds);
-    setAuthSuccess(`OTP sent to ${target.value}.`);
+    setAuthSuccess("OTP sent to your email.");
     go("otp");
   };
 
@@ -1800,7 +1800,6 @@ export default function App() {
         label="Send Email OTP"
         onPress={login}
         loading={authLoading}
-        disabled={otpTimer > 0}
       />
       <TouchableOpacity
         activeOpacity={0.82}
@@ -1897,7 +1896,6 @@ export default function App() {
         label="Create Account with Email OTP"
         onPress={signup}
         loading={authLoading}
-        disabled={otpTimer > 0}
       />
       <TouchableOpacity
         activeOpacity={0.82}
