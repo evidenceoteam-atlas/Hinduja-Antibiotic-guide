@@ -60,7 +60,7 @@ class ImportCounts:
 @dataclass(frozen=True)
 class SupabaseRestConfig:
     url: str
-    anon_key: str
+    service_role_key: str
 
     @property
     def rest_url(self) -> str:
@@ -69,8 +69,8 @@ class SupabaseRestConfig:
     @property
     def headers(self) -> dict[str, str]:
         return {
-            "apikey": self.anon_key,
-            "Authorization": f"Bearer {self.anon_key}",
+            "apikey": self.service_role_key,
+            "Authorization": f"Bearer {self.service_role_key}",
             "Content-Type": "application/json",
         }
 
@@ -506,19 +506,20 @@ def database_url_from_env_optional() -> str | None:
 
 
 def rest_config_from_env() -> SupabaseRestConfig:
-    supabase_url = (
-        os.environ.get("EXPO_PUBLIC_SUPABASE_URL") or os.environ.get("SUPABASE_URL")
-    )
-    anon_key = (
-        os.environ.get("EXPO_PUBLIC_SUPABASE_ANON_KEY")
-        or os.environ.get("SUPABASE_ANON_KEY")
-    )
-    if not supabase_url or not anon_key:
+    supabase_url = os.environ.get("SUPABASE_URL") or os.environ.get("EXPO_PUBLIC_SUPABASE_URL")
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_role_key:
         raise RuntimeError(
-            "Set SUPABASE_DB_URL/DATABASE_URL, or set EXPO_PUBLIC_SUPABASE_URL and "
-            "EXPO_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_URL and SUPABASE_ANON_KEY)."
+            "Draft clinical import requires service role or DB URL. Do not use anon key."
         )
-    return SupabaseRestConfig(url=supabase_url, anon_key=anon_key)
+    if service_role_key == os.environ.get("EXPO_PUBLIC_SUPABASE_ANON_KEY") or (
+        os.environ.get("SUPABASE_ANON_KEY")
+        and service_role_key == os.environ.get("SUPABASE_ANON_KEY")
+    ):
+        raise RuntimeError(
+            "Draft clinical import requires service role or DB URL. Do not use anon key."
+        )
+    return SupabaseRestConfig(url=supabase_url, service_role_key=service_role_key)
 
 
 def print_counts(counts: ImportCounts) -> None:

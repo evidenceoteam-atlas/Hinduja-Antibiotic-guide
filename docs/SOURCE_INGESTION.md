@@ -53,6 +53,43 @@ All imported rows must start as `pending_review`. A row cannot be approved unles
 it has a reviewer and review timestamp. Every recommendation has a required
 `source_span_id`.
 
+## Secure Draft Import
+
+Draft clinical imports must use an admin-only credential. Do not use the mobile
+anon key for draft/source tables, and do not grant `anon` access to
+`clinical_source_files`, `clinical_source_spans`, or draft
+`clinical_recommendations`.
+
+Preferred direct database import:
+
+```bash
+SUPABASE_DB_URL='postgresql://...' \
+python scripts/import_clinical_jsonl_to_supabase.py \
+  /tmp/antibiotic_protocol_pocket_guide.draft.jsonl
+```
+
+Service-role REST import:
+
+```bash
+SUPABASE_URL='https://your-project.supabase.co' \
+SUPABASE_SERVICE_ROLE_KEY='your-service-role-key' \
+python scripts/import_clinical_jsonl_to_supabase.py \
+  /tmp/antibiotic_protocol_pocket_guide.draft.jsonl
+```
+
+The service-role key is server/admin only. Never put it in Expo, mobile,
+frontend, Vercel public env vars, or committed files. The importer intentionally
+refuses anon-key-only REST imports with:
+
+```text
+Draft clinical import requires service role or DB URL. Do not use anon key.
+```
+
+The importer preserves the extracted fields exactly, skips duplicate source
+files/spans/recommendations, and keeps all recommendations as `pending_review`.
+It prints insert/skip counts and the current
+`approved_clinical_recommendations_with_source` row count.
+
 ## Review And Approval
 
 1. Upload/extract source guide files.

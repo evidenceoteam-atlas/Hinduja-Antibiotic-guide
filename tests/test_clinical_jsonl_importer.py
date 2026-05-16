@@ -8,6 +8,7 @@ from scripts.import_clinical_jsonl_to_supabase import (
     SupabaseRestConfig,
     import_jsonl_via_rest,
     load_jsonl,
+    rest_config_from_env,
 )
 
 
@@ -146,11 +147,11 @@ async def test_rest_import_path_inserts_pending_rows_and_checks_approved_view(
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(
         base_url="https://example.supabase.co/rest/v1",
-        headers=SupabaseRestConfig("https://example.supabase.co", "anon").headers,
+        headers=SupabaseRestConfig("https://example.supabase.co", "service-role").headers,
         transport=transport,
     ) as client:
         counts = await import_jsonl_via_rest(
-            SupabaseRestConfig("https://example.supabase.co", "anon"),
+            SupabaseRestConfig("https://example.supabase.co", "service-role"),
             jsonl_path,
             client=client,
         )
@@ -188,11 +189,11 @@ async def test_rest_import_path_skips_existing_rows(tmp_path: Path) -> None:
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(
         base_url="https://example.supabase.co/rest/v1",
-        headers=SupabaseRestConfig("https://example.supabase.co", "anon").headers,
+        headers=SupabaseRestConfig("https://example.supabase.co", "service-role").headers,
         transport=transport,
     ) as client:
         counts = await import_jsonl_via_rest(
-            SupabaseRestConfig("https://example.supabase.co", "anon"),
+            SupabaseRestConfig("https://example.supabase.co", "service-role"),
             jsonl_path,
             client=client,
         )
@@ -201,3 +202,23 @@ async def test_rest_import_path_skips_existing_rows(tmp_path: Path) -> None:
     assert counts.source_spans_skipped == 1
     assert counts.recommendations_skipped == 1
     assert post_calls == []
+
+
+def test_rest_config_requires_service_role_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "anon")
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="Do not use anon key"):
+        rest_config_from_env()
+
+
+def test_rest_config_rejects_service_role_equal_to_anon(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "same-key")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "same-key")
+
+    with pytest.raises(RuntimeError, match="Do not use anon key"):
+        rest_config_from_env()
