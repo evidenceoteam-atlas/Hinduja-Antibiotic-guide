@@ -1613,9 +1613,7 @@ export default function App() {
     setAuthLoading(false);
 
     if (error) {
-      setLoginError(
-        friendlyAuthError(error.message, "OTP failed or expired. Please request a new OTP."),
-      );
+      setLoginError("Invalid OTP. Please try again.");
       return;
     }
   };
