@@ -23,6 +23,64 @@ REVIEW_STATUS = "pending_review"
 NOT_SPECIFIED = "not specified in source"
 
 
+CONDITION_PATTERNS = [
+    ("CAP", "Respiratory Tract Infection"),
+    ("HCAP/ Early onset VAP", "Respiratory Tract Infection"),
+    ("Lung abscess", "Respiratory Tract Infection"),
+    ("Susceptible host", None),
+    ("Native Valve/ Late Prosthetic Valve Infective Endocarditis (>1yr)", "Blood Stream Infection (BSI)"),
+    ("Prosthetic valve Infective Endocarditis (<1yr)", "Blood Stream Infection (BSI)"),
+    ("Cellulitis/ pyomyositis", "Skin & Soft Tissue Infection (SSTI)"),
+    ("Diabetic foot infection", "Skin & Soft Tissue Infection (SSTI)"),
+    ("Necrotizing fasciitis", "Skin & Soft Tissue Infection (SSTI)"),
+    ("Urosepsis/ Pyelonephritis", "Urinary Tract Infection (UTI)"),
+    ("Severe PN/ emphysematous PN/ perinephric abscess", "Urinary Tract Infection (UTI)"),
+    ("Intra-abdominal sepsis", "Intra-abdominal Infection"),
+    ("Catheter related blood-stream infection", "Blood Stream Infection (BSI)"),
+    ("Community acquired meningitis", "CNS Infection"),
+    ("Post neurosurgical meningitis/ shunt infection", "CNS Infection"),
+    ("Brain abscess", "CNS Infection"),
+    ("Invasive candidiasis", "Blood Stream Infection (BSI)"),
+    ("Febrile neutropenia", "Febrile Neutropenia"),
+    ("Malignant otitis externa", None),
+    ("Deep Neck Space Infection", None),
+    ("Acute Osteomyelitis/ Septic arthritis", "Skin & Soft Tissue Infection (SSTI)"),
+    ("Prosthetic Joint Infection/ Implant associated Infections", "Skin & Soft Tissue Infection (SSTI)"),
+    ("Enteric fever", None),
+    ("Dysentery", None),
+    ("Liver abscess", "Intra-abdominal Infection"),
+]
+
+LOCAL_TITLE_RE = re.compile(
+    r"(?P<site>BLOOD STREAM INFECTION \(BSI\)|URINARY TRACT INFECTION \(UTI\)|RESPIRATORY TRACT INFECTION|INTRA-ABDOMINAL INFECTION)"
+    r"\s*(?:\(ICU\)|ICU|WARDS?)?\s*[-–]\s*(?P<acquisition>COMMUNITY ACQUIRED|HOSPITAL ACQUIRED)",
+    re.IGNORECASE,
+)
+
+LOCAL_SITE_MAP = {
+    "BLOOD STREAM INFECTION (BSI)": "Blood Stream Infection (BSI)",
+    "URINARY TRACT INFECTION (UTI)": "Urinary Tract Infection (UTI)",
+    "RESPIRATORY TRACT INFECTION": "Respiratory Tract Infection",
+    "INTRA-ABDOMINAL INFECTION": "Intra-abdominal Infection",
+}
+
+DOSE_RE = re.compile(
+    r"(?:^|[\n;:]|\bOR\b|\+)\s*"
+    r"(?P<drug>[A-Z][A-Za-z][A-Za-z\-/() ]{1,70}?)\s+"
+    r"(?P<dose>(?:\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?\s*)?(?:mg/kg/day|mg/kg/d|mg/kg|mg|gm|g|mU|mil U/day|lac units|U/day))"
+    r"(?P<trailing>(?:\s+(?:IV|PO|oral|loading dose|LD|followed by|then|q\d+(?:-\d+)?h|q\d+(?:-\d+)?hr|q\d+(?:-\d+)? hrs|q\d+(?:-\d+)? hourly|q\d+d|q\d+|BD|TDS|QDS|OD|daily|tds|hrly|every \d+-\d+ hrs|every \d+ hrs|in \d+-\d+ doses|single dose|x \d+ doses|for \d+ days|\d+-\d+d|\d+d|\d+-\d+ weeks|\d+ weeks|day|days|weeks|months|/day|/d|\+/-|\+|OR|and|with|target trough concentration|\(|\)|\d+|[-–])){0,22})",
+    re.IGNORECASE,
+)
+
+FREQUENCY_RE = re.compile(
+    r"\b(q\d+(?:-\d+)?h|q\d+(?:-\d+)?hr|q\d+(?:-\d+)? hrs|BD|TDS|QDS|OD|daily|tds|every \d+-\d+ hrs|every \d+ hrs|single dose|x \d+ doses|in \d+-\d+ doses)\b",
+    re.IGNORECASE,
+)
+ROUTE_RE = re.compile(r"\b(IV|PO|oral)\b", re.IGNORECASE)
+DURATION_RE = re.compile(r"\b(\d+\s*-\s*\d+\s*(?:days|day|d|weeks|months)|\d+\s*(?:days|day|d|weeks|months))\b", re.IGNORECASE)
+
+
+
 @dataclass(frozen=True)
 class SourceFile:
     filename: str
@@ -154,6 +212,259 @@ def candidate_blocks(page_text: str) -> Iterable[tuple[int, int, str, str | None
             yield start, end, quote, guess_section_heading(page_text[:start])
 
 
+def normalized_text(text: str) -> str:
+    return " ".join(text.split())
+
+
+def flexible_pattern(label: str) -> re.Pattern[str]:
+    escaped = re.escape(label)
+    escaped = escaped.replace(r"\ ", r"\s+")
+    escaped = escaped.replace(r"\/", r"\s*/\s*")
+    escaped = escaped.replace(r"\-", r"\s*[-–]\s*")
+    if len(label) <= 4:
+        escaped = rf"\b{escaped}\b"
+    return re.compile(escaped, re.IGNORECASE)
+
+
+def source_span(
+    source: SourceFile,
+    page_number: int | None,
+    page_text: str,
+    span_start: int,
+    span_end: int,
+    extracted_at: str,
+    section_heading: str | None,
+) -> SourceSpan:
+    return SourceSpan(
+        source_file_sha256=source.file_sha256,
+        page_number=page_number,
+        section_heading=section_heading,
+        span_start=span_start,
+        span_end=span_end,
+        quote=normalized_text(page_text[span_start:span_end]),
+        extracted_at=extracted_at,
+    )
+
+
+def extract_local_context(page_text: str) -> tuple[str | None, str | None, str | None]:
+    text = normalized_text(page_text)
+    match = LOCAL_TITLE_RE.search(text)
+    if not match:
+        return None, None, None
+
+    raw_site = match.group("site").upper()
+    setting = "ICU" if " ICU" in text[: match.end()].upper() or "(ICU)" in text[: match.end()].upper() else None
+    if setting is None and re.search(r"\bWARDS?\b", text[: match.end()], re.IGNORECASE):
+        setting = "Ward"
+    acquisition = match.group("acquisition").title().replace(" Acquired", "-acquired")
+    return LOCAL_SITE_MAP.get(raw_site, match.group("site").title()), setting, acquisition
+
+
+def split_treatment_tokens(text: str) -> list[str]:
+    cleaned = re.sub(r"\bEmpiric therapy\b", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bType\s+[123]\b", "", cleaned, flags=re.IGNORECASE)
+    parts = re.split(r"\s+(?:OR|or)\s+|\n| {2,}", cleaned)
+    tokens: list[str] = []
+    for part in parts:
+        token = normalized_text(part.strip(" -:;,"))
+        if not token:
+            continue
+        if re.search(r"\b(patient risk|meeting all|meeting any|most common|prevalance)\b", token, re.I):
+            continue
+        if re.search(r"[A-Za-z]", token) and not re.fullmatch(r"Type\s+[123]", token, re.I):
+            tokens.append(token)
+    return tokens
+
+
+def parse_drug_details(treatment_text: str) -> tuple[str, str | None, str | None, str | None, str | None]:
+    match = DOSE_RE.search(treatment_text)
+    if not match:
+        return treatment_text.strip(), None, None, None, None
+
+    drug = normalized_text(match.group("drug").strip(" -:+/"))
+    drug = re.sub(r"\s+\b(IV|PO|oral)\b$", "", drug, flags=re.IGNORECASE)
+    dose = normalized_text(match.group("dose"))
+    trailing = normalized_text(match.group("trailing") or "")
+    route_match = ROUTE_RE.search(f"{match.group('drug')} {trailing}")
+    frequency_match = FREQUENCY_RE.search(trailing)
+    duration_match = DURATION_RE.search(trailing)
+    route = route_match.group(1) if route_match else None
+    frequency = frequency_match.group(1) if frequency_match else None
+    duration = duration_match.group(1) if duration_match else None
+    return drug, dose, route, frequency, duration
+
+
+def recommendation_from_treatment(
+    *,
+    source: SourceFile,
+    page_number: int | None,
+    page_text: str,
+    span_start: int,
+    span_end: int,
+    extracted_at: str,
+    section_heading: str | None,
+    syndrome: str | None,
+    infection_site: str | None,
+    setting: str | None = None,
+    acquisition: str | None = None,
+    risk_type: str | None = None,
+    severity_category: str | None = None,
+    stewardship_note: str | None = None,
+    id_consult_trigger: str | None = None,
+) -> DraftRecommendation | None:
+    quote = normalized_text(page_text[span_start:span_end])
+    if not quote:
+        return None
+
+    drug, dose, route, frequency, duration = parse_drug_details(quote)
+    if not drug:
+        return None
+
+    return DraftRecommendation(
+        syndrome=syndrome,
+        infection_site=infection_site,
+        setting=setting,
+        acquisition=acquisition,
+        risk_type=risk_type,
+        severity_category=severity_category,
+        organism=None,
+        pathogen=None,
+        drug=drug,
+        dose=dose,
+        route=route,
+        frequency=frequency,
+        duration=duration,
+        renal_adjustment=None,
+        hepatic_adjustment=None,
+        pregnancy_lactation_caution=None,
+        allergy_warning=None,
+        contraindication=None,
+        stewardship_note=stewardship_note,
+        id_consult_trigger=id_consult_trigger,
+        review_status=REVIEW_STATUS,
+        source_span=source_span(
+            source,
+            page_number,
+            page_text,
+            span_start,
+            span_end,
+            extracted_at,
+            section_heading,
+        ),
+    )
+
+
+def extract_local_empiric_rows(
+    source: SourceFile,
+    page_number: int | None,
+    page_text: str,
+    extracted_at: str,
+) -> list[DraftRecommendation]:
+    context = extract_local_context(page_text)
+    if not any(context):
+        return []
+
+    start = page_text.find("Empiric therapy")
+    if start < 0:
+        return []
+
+    end_candidates = [
+        index
+        for marker in ["Patient Risk Stratification", "Note:", "*Colistin", "Fosfomycin susceptibility"]
+        for index in [page_text.find(marker, start)]
+        if index > start
+    ]
+    end = min(end_candidates) if end_candidates else min(len(page_text), start + 900)
+    section = page_text[start:end]
+    infection_site, setting, acquisition = context
+    rows: list[DraftRecommendation] = []
+
+    for token in split_treatment_tokens(section):
+        token_start = page_text.find(token, start, end)
+        if token_start < 0:
+            token_start = start
+        token_end = min(end, token_start + len(token))
+        row = recommendation_from_treatment(
+            source=source,
+            page_number=page_number,
+            page_text=page_text,
+            span_start=token_start,
+            span_end=token_end,
+            extracted_at=extracted_at,
+            section_heading="Empiric therapy",
+            syndrome=infection_site,
+            infection_site=infection_site,
+            setting=setting,
+            acquisition=acquisition,
+            severity_category="Empiric therapy",
+        )
+        if row is not None:
+            rows.append(row)
+    return rows
+
+
+def condition_segments(page_text: str) -> list[tuple[str, str | None, int, int]]:
+    matches: list[tuple[int, int, str, str | None]] = []
+    for label, infection_site in CONDITION_PATTERNS:
+        match = flexible_pattern(label).search(page_text)
+        if match:
+            matches.append((match.start(), match.end(), label, infection_site))
+
+    matches.sort(key=lambda item: item[0])
+    segments: list[tuple[str, str | None, int, int]] = []
+    for index, (start, _end, label, infection_site) in enumerate(matches):
+        next_start = matches[index + 1][0] if index + 1 < len(matches) else len(page_text)
+        segments.append((label, infection_site, start, next_start))
+    return segments
+
+
+def extract_site_guideline_rows(
+    source: SourceFile,
+    page_number: int | None,
+    page_text: str,
+    extracted_at: str,
+) -> list[DraftRecommendation]:
+    rows: list[DraftRecommendation] = []
+    for syndrome, infection_site, start, end in condition_segments(page_text):
+        segment = page_text[start:end]
+        for match in DOSE_RE.finditer(segment):
+            drug_start = start + match.start()
+            previous_word = re.search(
+                r"([A-Z][A-Za-z]+(?:cillin|cycline|penem|xacin|mycin|azole))\s*$",
+                segment[: match.start()].replace("\n", " "),
+            )
+            if previous_word:
+                drug_start = start + previous_word.start(1)
+            trailing = match.group("trailing") or ""
+            drug_end = start + match.end()
+            if re.search(r"\b(Sensitivity|Prevalance|Pathogen)\b", segment[: match.start()], re.I):
+                continue
+            row = recommendation_from_treatment(
+                source=source,
+                page_number=page_number,
+                page_text=page_text,
+                span_start=drug_start,
+                span_end=drug_end,
+                extracted_at=extracted_at,
+                section_heading=syndrome,
+                syndrome=syndrome,
+                infection_site=infection_site,
+                stewardship_note=(
+                    normalized_text(trailing)
+                    if re.search(r"\b(ID consult|risk factors|advised|source control)\b", trailing, re.I)
+                    else None
+                ),
+                id_consult_trigger=(
+                    normalized_text(trailing)
+                    if re.search(r"\bID consult\b", trailing, re.I)
+                    else None
+                ),
+            )
+            if row is not None:
+                rows.append(row)
+    return rows
+
+
 def is_candidate_recommendation(text: str) -> bool:
     lowered = text.lower()
     clinical_markers = [
@@ -207,25 +518,18 @@ def ingest_source(path: Path) -> tuple[SourceFile, list[DraftRecommendation]]:
     recommendations: list[DraftRecommendation] = []
 
     for page_number, text in extract_pages(path):
-        for span_start, span_end, quote, section_heading in candidate_blocks(text):
-            span = SourceSpan(
-                source_file_sha256=source.file_sha256,
-                page_number=page_number,
-                section_heading=section_heading,
-                span_start=span_start,
-                span_end=span_end,
-                quote=quote,
-                extracted_at=extracted_at,
-            )
-            recommendations.append(
-                DraftRecommendation(
-                    **null_fields(),
-                    review_status=REVIEW_STATUS,
-                    source_span=span,
-                )
-            )
+        recommendations.extend(
+            extract_site_guideline_rows(source, page_number, text, extracted_at)
+        )
+        recommendations.extend(
+            extract_local_empiric_rows(source, page_number, text, extracted_at)
+        )
 
     return source, recommendations
+
+
+def has_structured_clinical_content(row: DraftRecommendation) -> bool:
+    return any(getattr(row, field) for field in null_fields())
 
 
 def validate_recommendation(row: DraftRecommendation) -> None:
@@ -233,6 +537,10 @@ def validate_recommendation(row: DraftRecommendation) -> None:
         raise ValueError("recommendation is missing source quote")
     if row.review_status == "approved":
         raise ValueError("ingested rows must not be approved automatically")
+    if not has_structured_clinical_content(row):
+        raise ValueError("recommendation is missing structured clinical fields")
+    if not row.drug:
+        raise ValueError("recommendation is missing extracted drug or treatment text")
 
 
 def write_jsonl(source: SourceFile, rows: list[DraftRecommendation], output: Path) -> None:

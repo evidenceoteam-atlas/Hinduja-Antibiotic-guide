@@ -33,6 +33,12 @@ It does not infer antibiotic names, doses, durations, routes, renal adjustments,
 pregnancy cautions, organisms, alternatives, or warnings. Structured clinical
 fields remain `NULL` until a reviewer fills them from the source quote.
 
+The extractor rejects empty clinical recommendation rows. A draft
+recommendation must contain source provenance and at least explicit treatment
+text in the `drug` field. Dose, route, frequency, duration, setting,
+acquisition, risk type, and warnings are populated only when they are present in
+the extracted source span; otherwise they stay `NULL`.
+
 ## Database Workflow
 
 Apply:
@@ -89,6 +95,15 @@ The importer preserves the extracted fields exactly, skips duplicate source
 files/spans/recommendations, and keeps all recommendations as `pending_review`.
 It prints insert/skip counts and the current
 `approved_clinical_recommendations_with_source` row count.
+
+If earlier imports created empty approved or pending rows with all clinical
+fields `NULL`, run the cleanup script with admin/service-role privileges before
+importing corrected draft rows:
+
+```bash
+psql "$SUPABASE_DB_URL" \
+  -f supabase/sql/cleanup_empty_clinical_recommendations.sql
+```
 
 ## Review And Approval
 

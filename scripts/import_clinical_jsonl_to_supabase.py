@@ -44,6 +44,7 @@ CLINICAL_FIELDS = [
     "stewardship_note",
     "id_consult_trigger",
 ]
+CLINICAL_CONTENT_FIELDS = CLINICAL_FIELDS
 
 
 @dataclass
@@ -113,6 +114,10 @@ def validate_recommendation(data: dict[str, Any], line_number: int) -> None:
         raise ValueError(f"line {line_number}: recommendation is missing source_span")
     if not data["source_span"].get("quote"):
         raise ValueError(f"line {line_number}: source_span.quote is required")
+    if not any(data.get(field) for field in CLINICAL_CONTENT_FIELDS):
+        raise ValueError(f"line {line_number}: recommendation is missing structured clinical fields")
+    if not data.get("drug"):
+        raise ValueError(f"line {line_number}: recommendation is missing extracted drug or treatment text")
 
 
 def source_file_payload(source_file: dict[str, Any]) -> dict[str, Any]:

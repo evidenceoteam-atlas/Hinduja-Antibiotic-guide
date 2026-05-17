@@ -30,18 +30,18 @@ def draft_jsonl_rows() -> list[dict]:
         {
             "type": "draft_recommendation",
             "data": {
-                "syndrome": None,
-                "infection_site": None,
+                "syndrome": "UTI",
+                "infection_site": "Urinary Tract Infection (UTI)",
                 "setting": None,
                 "acquisition": None,
                 "risk_type": None,
                 "severity_category": None,
                 "organism": None,
                 "pathogen": None,
-                "drug": None,
-                "dose": None,
-                "route": None,
-                "frequency": None,
+                "drug": "Ceftriaxone",
+                "dose": "1g",
+                "route": "IV",
+                "frequency": "q12h",
                 "duration": None,
                 "renal_adjustment": None,
                 "hepatic_adjustment": None,
@@ -109,6 +109,25 @@ def test_importer_rejects_approved_recommendations(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError, match="pending_review"):
+        load_jsonl(jsonl_path)
+
+
+def test_importer_rejects_empty_structured_recommendations(tmp_path: Path) -> None:
+    jsonl_path = tmp_path / "empty.jsonl"
+    rows = draft_jsonl_rows()
+    rows[1]["data"].update(
+        {
+            "syndrome": None,
+            "infection_site": None,
+            "drug": None,
+            "dose": None,
+            "route": None,
+            "frequency": None,
+        }
+    )
+    write_jsonl(jsonl_path, rows)
+
+    with pytest.raises(ValueError, match="structured clinical fields"):
         load_jsonl(jsonl_path)
 
 
