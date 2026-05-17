@@ -30,6 +30,7 @@ type Screen =
   | "otp"
   | "dashboard"
   | "guidelines"
+  | "guidelineSection"
   | "duration"
   | "alerts"
   | "profile"
@@ -168,6 +169,13 @@ type DrawerMenuItem = {
 type OtpTarget = {
   value: string;
 };
+type GuidelineSectionKey = "empiric" | "renal" | "carbapenem";
+type GuidelineSectionItem = {
+  key: GuidelineSectionKey;
+  title: string;
+  subtitle: string;
+  icon: ComponentProps<typeof Feather>["name"];
+};
 
 type DoctorProfile = {
   name: string;
@@ -195,6 +203,27 @@ const bottomTabs: BottomTab[] = [
   "Duration",
   "Alerts",
   "Profile",
+];
+
+const guidelineSections: GuidelineSectionItem[] = [
+  {
+    key: "empiric",
+    title: "Empiric therapy by infection site",
+    subtitle: "Approved source-based treatment summaries",
+    icon: "activity",
+  },
+  {
+    key: "renal",
+    title: "Renal dose adjustment",
+    subtitle: "Approved kidney-function dosing guidance",
+    icon: "droplet",
+  },
+  {
+    key: "carbapenem",
+    title: "Carbapenem stewardship policy",
+    subtitle: "Approved restricted-antibiotic stewardship notes",
+    icon: "shield",
+  },
 ];
 
 const bottomTabIcons: Record<BottomTab, ComponentProps<typeof Feather>["name"]> = {
@@ -513,6 +542,8 @@ const hasDisplayValue = (value: string | null | undefined) =>
 const clinicalFieldScore = (value: string | null | undefined) =>
   hasDisplayValue(value) ? 1 : 0;
 
+const carbapenemPattern = /(carbapenem|meropenem|imipenem|ertapenem|doripenem)/i;
+
 const recommendationIdentity = (item: SourceRecommendation) =>
   [
     normalizeMatchText(item.drug),
@@ -613,6 +644,8 @@ export default function App() {
   const [riskType, setRiskType] = useState<RiskType>("Type 2");
   const [protocolDetailTab, setProtocolDetailTab] =
     useState<ProtocolDetailTab>("Notes");
+  const [selectedGuidelineSection, setSelectedGuidelineSection] =
+    useState<GuidelineSectionKey>("empiric");
   const [sourceRecommendations, setSourceRecommendations] = useState<
     SourceRecommendation[]
   >([]);
@@ -929,7 +962,7 @@ export default function App() {
         id: `${site.code}-protocol`,
         title: `${site.code} empiric protocol`,
         subtitle: `${site.label} recommendations`,
-        icon: "□",
+        icon: "⚕",
         site,
         target: "protocolDetails",
         detailTab: "Notes",
@@ -1097,6 +1130,45 @@ export default function App() {
   const alternativeTreatmentRecommendations = selectedSourceRecommendations.slice(
     recommendedTreatmentRecommendations.length,
     6,
+  );
+  const approvedCleanRecommendations = useMemo(
+    () => cleanRecommendationRows(sourceRecommendations),
+    [sourceRecommendations],
+  );
+  const empiricGuidelineSummaries = useMemo(() => {
+    const summaries = new Map<
+      string,
+      { title: string; rows: SourceRecommendation[] }
+    >();
+
+    approvedCleanRecommendations.forEach((item) => {
+      const category =
+        canonicalInfectionCategory(item.infection_site) ??
+        canonicalInfectionCategory(item.syndrome) ??
+        canonicalInfectionCategory(item.section_heading);
+      const title =
+        sites.find((site) => site.code === category)?.label ||
+        item.infection_site?.trim() ||
+        item.syndrome?.trim();
+
+      if (!title) {
+        return;
+      }
+
+      const current = summaries.get(title) ?? { title, rows: [] };
+      current.rows.push(item);
+      summaries.set(title, current);
+    });
+
+    return Array.from(summaries.values()).slice(0, 8);
+  }, [approvedCleanRecommendations]);
+  const renalGuidelineRecommendations = approvedCleanRecommendations.filter(
+    (item) => hasMeaningfulText(item.renal_adjustment),
+  );
+  const carbapenemGuidelineRecommendations = approvedCleanRecommendations.filter(
+    (item) =>
+      carbapenemPattern.test(item.drug ?? "") ||
+      carbapenemPattern.test(item.stewardship_note ?? ""),
   );
   const hasStewardshipGuidance =
     meaningfulWarningRecommendations.length > 0 ||
@@ -2185,24 +2257,134 @@ export default function App() {
     TabPage(
       "Guidelines",
       <View>
-        {[
-          "Empiric therapy by infection site",
-          "Renal dose adjustment",
-          "Carbapenem stewardship policy",
-        ].map((item) => (
+        {guidelineSections.map((item) => (
           <TouchableOpacity
-            key={item}
+            key={item.key}
             activeOpacity={0.86}
             style={styles.listCard}
-            onPress={() => go("protocolDetails")}
+            onPress={() => {
+              setSelectedGuidelineSection(item.key);
+              go("guidelineSection");
+            }}
           >
-            <Text style={styles.listIcon}>□</Text>
-            <Text style={styles.listText}>{item}</Text>
+            <View style={styles.guidelineIconBadge}>
+              <Feather
+                name={item.icon}
+                size={22}
+                strokeWidth={2.4}
+                color={palette.blue}
+              />
+            </View>
+            <View style={styles.listTextBlock}>
+              <Text style={styles.listText}>{item.title}</Text>
+              <Text style={styles.listSubText}>{item.subtitle}</Text>
+            </View>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         ))}
       </View>,
     );
+
+  const GuidelineSection = () => {
+    const section = guidelineSections.find(
+      (item) => item.key === selectedGuidelineSection,
+    );
+
+    return appShell(
+      <View>
+        <View style={styles.guidelineHero}>
+          <View style={styles.guidelineIconBadgeLarge}>
+            <Feather
+              name={section?.icon ?? "book-open"}
+              size={26}
+              strokeWidth={2.4}
+              color={palette.blue}
+            />
+          </View>
+          <View style={styles.shareTextBlock}>
+            <Text style={styles.detailsTitle}>{section?.title}</Text>
+            <Text style={styles.infoCardBody}>{section?.subtitle}</Text>
+          </View>
+        </View>
+        {selectedGuidelineSection === "empiric" ? (
+          empiricGuidelineSummaries.length === 0 ? (
+            <GuidelineEmptyState />
+          ) : (
+            empiricGuidelineSummaries.map((summary) => (
+              <View key={summary.title} style={styles.infoCard}>
+                <Text style={styles.infoCardTitle}>{summary.title}</Text>
+                {summary.rows.slice(0, 3).map((item) => (
+                  <View key={item.id} style={styles.guidelineRow}>
+                    <Text style={styles.therapyName}>{item.drug?.trim()}</Text>
+                    <View style={styles.recommendationGrid}>
+                      <RecommendationField label="Dose" value={item.dose} />
+                      <RecommendationField label="Route" value={item.route} />
+                      <RecommendationField
+                        label="Frequency"
+                        value={item.frequency}
+                      />
+                      <RecommendationField
+                        label="Duration"
+                        value={item.duration}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ))
+          )
+        ) : null}
+        {selectedGuidelineSection === "renal" ? (
+          renalGuidelineRecommendations.length === 0 ? (
+            <GuidelineEmptyState />
+          ) : (
+            renalGuidelineRecommendations.slice(0, 12).map((item) => (
+              <View key={item.id} style={styles.infoCard}>
+                <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
+                <RecommendationField
+                  label="Renal dose adjustment"
+                  value={item.renal_adjustment}
+                />
+              </View>
+            ))
+          )
+        ) : null}
+        {selectedGuidelineSection === "carbapenem" ? (
+          carbapenemGuidelineRecommendations.length === 0 ? (
+            <GuidelineEmptyState />
+          ) : (
+            carbapenemGuidelineRecommendations.slice(0, 12).map((item) => (
+              <View key={item.id} style={styles.infoCard}>
+                <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
+                {hasMeaningfulText(item.stewardship_note) ? (
+                  <RecommendationField
+                    label="Stewardship note"
+                    value={item.stewardship_note}
+                  />
+                ) : null}
+                {hasMeaningfulText(item.id_consult_trigger) ? (
+                  <RecommendationField
+                    label="ID consult"
+                    value={item.id_consult_trigger}
+                  />
+                ) : null}
+              </View>
+            ))
+          )
+        ) : null}
+      </View>,
+      section?.title ?? "Guideline",
+      false,
+    );
+  };
+
+  const GuidelineEmptyState = () => (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoCardBody}>
+        No approved guideline content available for this section.
+      </Text>
+    </View>
+  );
 
   const RecommendationField = ({
     label,
@@ -2820,7 +3002,14 @@ export default function App() {
                     style={styles.listCard}
                     onPress={() => go("stewardshipAlert")}
                   >
-                    <Text style={styles.listIcon}>□</Text>
+                    <View style={styles.guidelineIconBadge}>
+                      <Feather
+                        name="alert-circle"
+                        size={21}
+                        strokeWidth={2.4}
+                        color={palette.blue}
+                      />
+                    </View>
                     <Text style={styles.listText}>
                       {item.id_consult_trigger?.trim()}
                     </Text>
@@ -3205,6 +3394,8 @@ export default function App() {
         return Dashboard();
       case "guidelines":
         return Guidelines();
+      case "guidelineSection":
+        return GuidelineSection();
       case "duration":
         return Duration();
       case "alerts":
@@ -4094,6 +4285,27 @@ const makeStyles = (p: Palette) =>
       elevation: 2,
     },
     listIcon: { width: 48, fontSize: 30, fontWeight: "900" },
+    guidelineIconBadge: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: "#EAF4FF",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+    guidelineIconBadgeLarge: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      backgroundColor: "#EAF4FF",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    listTextBlock: {
+      flex: 1,
+      gap: 3,
+    },
     listText: {
       flex: 1,
       color: p.blue2,
@@ -4101,7 +4313,31 @@ const makeStyles = (p: Palette) =>
       lineHeight: 18,
       fontWeight: "900",
     },
+    listSubText: {
+      color: p.muted,
+      fontSize: 11,
+      lineHeight: 15,
+      fontWeight: "700",
+    },
     chevron: { color: p.muted, fontSize: 25, fontWeight: "900" },
+    guidelineHero: {
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.card,
+      padding: 14,
+      marginBottom: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    guidelineRow: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 10,
+      marginTop: 10,
+      gap: 7,
+    },
     questionTitle: {
       color: p.text,
       textAlign: "center",
