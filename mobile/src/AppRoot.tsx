@@ -1,14 +1,19 @@
 import { StatusBar } from "expo-status-bar";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import Feather from "@expo/vector-icons/Feather";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import type { User } from "@supabase/supabase-js";
 import type { ComponentProps, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   SafeAreaView,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -39,9 +44,9 @@ type Screen =
   | "actions"
   | "savedCases"
   | "reports"
-  | "qrView"
   | "shareView"
-  | "stewardshipAlert";
+  | "stewardshipAlert"
+  | "caseReport";
 
 type RiskType = "Type 1" | "Type 2" | "Type 3";
 
@@ -167,6 +172,21 @@ type OtpTarget = {
 type DoctorProfile = {
   name: string;
   email: string;
+};
+
+type SavedClinicalCase = {
+  id: string;
+  infectionSite: string;
+  setting: string;
+  acquisition: string;
+  riskLevel: string;
+  riskType: RiskType;
+  recommendations: SourceRecommendation[];
+  warningRecommendations: SourceRecommendation[];
+  consultRecommendations: SourceRecommendation[];
+  savedAt: string;
+  doctorName: string;
+  doctorEmail: string;
 };
 
 const bottomTabs: BottomTab[] = [
@@ -600,6 +620,11 @@ export default function App() {
     useState(false);
   const [sourceRecommendationError, setSourceRecommendationError] =
     useState("");
+  const [savedCases, setSavedCases] = useState<SavedClinicalCase[]>([]);
+  const [selectedCase, setSelectedCase] = useState<SavedClinicalCase | null>(
+    null,
+  );
+  const [actionMessage, setActionMessage] = useState("");
   const isAuthScreen =
     screen === "login" || screen === "signup" || screen === "otp";
 
@@ -1073,6 +1098,238 @@ export default function App() {
     recommendedTreatmentRecommendations.length,
     6,
   );
+  const hasStewardshipGuidance =
+    meaningfulWarningRecommendations.length > 0 ||
+    meaningfulConsultRecommendations.length > 0;
+  const isHighRiskCase = riskType === "Type 3";
+  const shouldShowStewardshipAlert = hasStewardshipGuidance || isHighRiskCase;
+  const stewardshipAlertReason = isHighRiskCase
+    ? "High-risk case: ID specialist review recommended."
+    : "Approved stewardship guidance is documented for this protocol.";
+  const stewardshipAlertAction =
+    meaningfulConsultRecommendations[0]?.id_consult_trigger?.trim() ||
+    meaningfulWarningRecommendations[0]?.stewardship_note?.trim() ||
+    "Review antimicrobial choice, cultures, source control, and escalation or de-escalation with the appropriate senior clinician.";
+  const currentCaseSnapshot = (): SavedClinicalCase => ({
+    id: `${Date.now()}`,
+    infectionSite: selectedSite.label,
+    setting,
+    acquisition,
+    riskLevel: `${riskType} - ${riskLabel}`,
+    riskType,
+    recommendations: selectedSourceRecommendations,
+    warningRecommendations: meaningfulWarningRecommendations,
+    consultRecommendations: meaningfulConsultRecommendations,
+    savedAt: new Date().toISOString(),
+    doctorName: doctorProfile.name,
+    doctorEmail: doctorProfile.email,
+  });
+  const activeReportCase = selectedCase ?? currentCaseSnapshot();
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  const recommendationLines = (item: SourceRecommendation) =>
+    [
+      item.drug?.trim(),
+      item.dose?.trim() ? `Dose: ${item.dose.trim()}` : "",
+      item.route?.trim() ? `Route: ${item.route.trim()}` : "",
+      item.frequency?.trim() ? `Frequency: ${item.frequency.trim()}` : "",
+      item.duration?.trim() ? `Duration: ${item.duration.trim()}` : "",
+    ].filter(Boolean);
+  const buildReportText = (reportCase = activeReportCase) => {
+    const protocolLines = reportCase.recommendations
+      .flatMap((item, index) => [
+        `${index + 1}. ${item.drug?.trim()}`,
+        ...recommendationLines(item).slice(1).map((line) => `   ${line}`),
+      ])
+      .join("\n");
+    const stewardshipLines = [
+      ...reportCase.warningRecommendations.flatMap((item) =>
+        [
+          item.drug?.trim() ? `${item.drug.trim()}:` : "",
+          item.stewardship_note?.trim(),
+          item.renal_adjustment?.trim(),
+          item.allergy_warning?.trim(),
+          item.contraindication?.trim(),
+        ].filter((line): line is string => Boolean(line && hasMeaningfulText(line))),
+      ),
+      ...reportCase.consultRecommendations
+        .map((item) => item.id_consult_trigger?.trim())
+        .filter((line): line is string => Boolean(line && hasMeaningfulText(line))),
+      reportCase.riskType === "Type 3"
+        ? "High-risk case: ID specialist review recommended."
+        : "",
+    ].filter(Boolean);
+
+    return [
+      "Hinduja Antibiotic Guide Protocol Report",
+      "",
+      `Doctor: ${reportCase.doctorName || "Authenticated doctor"}`,
+      `Email: ${reportCase.doctorEmail}`,
+      `Generated: ${formatDateTime(reportCase.savedAt)}`,
+      "",
+      "Case Summary",
+      `Infection Site: ${reportCase.infectionSite}`,
+      `Setting: ${reportCase.setting}`,
+      `Acquisition: ${reportCase.acquisition}`,
+      `Risk Level: ${reportCase.riskLevel}`,
+      "",
+      "Recommended Treatment Protocol",
+      protocolLines || failClosedMessage,
+      ...(stewardshipLines.length > 0
+        ? ["", "Stewardship Guidance", ...stewardshipLines]
+        : []),
+      "",
+      "Disclaimer",
+      "For authorized clinical use. Verify with institutional protocol and clinical judgment.",
+    ].join("\n");
+  };
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  const buildReportHtml = (text: string, includePrintButton: boolean) => `
+    <!doctype html>
+    <html>
+      <head>
+        <title>Hinduja Antibiotic Guide Protocol Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; color: #0B2850; margin: 40px; line-height: 1.45; }
+          button { background: #0057B8; border: 0; color: #fff; border-radius: 6px; padding: 10px 14px; font-weight: 700; margin-bottom: 20px; }
+          pre { white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 12px; }
+          @media print { button { display: none; } body { margin: 24px; } }
+        </style>
+      </head>
+      <body>
+        ${includePrintButton ? '<button onclick="window.print()">Export PDF</button>' : ""}
+        <pre>${escapeHtml(text)}</pre>
+      </body>
+    </html>
+  `;
+  const saveCurrentCase = () => {
+    if (selectedSourceRecommendations.length === 0) {
+      setActionMessage(failClosedMessage);
+      return;
+    }
+
+    const nextCase = currentCaseSnapshot();
+    setSavedCases((cases) => [nextCase, ...cases]);
+    setSelectedCase(nextCase);
+    setActionMessage("Case saved to My Cases.");
+    go("savedCases");
+  };
+  const openCaseReport = (reportCase: SavedClinicalCase) => {
+    setSelectedCase(reportCase);
+    go("caseReport");
+  };
+  const openWhatsAppShare = async () => {
+    const text = buildReportText();
+    const encodedText = encodeURIComponent(text);
+    const url =
+      Platform.OS === "web"
+        ? `https://wa.me/?text=${encodedText}`
+        : `whatsapp://send?text=${encodedText}`;
+    const canOpen = Platform.OS === "web" || (await Linking.canOpenURL(url));
+
+    if (!canOpen) {
+      setActionMessage("WhatsApp is not available on this device.");
+      return;
+    }
+
+    await Linking.openURL(url);
+  };
+  const openEmailShare = async () => {
+    const subject = encodeURIComponent(
+      "Hinduja Antibiotic Guide Protocol Report",
+    );
+    const body = encodeURIComponent(buildReportText());
+    await Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
+  };
+  const openNativeShare = async (unsupportedMessage?: string) => {
+    const text = buildReportText();
+
+    if (Platform.OS === "web") {
+      const nav = globalThis.navigator as
+        | (Navigator & {
+            share?: (data: { title: string; text: string }) => Promise<void>;
+            clipboard?: { writeText: (value: string) => Promise<void> };
+          })
+        | undefined;
+
+      if (nav?.share) {
+        await nav.share({
+          title: "Hinduja Antibiotic Guide Protocol Report",
+          text,
+        });
+        return;
+      }
+
+      if (nav?.clipboard?.writeText) {
+        await nav.clipboard.writeText(text);
+        setActionMessage("Report text copied to clipboard.");
+        return;
+      }
+
+      setActionMessage(unsupportedMessage ?? "Sharing is not available on this device.");
+      return;
+    }
+
+    await Share.share({
+      title: "Hinduja Antibiotic Guide Protocol Report",
+      message: text,
+    });
+  };
+  const shareBluetooth = async () => {
+    if (Platform.OS === "web") {
+      setActionMessage("Bluetooth sharing is not available on this device.");
+      return;
+    }
+
+    await openNativeShare("Bluetooth sharing is not available on this device.");
+  };
+  const exportReportPdf = async () => {
+    const text = buildReportText();
+    const html = buildReportHtml(text, Platform.OS === "web");
+
+    if (Platform.OS === "web") {
+      const reportWindow = globalThis.window?.open("", "_blank");
+
+      if (!reportWindow) {
+        await openNativeShare("PDF export is not available on this device.");
+        return;
+      }
+
+      reportWindow.document.write(html);
+      reportWindow.document.close();
+      setActionMessage("PDF report opened. Use the browser print dialog to save as PDF.");
+      return;
+    }
+
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      const canSharePdf = await Sharing.isAvailableAsync();
+
+      if (canSharePdf) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Hinduja Antibiotic Guide Protocol Report",
+          UTI: "com.adobe.pdf",
+        });
+        setActionMessage("PDF report generated.");
+        return;
+      }
+
+      await openNativeShare("PDF sharing is not available on this device.");
+      setActionMessage("PDF generated, but file sharing is not available on this device.");
+    } catch {
+      await openNativeShare("PDF export is not available on this device.");
+      setActionMessage("PDF export is not available on this device. Report text can be shared instead.");
+    }
+  };
   const clearAuthMessages = () => {
     setLoginError("");
     setSignupError("");
@@ -1311,6 +1568,9 @@ export default function App() {
     applyUserProfile(null);
     setSourceRecommendations([]);
     setSourceRecommendationError("");
+    setSavedCases([]);
+    setSelectedCase(null);
+    setActionMessage("");
     setOtpTarget(null);
     setAuthSuccess("Logged out successfully.");
     go("login", "reset");
@@ -2579,47 +2839,76 @@ export default function App() {
   const Actions = () =>
     appShell(
       <View>
+        <Text style={styles.resultSection}>Recommended Treatment Protocol</Text>
+        {selectedSourceRecommendations.length === 0 ? (
+          <View style={[styles.noteBlue, styles.actionAlert]}>
+            <Text style={[styles.noteText, styles.actionBodyRed]}>
+              {sourceRecommendationError || failClosedMessage}
+            </Text>
+          </View>
+        ) : (
+          <View>
+            {recommendedTreatmentRecommendations.map((item, index) => (
+              <SourceRecommendationCard key={item.id} item={item} index={index} />
+            ))}
+            {alternativeTreatmentRecommendations.length > 0 ? (
+              <View style={styles.alternativeSection}>
+                <Text style={styles.resultSection}>Alternative Options</Text>
+                {alternativeTreatmentRecommendations.map((item, index) => (
+                  <SourceRecommendationCard
+                    key={item.id}
+                    item={item}
+                    index={index}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        )}
+        <Text style={styles.detailsTitle}>Actions</Text>
+        {actionMessage ? (
+          <View style={styles.successBanner}>
+            <Text style={styles.successBannerText}>{actionMessage}</Text>
+          </View>
+        ) : null}
         <View style={styles.actionsGrid}>
           <ActionCard
             title="Save to My Cases"
-            body="Saved successfully!"
-            button="View My Cases"
-            icon="✓"
-            onPress={() => go("savedCases")}
+            body="Save this selected scenario and approved protocol as a case report."
+            button="Save Case"
+            icon="save"
+            onPress={saveCurrentCase}
           />
           <ActionCard
             title="Export PDF"
             body="Hinduja Antibiotic Guide Protocol Report"
             button="Export PDF"
-            icon="▧"
-            onPress={() => go("reports")}
-          />
-          <ActionCard
-            title="QR Code"
-            body="Scan to view protocol"
-            button="Open QR"
-            icon="▦"
-            onPress={() => go("qrView")}
+            icon="file-text"
+            onPress={() => {
+              setSelectedCase(currentCaseSnapshot());
+              go("reports");
+            }}
           />
           <ActionCard
             title="Share with Team"
-            body="WhatsApp  Email  Bluetooth  More"
+            body="Share the clinical report through available device channels."
             button="Share"
-            icon="●"
-            onPress={() => go("shareView")}
+            icon="share-2"
+            onPress={() => {
+              setSelectedCase(currentCaseSnapshot());
+              go("shareView");
+            }}
           />
-          <ActionCard
-            title="Stewardship Alert"
-            body={
-              riskType === "Type 3"
-                ? "Type 3 (High Risk) Alert Triggered"
-                : "No critical stewardship alert"
-            }
-            button="View Alert"
-            icon="!"
-            alert={riskType === "Type 3"}
-            onPress={() => go("stewardshipAlert")}
-          />
+          {shouldShowStewardshipAlert ? (
+            <ActionCard
+              title="Stewardship Alert Triggered"
+              body={stewardshipAlertReason}
+              button="View Alert"
+              icon="alert-triangle"
+              alert
+              onPress={() => go("stewardshipAlert")}
+            />
+          ) : null}
         </View>
       </View>,
       "Actions",
@@ -2637,7 +2926,7 @@ export default function App() {
     title: string;
     body: string;
     button: string;
-    icon: string;
+    icon: ComponentProps<typeof Feather>["name"];
     alert?: boolean;
     onPress: () => void;
   }) => (
@@ -2645,9 +2934,13 @@ export default function App() {
       <Text style={[styles.actionTitle, alert && styles.actionTitleRed]}>
         {title}
       </Text>
-      <Text style={[styles.actionIcon, alert && styles.actionIconRed]}>
-        {icon}
-      </Text>
+      <Feather
+        name={icon}
+        size={44}
+        strokeWidth={2.2}
+        color={alert ? palette.red : palette.green}
+        style={styles.actionIcon}
+      />
       <Text style={[styles.actionBody, alert && styles.actionBodyRed]}>
         {body}
       </Text>
@@ -2664,20 +2957,36 @@ export default function App() {
   const SavedCases = () =>
     appShell(
       <View>
-        {[
-          [`${selectedSite.code} · ${setting} · ${acquisition}`, riskLabel],
-          ["UTI · Ward · Community-acquired", "Medium Risk"],
-        ].map(([title, value]) => (
-          <TouchableOpacity
-            key={title}
-            activeOpacity={0.86}
-            style={styles.infoCard}
-            onPress={() => go("protocolResult")}
-          >
-            <Text style={styles.infoCardTitle}>{title}</Text>
-            <Text style={styles.infoCardBody}>{value}</Text>
-          </TouchableOpacity>
-        ))}
+        {actionMessage ? (
+          <View style={styles.successBanner}>
+            <Text style={styles.successBannerText}>{actionMessage}</Text>
+          </View>
+        ) : null}
+        {savedCases.length === 0 ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>No saved cases yet</Text>
+            <Text style={styles.infoCardBody}>
+              Save a selected protocol from Actions to create a case report.
+            </Text>
+          </View>
+        ) : (
+          savedCases.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.86}
+              style={styles.infoCard}
+              onPress={() => openCaseReport(item)}
+            >
+              <Text style={styles.infoCardTitle}>{item.infectionSite}</Text>
+              <Text style={styles.infoCardBody}>
+                {item.setting} · {item.acquisition} · {item.riskLevel}
+              </Text>
+              <Text style={styles.infoCardBody}>
+                Saved {formatDateTime(item.savedAt)}
+              </Text>
+            </TouchableOpacity>
+          ))
+        )}
       </View>,
       "My Cases",
       false,
@@ -2686,99 +2995,230 @@ export default function App() {
   const Reports = () =>
     appShell(
       <View>
-        <View style={styles.reportPreview}>
-          <Text style={styles.reportTitle}>Hinduja Antibiotic Guide</Text>
-          <Text style={styles.reportBody}>Protocol Report</Text>
-          <Text style={styles.reportMeta}>
-            {selectedSite.code} - {setting} - {riskType}
-          </Text>
-          <Text style={styles.reportIcon}>PDF</Text>
-        </View>
-        <PrimaryButton label="View Reports" onPress={() => go("savedCases")} />
+        <CaseReportContent reportCase={activeReportCase} />
+        {actionMessage ? (
+          <View style={styles.successBanner}>
+            <Text style={styles.successBannerText}>{actionMessage}</Text>
+          </View>
+        ) : null}
+        <PrimaryButton label="Export PDF" onPress={exportReportPdf} />
+        <PrimaryButton label="Share with Team" onPress={() => go("shareView")} />
+        <PrimaryButton label="Back to Details" onPress={() => go("protocolDetails")} />
       </View>,
-      "Generated Report",
-      false,
-    );
-
-  const QrView = () =>
-    appShell(
-      <View>
-        <View style={styles.qrPanel}>
-          <Text style={styles.qrCode}>
-            ▦▦▦{"\n"}▦ ▦{"\n"}▦▦▦
-          </Text>
-          <Text style={styles.infoCardBody}>Scan to view protocol</Text>
-        </View>
-        <PrimaryButton label="Share QR" onPress={() => go("shareView")} />
-      </View>,
-      "QR Code",
+      "Export PDF",
       false,
     );
 
   const ShareView = () =>
     appShell(
       <View>
-        {["WhatsApp", "Email", "Bluetooth", "More"].map((item) => (
-          <TouchableOpacity
-            key={item}
-            activeOpacity={0.86}
-            onPress={() => go("actions")}
-            style={styles.listCard}
-          >
-            <Text style={styles.listIcon}>●</Text>
-            <Text style={styles.listText}>{item}</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        ))}
+        {actionMessage ? (
+          <View style={styles.successBanner}>
+            <Text style={styles.successBannerText}>{actionMessage}</Text>
+          </View>
+        ) : null}
+        <ShareRow
+          title="WhatsApp"
+          subtitle="Open WhatsApp with report summary"
+          icon="whatsapp"
+          brandColor="#25D366"
+          onPress={openWhatsAppShare}
+        />
+        <ShareRow
+          title="Email"
+          subtitle="Create an email with report subject and body"
+          icon="mail"
+          onPress={openEmailShare}
+        />
+        <ShareRow
+          title="Bluetooth"
+          subtitle="Use native sharing where supported"
+          icon="bluetooth"
+          onPress={shareBluetooth}
+        />
+        <ShareRow
+          title="More"
+          subtitle="Open native share or copy report text"
+          icon="more-horizontal"
+          onPress={() => openNativeShare()}
+        />
       </View>,
       "Share with Team",
       false,
     );
 
+  const ShareRow = ({
+    title,
+    subtitle,
+    icon,
+    brandColor,
+    onPress,
+  }: {
+    title: string;
+    subtitle: string;
+    icon: "whatsapp" | ComponentProps<typeof Feather>["name"];
+    brandColor?: string;
+    onPress: () => void;
+  }) => (
+    <TouchableOpacity
+      activeOpacity={0.86}
+      onPress={onPress}
+      style={styles.shareRow}
+    >
+      <View
+        style={[
+          styles.shareIconBox,
+          brandColor ? { backgroundColor: brandColor } : null,
+        ]}
+      >
+        {icon === "whatsapp" ? (
+          <FontAwesome name="whatsapp" size={22} color="#FFFFFF" />
+        ) : (
+          <Feather
+            name={icon}
+            size={21}
+            strokeWidth={2.3}
+            color={brandColor ? "#FFFFFF" : palette.blue}
+          />
+        )}
+      </View>
+      <View style={styles.shareTextBlock}>
+        <Text style={styles.listText}>{title}</Text>
+        <Text style={styles.infoCardBody}>{subtitle}</Text>
+      </View>
+      <Text style={styles.chevron}>›</Text>
+    </TouchableOpacity>
+  );
+
+  const CaseReportContent = ({
+    reportCase,
+  }: {
+    reportCase: SavedClinicalCase;
+  }) => {
+    const reportWarnings = [
+      ...reportCase.warningRecommendations.flatMap((item) =>
+        [
+          item.stewardship_note,
+          item.renal_adjustment,
+          item.allergy_warning,
+          item.contraindication,
+        ].filter((value): value is string => Boolean(value && hasMeaningfulText(value))),
+      ),
+      ...reportCase.consultRecommendations
+        .map((item) => item.id_consult_trigger)
+        .filter((value): value is string => Boolean(value && hasMeaningfulText(value))),
+      reportCase.riskType === "Type 3"
+        ? "High-risk case: ID specialist review recommended."
+        : "",
+    ].filter(Boolean);
+
+    return (
+      <View style={styles.reportPreview}>
+        <View style={styles.reportHeaderRow}>
+          <View>
+            <Text style={styles.reportTitle}>
+              Hinduja Antibiotic Guide Protocol Report
+            </Text>
+            <Text style={styles.reportMeta}>
+              Generated {formatDateTime(reportCase.savedAt)}
+            </Text>
+          </View>
+          <View style={styles.reportIcon}>
+            <Feather name="file-text" size={24} color={palette.red} />
+            <Text style={styles.reportIconText}>PDF</Text>
+          </View>
+        </View>
+        <View style={styles.reportSection}>
+          <Text style={styles.detailsTitle}>Doctor</Text>
+          <Text style={styles.infoCardBody}>
+            {reportCase.doctorName || "Authenticated doctor"}
+          </Text>
+          <Text style={styles.infoCardBody}>{reportCase.doctorEmail}</Text>
+        </View>
+        <View style={styles.reportSection}>
+          <Text style={styles.detailsTitle}>Case Summary</Text>
+          <Text style={styles.infoCardBody}>
+            Infection Site: {reportCase.infectionSite}
+          </Text>
+          <Text style={styles.infoCardBody}>Setting: {reportCase.setting}</Text>
+          <Text style={styles.infoCardBody}>
+            Acquisition: {reportCase.acquisition}
+          </Text>
+          <Text style={styles.infoCardBody}>
+            Risk Level: {reportCase.riskLevel}
+          </Text>
+        </View>
+        <View style={styles.reportSection}>
+          <Text style={styles.detailsTitle}>Recommended Treatment Protocol</Text>
+          {reportCase.recommendations.length === 0 ? (
+            <View style={[styles.noteBlue, styles.actionAlert]}>
+              <Text style={[styles.noteText, styles.actionBodyRed]}>
+                {failClosedMessage}
+              </Text>
+            </View>
+          ) : (
+            reportCase.recommendations.map((item, index) => (
+              <SourceRecommendationCard key={item.id} item={item} index={index} />
+            ))
+          )}
+        </View>
+        {reportWarnings.length > 0 ? (
+          <View style={styles.reportSection}>
+            <Text style={styles.detailsTitle}>Stewardship Guidance</Text>
+            {reportWarnings.map((item) => (
+              <Text key={item} style={styles.infoCardBody}>
+                {item}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+        <View style={styles.disclaimerBox}>
+          <Text style={styles.infoCardBody}>
+            For authorized clinical use. Verify with institutional protocol and
+            clinical judgment.
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   const StewardshipAlert = () =>
     appShell(
       <View>
         <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Stewardship Guidance</Text>
+          <Text style={styles.infoCardTitle}>Stewardship Alert Details</Text>
           {sourceRecommendationLoading ? (
             <ActivityIndicator color={palette.blue} />
           ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
-          ) : meaningfulWarningRecommendations.length === 0 &&
-            meaningfulConsultRecommendations.length === 0 ? (
+          ) : !shouldShowStewardshipAlert ? (
             <Text style={styles.infoCardBody}>
-              No specific stewardship, warning, or ID consult trigger documented in approved data for the current recommendations.
+              No stewardship alert is triggered for the current approved
+              recommendations.
             </Text>
           ) : (
-            selectedSourceRecommendations
-              .filter(
-                (item) =>
-                  hasMeaningfulText(item.stewardship_note) ||
-                  hasMeaningfulText(item.id_consult_trigger) ||
-                  hasMeaningfulText(item.contraindication),
-              )
-              .map((item) => (
-              <View key={item.id} style={styles.durationRow}>
-                <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
-                {hasMeaningfulText(item.stewardship_note) ? (
-                  <Text style={styles.infoCardBody}>
-                    Stewardship: {item.stewardship_note?.trim()}
-                  </Text>
-                ) : null}
-                {hasMeaningfulText(item.id_consult_trigger) ? (
-                  <Text style={styles.infoCardBody}>
-                    ID consult: {item.id_consult_trigger?.trim()}
-                  </Text>
-                ) : null}
-                {hasMeaningfulText(item.contraindication) ? (
-                  <Text style={styles.infoCardBody}>
-                    Contraindication: {item.contraindication?.trim()}
-                  </Text>
-                ) : null}
-              </View>
-            ))
+            <View>
+              <Text style={styles.detailLabel}>Risk level</Text>
+              <Text style={styles.infoCardBody}>
+                {riskType} - {riskLabel}
+              </Text>
+              <Text style={styles.detailLabel}>Reason for alert</Text>
+              <Text style={styles.infoCardBody}>{stewardshipAlertReason}</Text>
+              <Text style={styles.detailLabel}>Recommended action</Text>
+              <Text style={styles.infoCardBody}>{stewardshipAlertAction}</Text>
+              {selectedSourceRecommendations.length > 0 ? (
+                <View style={styles.durationRow}>
+                  <Text style={styles.detailLabel}>Antibiotics to review</Text>
+                  {selectedSourceRecommendations.map((item) => (
+                    <Text key={item.id} style={styles.infoCardBody}>
+                      {item.drug?.trim()}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+            </View>
           )}
         </View>
         <PrimaryButton
@@ -2830,12 +3270,21 @@ export default function App() {
         return SavedCases();
       case "reports":
         return Reports();
-      case "qrView":
-        return QrView();
       case "shareView":
         return ShareView();
       case "stewardshipAlert":
         return StewardshipAlert();
+      case "caseReport":
+        return appShell(
+          <View>
+            <CaseReportContent reportCase={activeReportCase} />
+            <PrimaryButton label="Export PDF" onPress={exportReportPdf} />
+            <PrimaryButton label="Share with Team" onPress={() => go("shareView")} />
+            <PrimaryButton label="Back to Details" onPress={() => go("protocolDetails")} />
+          </View>,
+          "Case Report",
+          false,
+        );
     }
   };
 
@@ -4039,6 +4488,21 @@ const makeStyles = (p: Palette) =>
       marginBottom: 18,
     },
     actionsGrid: { gap: 14 },
+    successBanner: {
+      borderRadius: 8,
+      backgroundColor: "#EAF8F0",
+      borderWidth: 1,
+      borderColor: "#BDE8CF",
+      padding: 12,
+      marginTop: 10,
+      marginBottom: 14,
+    },
+    successBannerText: {
+      color: p.green,
+      fontSize: 12,
+      lineHeight: 17,
+      fontWeight: "900",
+    },
     actionCard: {
       minHeight: 154,
       borderRadius: 8,
@@ -4058,13 +4522,8 @@ const makeStyles = (p: Palette) =>
     },
     actionTitleRed: { color: p.red },
     actionIcon: {
-      color: p.green,
-      fontSize: 48,
-      lineHeight: 54,
-      fontWeight: "900",
       marginBottom: 8,
     },
-    actionIconRed: { color: p.red },
     actionBody: {
       color: p.text,
       fontSize: 12,
@@ -4086,22 +4545,32 @@ const makeStyles = (p: Palette) =>
     actionButtonRed: { backgroundColor: p.red },
     actionButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
     reportPreview: {
-      minHeight: 220,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.card,
-      alignItems: "center",
-      justifyContent: "center",
       padding: 18,
       marginBottom: 18,
+    },
+    reportHeaderRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 12,
+      marginBottom: 14,
+    },
+    reportSection: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 12,
+      marginTop: 12,
+      gap: 5,
     },
     reportTitle: {
       color: p.blue2,
       fontSize: 15,
       lineHeight: 20,
       fontWeight: "900",
-      textAlign: "center",
     },
     reportBody: {
       color: p.text,
@@ -4116,37 +4585,51 @@ const makeStyles = (p: Palette) =>
       lineHeight: 18,
       fontWeight: "700",
       marginTop: 5,
-      marginBottom: 20,
     },
     reportIcon: {
-      width: 58,
-      height: 72,
+      width: 56,
+      height: 64,
       borderRadius: 8,
       borderWidth: 2,
       borderColor: p.red,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 3,
+    },
+    reportIconText: {
       color: p.red,
-      textAlign: "center",
-      lineHeight: 68,
-      fontSize: 16,
+      fontSize: 11,
+      lineHeight: 14,
       fontWeight: "900",
     },
-    qrPanel: {
-      minHeight: 250,
+    disclaimerBox: {
+      borderRadius: 8,
+      backgroundColor: p.soft,
+      padding: 12,
+      marginTop: 14,
+    },
+    shareRow: {
+      minHeight: 76,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.card,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 12,
+      gap: 12,
+    },
+    shareIconBox: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: "#EAF4FF",
       alignItems: "center",
       justifyContent: "center",
-      padding: 18,
-      marginBottom: 18,
     },
-    qrCode: {
-      color: "#111827",
-      fontSize: 44,
-      lineHeight: 48,
-      fontWeight: "900",
-      textAlign: "center",
-      marginBottom: 16,
+    shareTextBlock: {
+      flex: 1,
     },
   });
