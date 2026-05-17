@@ -1131,6 +1131,9 @@ export default function App() {
     recommendedTreatmentRecommendations.length,
     6,
   );
+  const durationRecommendations = selectedSourceRecommendations.filter((item) =>
+    hasDisplayValue(item.duration),
+  );
   const approvedCleanRecommendations = useMemo(
     () => cleanRecommendationRows(sourceRecommendations),
     [sourceRecommendations],
@@ -1667,15 +1670,7 @@ export default function App() {
           <Text style={styles.topIconText}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.topTitle}>{title}</Text>
-        <TouchableOpacity
-          activeOpacity={0.84}
-          onPress={goHome}
-          style={styles.topIcon}
-          accessibilityRole="button"
-          accessibilityLabel="Go to home"
-        >
-          <Feather name="home" size={21} strokeWidth={2.5} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.topIconSpacer} />
       </View>
       {progress && <StepDots />}
       <ScrollView
@@ -2028,15 +2023,6 @@ export default function App() {
           {doctorProfile.name || doctorProfile.email || "Authenticated doctor"}
         </Text>
       </View>
-      <TouchableOpacity
-        activeOpacity={0.84}
-        onPress={goHome}
-        style={styles.headerButton}
-        accessibilityRole="button"
-        accessibilityLabel="Go to home"
-      >
-        <Feather name="home" size={21} strokeWidth={2.5} color="#FFFFFF" />
-      </TouchableOpacity>
     </View>
   );
 
@@ -2454,17 +2440,24 @@ export default function App() {
           <Text style={styles.infoCardTitle}>
             {selectedSite.label} · {setting} · {acquisition}
           </Text>
-          {selectedSourceRecommendations.length === 0 ? (
+          {sourceRecommendationLoading ? (
+            <ActivityIndicator color={palette.blue} />
+          ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
+          ) : durationRecommendations.length === 0 ? (
+            <Text style={styles.infoCardBody}>
+              Duration not specified in approved guide data.
+            </Text>
           ) : (
-            selectedSourceRecommendations
-              .filter((item) => hasDisplayValue(item.duration))
-              .map((item) => (
-              <View key={item.id} style={styles.durationRow}>
+            durationRecommendations.map((item) => (
+              <View key={item.id} style={styles.durationCard}>
                 <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
-                <Text style={styles.infoCardBody}>{item.duration?.trim()}</Text>
+                <RecommendationField label="Dose" value={item.dose} />
+                <RecommendationField label="Route" value={item.route} />
+                <RecommendationField label="Frequency" value={item.frequency} />
+                <RecommendationField label="Duration" value={item.duration} />
               </View>
             ))
           )}
@@ -3935,7 +3928,11 @@ const makeStyles = (p: Palette) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    headerTextBlock: { flex: 1, paddingHorizontal: 12 },
+    headerTextBlock: {
+      flex: 1,
+      paddingLeft: 12,
+      paddingRight: 2,
+    },
     headerTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
     headerDoctor: {
       color: "#D7E8FF",
@@ -4238,6 +4235,10 @@ const makeStyles = (p: Palette) =>
       height: 42,
       alignItems: "center",
       justifyContent: "center",
+    },
+    topIconSpacer: {
+      width: 42,
+      height: 42,
     },
     topIconText: {
       color: "#FFFFFF",
@@ -4574,6 +4575,13 @@ const makeStyles = (p: Palette) =>
       borderTopColor: p.border,
       paddingTop: 10,
       marginTop: 10,
+    },
+    durationCard: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 11,
+      marginTop: 11,
+      gap: 7,
     },
     therapyDose: {
       color: p.text,
