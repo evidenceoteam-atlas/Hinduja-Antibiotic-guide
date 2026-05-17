@@ -217,6 +217,7 @@ const otpLength = 6;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
 const otpPattern = new RegExp(`^\\d{${otpLength}}$`);
+const notSpecifiedInSource = "Not specified in source";
 
 const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
 const otpCooldownText = (remainingSeconds: number) =>
@@ -277,6 +278,39 @@ const initialsForName = (name: string, email: string) => {
     .map((part) => part[0]?.toUpperCase())
     .join("");
 };
+
+const normalizeMatchText = (value: string | null | undefined) =>
+  (value ?? "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const matchStopWords = new Set([
+  "infection",
+  "infections",
+  "clinical",
+  "guideline",
+  "guidelines",
+  "protocol",
+  "protocols",
+  "therapy",
+  "treatment",
+]);
+
+const splitMatchTokens = (value: string | null | undefined) =>
+  normalizeMatchText(value)
+    .split(" ")
+    .filter((token) => token.length >= 3 && !matchStopWords.has(token));
+
+const hasSharedToken = (left: string, right: string) => {
+  const leftTokens = new Set(splitMatchTokens(left));
+  return splitMatchTokens(right).some((token) => leftTokens.has(token));
+};
+
+const sourceValue = (value: string | null | undefined) =>
+  value?.trim() || notSpecifiedInSource;
 
 export default function App() {
   const dark = useColorScheme() === "dark";
@@ -521,17 +555,60 @@ export default function App() {
         ? palette.orange
         : palette.red;
   const fieldMatches = (value: string | null, expected: string) => {
-    if (!value) {
+    const normalizedValue = normalizeMatchText(value);
+    const normalizedExpected = normalizeMatchText(expected);
+
+    if (!normalizedValue || !normalizedExpected) {
       return true;
     }
 
-    const normalizedValue = value.toLowerCase();
-    const normalizedExpected = expected.toLowerCase();
     return (
       normalizedValue === normalizedExpected ||
       normalizedValue.includes(normalizedExpected) ||
-      normalizedExpected.includes(normalizedValue)
+      normalizedExpected.includes(normalizedValue) ||
+      hasSharedToken(normalizedValue, normalizedExpected)
     );
+  };
+
+  const infectionMatchesSelection = (item: SourceRecommendation) => {
+    const sourceInfection = normalizeMatchText(
+      `${item.infection_site ?? ""} ${item.syndrome ?? ""}`,
+    );
+
+    if (!sourceInfection) {
+      return false;
+    }
+
+    const selectedInfection = normalizeMatchText(
+      `${selectedSite.code} ${selectedSite.label}`,
+    );
+    const selectedAliases = normalizeMatchText(
+      infectionAliases[selectedSite.code]?.join(" ") ?? "",
+    );
+    const selectedWithAliases = normalizeMatchText(
+      `${selectedInfection} ${selectedAliases}`,
+    );
+
+    return (
+      sourceInfection.includes(normalizeMatchText(selectedSite.code)) ||
+      sourceInfection.includes(selectedInfection) ||
+      selectedWithAliases.includes(sourceInfection) ||
+      hasSharedToken(sourceInfection, selectedWithAliases)
+    );
+  };
+
+  const applyProgressiveFilter = (
+    rows: SourceRecommendation[],
+    label: string,
+    predicate: (item: SourceRecommendation) => boolean,
+  ) => {
+    const filteredRows = rows.filter(predicate);
+
+    console.log(
+      `[clinical recommendations] ${label} filter retained ${filteredRows.length}/${rows.length} rows`,
+    );
+
+    return filteredRows.length > 0 ? filteredRows : rows;
   };
 
   const searchResults = useMemo(() => {
@@ -665,6 +742,10 @@ export default function App() {
     setSourceRecommendationLoading(true);
     setSourceRecommendationError("");
 
+    console.log(
+      "[clinical recommendations] Supabase query: approved_clinical_recommendations_with_source select * order syndrome asc",
+    );
+
     const { data, error } = await supabase
       .from("approved_clinical_recommendations_with_source")
       .select("*")
@@ -680,41 +761,49 @@ export default function App() {
       return;
     }
 
+    console.log(
+      `[clinical recommendations] Supabase rows returned: ${(data ?? []).length}`,
+    );
     setSourceRecommendations((data ?? []) as SourceRecommendation[]);
   };
 
-  const selectedSourceRecommendations = useMemo(
-    () =>
-      sourceRecommendations.filter((item) => {
-        const syndrome = `${item.syndrome ?? ""} ${item.infection_site ?? ""}`;
-        const sourceInfection = syndrome.toLowerCase();
-        const selectedInfection =
-          `${selectedSite.code} ${selectedSite.label}`.toLowerCase();
-        const hasSourceInfection = sourceInfection.trim().length > 0;
+  const selectedSourceRecommendations = useMemo(() => {
+    console.log("[clinical recommendations] selected filters", {
+      infectionSiteCode: selectedSite.code,
+      infectionSiteLabel: selectedSite.label,
+      setting,
+      acquisition,
+      riskType,
+      approvedRowsLoaded: sourceRecommendations.length,
+    });
 
-        return (
-          hasSourceInfection &&
-          (sourceInfection.includes(selectedSite.code.toLowerCase()) ||
-            selectedInfection.includes(sourceInfection.trim())) &&
-          fieldMatches(item.setting, setting) &&
-          fieldMatches(item.acquisition, acquisition) &&
-          fieldMatches(item.risk_type, riskType)
-        );
-      }),
-    [acquisition, riskType, selectedSite, setting, sourceRecommendations],
-  );
+    const infectionRows = sourceRecommendations.filter(infectionMatchesSelection);
+
+    console.log(
+      `[clinical recommendations] infection/syndrome base match returned ${infectionRows.length} rows`,
+    );
+
+    let matchedRows = infectionRows;
+
+    matchedRows = applyProgressiveFilter(matchedRows, "setting", (item) =>
+      fieldMatches(item.setting, setting),
+    );
+    matchedRows = applyProgressiveFilter(matchedRows, "acquisition", (item) =>
+      fieldMatches(item.acquisition, acquisition),
+    );
+    matchedRows = applyProgressiveFilter(matchedRows, "risk", (item) =>
+      fieldMatches(item.risk_type, riskType),
+    );
+
+    console.log(
+      `[clinical recommendations] progressive matching returned ${matchedRows.length} rows`,
+    );
+
+    return matchedRows;
+  }, [acquisition, riskType, selectedSite, setting, sourceRecommendations]);
 
   const failClosedMessage =
     "No approved recommendation available. Refer institutional guideline / ID specialist.";
-  const sourceAlertNotes = selectedSourceRecommendations
-    .flatMap((item) => [
-      item.stewardship_note,
-      item.id_consult_trigger,
-      item.contraindication,
-      item.allergy_warning,
-    ])
-    .filter((note): note is string => Boolean(note));
-
   const clearAuthMessages = () => {
     setLoginError("");
     setSignupError("");
@@ -1486,6 +1575,56 @@ export default function App() {
       </View>,
     );
 
+  const RecommendationField = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: string | null | undefined;
+  }) => (
+    <View style={styles.recommendationField}>
+      <Text style={styles.recommendationFieldLabel}>{label}</Text>
+      <Text style={styles.recommendationFieldValue}>{sourceValue(value)}</Text>
+    </View>
+  );
+
+  const SourceRecommendationCard = ({
+    item,
+    index,
+  }: {
+    item: SourceRecommendation;
+    index: number;
+  }) => (
+    <View style={styles.therapyCard}>
+      <Text style={styles.rank}>{index + 1}</Text>
+      <View style={styles.therapyBody}>
+        <Text style={styles.therapyName}>{sourceValue(item.drug)}</Text>
+        <RecommendationField label="Dose" value={item.dose} />
+        <RecommendationField label="Route" value={item.route} />
+        <RecommendationField label="Frequency" value={item.frequency} />
+        <RecommendationField label="Duration" value={item.duration} />
+        <RecommendationField
+          label="Renal adjustment"
+          value={item.renal_adjustment}
+        />
+        <RecommendationField label="Allergy warning" value={item.allergy_warning} />
+        <RecommendationField
+          label="Stewardship note"
+          value={item.stewardship_note}
+        />
+        <View style={styles.sourceQuoteBox}>
+          <Text style={styles.recommendationFieldLabel}>Source quote</Text>
+          <Text style={styles.detailText}>{sourceValue(item.source_quote)}</Text>
+          <Text style={styles.detailText}>
+            {item.source_filename}
+            {item.page_number ? ` · page ${item.page_number}` : ""}
+            {item.section_heading ? ` · ${item.section_heading}` : ""}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
   const Duration = () =>
     TabPage(
       "Duration",
@@ -1494,10 +1633,20 @@ export default function App() {
           <Text style={styles.infoCardTitle}>
             {selectedSite.label} · {setting} · {acquisition}
           </Text>
-          <Text style={styles.infoCardBody}>
-            {selectedSourceRecommendations.find((item) => item.duration)
-              ?.duration ?? failClosedMessage}
-          </Text>
+          {selectedSourceRecommendations.length === 0 ? (
+            <Text style={styles.infoCardBody}>
+              {sourceRecommendationError || failClosedMessage}
+            </Text>
+          ) : (
+            selectedSourceRecommendations.map((item) => (
+              <View key={item.id} style={styles.durationRow}>
+                <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
+                <Text style={styles.infoCardBody}>
+                  {sourceValue(item.duration)}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Review Trigger</Text>
@@ -1517,15 +1666,28 @@ export default function App() {
           <Text style={styles.infoCardTitle}>Stewardship Review</Text>
           {sourceRecommendationLoading ? (
             <ActivityIndicator color={palette.blue} />
-          ) : sourceAlertNotes.length === 0 ? (
+          ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
           ) : (
-            sourceAlertNotes.map((note) => (
-              <Text key={note} style={styles.infoCardBody}>
-                {note}
-              </Text>
+            selectedSourceRecommendations.map((item) => (
+              <View key={item.id} style={styles.durationRow}>
+                <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
+                <Text style={styles.infoCardBody}>
+                  Stewardship: {sourceValue(item.stewardship_note)}
+                </Text>
+                <Text style={styles.infoCardBody}>
+                  Allergy: {sourceValue(item.allergy_warning)}
+                </Text>
+                <Text style={styles.infoCardBody}>
+                  Renal: {sourceValue(item.renal_adjustment)}
+                </Text>
+                <Text style={styles.detailText}>
+                  Source: {item.source_filename}
+                  {item.page_number ? ` · page ${item.page_number}` : ""}
+                </Text>
+              </View>
             ))
           )}
           <TouchableOpacity
@@ -1857,28 +2019,7 @@ export default function App() {
           </View>
         ) : (
           selectedSourceRecommendations.map((item, index) => (
-            <View key={item.id} style={styles.therapyCard}>
-              <Text style={styles.rank}>{index + 1}</Text>
-              <View>
-                <Text style={styles.therapyName}>
-                  {item.drug ?? "Drug not specified in source"}
-                </Text>
-                <Text style={styles.therapyDose}>
-                  {[
-                    item.dose,
-                    item.route,
-                    item.frequency,
-                    item.duration,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || "Dose/duration not specified in source"}
-                </Text>
-                <Text style={styles.detailText}>
-                  Source: {item.source_filename}
-                  {item.page_number ? `, page ${item.page_number}` : ""}
-                </Text>
-              </View>
-            </View>
+            <SourceRecommendationCard key={item.id} item={item} index={index} />
           ))
         )}
         <PrimaryButton
@@ -1951,18 +2092,30 @@ export default function App() {
             ) : (
               selectedSourceRecommendations.map((item) => (
                 <View key={item.id} style={[styles.noteBlue, styles.actionAlert]}>
-                  <Text style={[styles.noteText, styles.actionBodyRed]}>
-                    {[
-                      item.renal_adjustment,
-                      item.hepatic_adjustment,
-                      item.pregnancy_lactation_caution,
-                      item.allergy_warning,
-                      item.contraindication,
-                      item.stewardship_note,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "No warning specified in source"}
-                  </Text>
+                  <RecommendationField
+                    label="Renal adjustment"
+                    value={item.renal_adjustment}
+                  />
+                  <RecommendationField
+                    label="Hepatic adjustment"
+                    value={item.hepatic_adjustment}
+                  />
+                  <RecommendationField
+                    label="Pregnancy/lactation caution"
+                    value={item.pregnancy_lactation_caution}
+                  />
+                  <RecommendationField
+                    label="Allergy warning"
+                    value={item.allergy_warning}
+                  />
+                  <RecommendationField
+                    label="Contraindication"
+                    value={item.contraindication}
+                  />
+                  <RecommendationField
+                    label="Stewardship note"
+                    value={item.stewardship_note}
+                  />
                 </View>
               ))
             )}
@@ -1989,8 +2142,7 @@ export default function App() {
                 >
                   <Text style={styles.listIcon}>□</Text>
                   <Text style={styles.listText}>
-                    {item.id_consult_trigger ??
-                      "ID consult trigger not specified in source"}
+                    {sourceValue(item.id_consult_trigger)}
                   </Text>
                   <Text style={styles.chevron}>›</Text>
                 </TouchableOpacity>
@@ -2170,15 +2322,28 @@ export default function App() {
           <Text style={styles.infoCardTitle}>Source-Linked Stewardship</Text>
           {sourceRecommendationLoading ? (
             <ActivityIndicator color={palette.blue} />
-          ) : sourceAlertNotes.length === 0 ? (
+          ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
           ) : (
-            sourceAlertNotes.map((note) => (
-              <Text key={note} style={styles.infoCardBody}>
-                {note}
-              </Text>
+            selectedSourceRecommendations.map((item) => (
+              <View key={item.id} style={styles.durationRow}>
+                <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
+                <Text style={styles.infoCardBody}>
+                  Stewardship: {sourceValue(item.stewardship_note)}
+                </Text>
+                <Text style={styles.infoCardBody}>
+                  ID consult: {sourceValue(item.id_consult_trigger)}
+                </Text>
+                <Text style={styles.infoCardBody}>
+                  Contraindication: {sourceValue(item.contraindication)}
+                </Text>
+                <Text style={styles.detailText}>
+                  Source: {item.source_filename}
+                  {item.page_number ? ` · page ${item.page_number}` : ""}
+                </Text>
+              </View>
             ))
           )}
         </View>
@@ -3142,14 +3307,19 @@ const makeStyles = (p: Palette) =>
     therapyCard: {
       minHeight: 58,
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
       gap: 13,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.card,
       paddingHorizontal: 12,
+      paddingVertical: 12,
       marginBottom: 8,
+    },
+    therapyBody: {
+      flex: 1,
+      gap: 7,
     },
     rank: {
       width: 28,
@@ -3167,6 +3337,37 @@ const makeStyles = (p: Palette) =>
       fontSize: 13,
       lineHeight: 18,
       fontWeight: "900",
+    },
+    recommendationField: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 7,
+      gap: 2,
+    },
+    recommendationFieldLabel: {
+      color: p.muted,
+      fontSize: 10,
+      lineHeight: 14,
+      fontWeight: "900",
+      textTransform: "uppercase",
+    },
+    recommendationFieldValue: {
+      color: p.text,
+      fontSize: 12,
+      lineHeight: 17,
+      fontWeight: "700",
+    },
+    sourceQuoteBox: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 8,
+      marginTop: 2,
+    },
+    durationRow: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 10,
+      marginTop: 10,
     },
     therapyDose: {
       color: p.text,
