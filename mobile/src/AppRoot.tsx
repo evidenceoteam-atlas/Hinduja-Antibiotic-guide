@@ -2839,33 +2839,6 @@ export default function App() {
   const Actions = () =>
     appShell(
       <View>
-        <Text style={styles.resultSection}>Recommended Treatment Protocol</Text>
-        {selectedSourceRecommendations.length === 0 ? (
-          <View style={[styles.noteBlue, styles.actionAlert]}>
-            <Text style={[styles.noteText, styles.actionBodyRed]}>
-              {sourceRecommendationError || failClosedMessage}
-            </Text>
-          </View>
-        ) : (
-          <View>
-            {recommendedTreatmentRecommendations.map((item, index) => (
-              <SourceRecommendationCard key={item.id} item={item} index={index} />
-            ))}
-            {alternativeTreatmentRecommendations.length > 0 ? (
-              <View style={styles.alternativeSection}>
-                <Text style={styles.resultSection}>Alternative Options</Text>
-                {alternativeTreatmentRecommendations.map((item, index) => (
-                  <SourceRecommendationCard
-                    key={item.id}
-                    item={item}
-                    index={index}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        )}
-        <Text style={styles.detailsTitle}>Actions</Text>
         {actionMessage ? (
           <View style={styles.successBanner}>
             <Text style={styles.successBannerText}>{actionMessage}</Text>
@@ -2881,17 +2854,17 @@ export default function App() {
           />
           <ActionCard
             title="Export PDF"
-            body="Hinduja Antibiotic Guide Protocol Report"
+            body="Generate a professional PDF report of this case."
             button="Export PDF"
             icon="file-text"
             onPress={() => {
               setSelectedCase(currentCaseSnapshot());
-              go("reports");
+              void exportReportPdf();
             }}
           />
           <ActionCard
             title="Share with Team"
-            body="Share the clinical report through available device channels."
+            body="Share this clinical report via WhatsApp, Email, or other apps."
             button="Share"
             icon="share-2"
             onPress={() => {
@@ -2899,16 +2872,6 @@ export default function App() {
               go("shareView");
             }}
           />
-          {shouldShowStewardshipAlert ? (
-            <ActionCard
-              title="Stewardship Alert Triggered"
-              body={stewardshipAlertReason}
-              button="View Alert"
-              icon="alert-triangle"
-              alert
-              onPress={() => go("stewardshipAlert")}
-            />
-          ) : null}
         </View>
       </View>,
       "Actions",
