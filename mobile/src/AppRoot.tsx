@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
+import Feather from "@expo/vector-icons/Feather";
 import type { User } from "@supabase/supabase-js";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -169,6 +170,14 @@ const bottomTabs: BottomTab[] = [
   "Alerts",
   "Profile",
 ];
+
+const bottomTabIcons: Record<BottomTab, ComponentProps<typeof Feather>["name"]> = {
+  Home: "home",
+  Guidelines: "book-open",
+  Duration: "clock",
+  Alerts: "bell",
+  Profile: "user",
+};
 
 const tabRoutes: Record<BottomTab, Screen> = {
   Home: "dashboard",
@@ -1388,31 +1397,43 @@ export default function App() {
 
   const BottomTabs = () => (
     <View style={styles.bottomTabs}>
-      {bottomTabs.map((tab, index) => (
-        <TouchableOpacity
-          key={tab}
-          activeOpacity={0.82}
-          onPress={() => goTab(tab)}
-          style={styles.bottomTab}
-        >
-          <Text
-            style={[
-              styles.bottomIcon,
-              activeTab === tab && styles.bottomIconActive,
-            ]}
+      {bottomTabs.map((tab) => {
+        const isActive = activeTab === tab;
+
+        return (
+          <TouchableOpacity
+            key={tab}
+            activeOpacity={0.86}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isActive }}
+            accessibilityLabel={`${tab} tab`}
+            onPress={() => goTab(tab)}
+            style={styles.bottomTab}
           >
-            {["⌂", "□", "◷", "◇", "○"][index]}
-          </Text>
-          <Text
-            style={[
-              styles.bottomText,
-              activeTab === tab && styles.bottomTextActive,
-            ]}
-          >
-            {tab}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <View
+              style={[
+                styles.bottomTabPill,
+                isActive && styles.bottomTabPillActive,
+              ]}
+            >
+              <Feather
+                name={bottomTabIcons[tab]}
+                size={20}
+                strokeWidth={2.4}
+                color={isActive ? palette.blue : palette.muted}
+              />
+              <Text
+                style={[
+                  styles.bottomText,
+                  isActive && styles.bottomTextActive,
+                ]}
+              >
+                {tab}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 
@@ -2720,7 +2741,7 @@ const makeStyles = (p: Palette) =>
       marginTop: 2,
     },
     bell: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
-    dashboardBody: { padding: 14, paddingBottom: 90 },
+    dashboardBody: { padding: 14, paddingBottom: 112 },
     searchBox: {
       height: 52,
       borderRadius: 8,
@@ -2837,29 +2858,50 @@ const makeStyles = (p: Palette) =>
       bottom: 0,
       left: 0,
       right: 0,
-      height: 72,
+      minHeight: 78,
       backgroundColor: p.card,
       borderTopWidth: 1,
       borderTopColor: p.border,
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-around",
+      justifyContent: "space-between",
+      paddingHorizontal: 9,
+      paddingTop: 9,
+      paddingBottom: Platform.OS === "ios" ? 18 : 10,
+      shadowColor: p.shadow,
+      shadowOffset: { width: 0, height: -8 },
+      shadowOpacity: 0.1,
+      shadowRadius: 18,
+      elevation: 14,
     },
-    bottomTab: { flex: 1, alignItems: "center" },
-    bottomIcon: {
-      color: p.muted,
-      fontSize: 20,
-      lineHeight: 24,
-      fontWeight: "900",
+    bottomTab: {
+      flex: 1,
+      minHeight: 58,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 2,
     },
-    bottomIconActive: { color: p.blue },
+    bottomTabPill: {
+      minHeight: 48,
+      minWidth: 58,
+      borderRadius: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 7,
+      paddingVertical: 5,
+      gap: 3,
+    },
+    bottomTabPillActive: {
+      backgroundColor: "#EAF4FF",
+    },
     bottomText: {
       color: p.muted,
-      fontSize: 9,
-      lineHeight: 14,
+      fontSize: 10,
+      lineHeight: 13,
       fontWeight: "800",
+      textAlign: "center",
     },
-    bottomTextActive: { color: p.blue },
+    bottomTextActive: { color: p.blue, fontWeight: "900" },
     appScreen: { minHeight: 720, flex: 1, backgroundColor: p.bg },
     topBar: {
       height: 70,
