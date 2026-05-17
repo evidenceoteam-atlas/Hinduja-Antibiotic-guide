@@ -1799,7 +1799,7 @@ export default function App() {
         <View style={[styles.checkbox, keepLoggedIn && styles.checkboxActive]}>
           {keepLoggedIn ? <Text style={styles.checkboxMark}>✓</Text> : null}
         </View>
-        <Text style={styles.keepText}>Keep me logged in</Text>
+        <Text style={styles.keepText}>Remember me</Text>
       </TouchableOpacity>
       {loginError ? (
         <View style={styles.errorBox}>
@@ -1894,7 +1894,7 @@ export default function App() {
         <View style={[styles.checkbox, keepLoggedIn && styles.checkboxActive]}>
           {keepLoggedIn ? <Text style={styles.checkboxMark}>✓</Text> : null}
         </View>
-        <Text style={styles.keepText}>Keep me logged in</Text>
+        <Text style={styles.keepText}>Remember me</Text>
       </TouchableOpacity>
       {signupError ? (
         <View style={styles.errorBox}>
