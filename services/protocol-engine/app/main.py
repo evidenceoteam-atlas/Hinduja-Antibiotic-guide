@@ -48,7 +48,7 @@ async def dashboard():
     return ApiResponse(
         message="Dashboard metadata loaded",
         data=DashboardMetadata(
-            doctor_name="Dr. Ananya Sharma",
+            doctor_name="Authenticated Doctor",
             search_placeholder="Search infection or guideline...",
             infection_sites=INFECTION_SITES,
             bottom_tabs=["Home", "Guidelines", "Duration", "Alerts", "Profile"],

@@ -13,7 +13,7 @@ register_health_routes(app, "user-service")
 USERS = [
     {
         "id": "doctor-1",
-        "full_name": "Dr. Ananya Sharma",
+        "full_name": "Authenticated Doctor",
         "role": "Doctor",
         "department": "Medicine",
     },

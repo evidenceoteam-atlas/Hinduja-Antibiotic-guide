@@ -109,7 +109,7 @@ async def me():
         message="Profile loaded",
         data=UserProfile(
             id=str(DEMO_USER_ID),
-            full_name="Dr. Ananya Sharma",
+            full_name="Authenticated Doctor",
             role=DEMO_ROLE,
             department="Medicine",
         ),

@@ -1,4 +1,5 @@
 import { StatusBar } from "expo-status-bar";
+import type { User } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -26,6 +27,7 @@ type Screen =
   | "duration"
   | "alerts"
   | "profile"
+  | "editProfile"
   | "infectionSite"
   | "setting"
   | "acquisition"
@@ -155,6 +157,11 @@ type OtpTarget = {
   value: string;
 };
 
+type DoctorProfile = {
+  name: string;
+  email: string;
+};
+
 const bottomTabs: BottomTab[] = [
   "Home",
   "Guidelines",
@@ -226,6 +233,42 @@ const friendlyAuthError = (message: string | undefined, fallback: string) => {
   return fallback;
 };
 
+const profileFromUser = (user: User | null): DoctorProfile => {
+  const metadata = user?.user_metadata ?? {};
+  const metadataName =
+    typeof metadata.full_name === "string"
+      ? metadata.full_name
+      : typeof metadata.display_name === "string"
+        ? metadata.display_name
+        : typeof metadata.name === "string"
+          ? metadata.name
+          : "";
+  const userEmail = user?.email ?? "";
+  const fallbackName = userEmail ? userEmail.split("@")[0] : "";
+
+  return {
+    name: metadataName.trim() || fallbackName,
+    email: userEmail,
+  };
+};
+
+const initialsForName = (name: string, email: string) => {
+  const label = name.trim() || email.trim();
+  const parts = label
+    .replace(/@.*/, "")
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return "DR";
+  }
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+};
+
 export default function App() {
   const dark = useColorScheme() === "dark";
   const { width, height } = useWindowDimensions();
@@ -255,6 +298,15 @@ export default function App() {
   const screen = routeStack[routeStack.length - 1];
   const [sessionReady, setSessionReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [doctorProfile, setDoctorProfile] = useState<DoctorProfile>({
+    name: "",
+    email: "",
+  });
+  const [profileNameInput, setProfileNameInput] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
   const [otpTarget, setOtpTarget] = useState<OtpTarget | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState("");
@@ -299,6 +351,16 @@ export default function App() {
   const isAuthScreen =
     screen === "login" || screen === "signup" || screen === "otp";
 
+  const applyUserProfile = (user: User | null) => {
+    const nextProfile = profileFromUser(user);
+
+    setCurrentUser(user);
+    setDoctorProfile(nextProfile);
+    setProfileNameInput(nextProfile.name);
+    setProfileError("");
+    setProfileSuccess("");
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setLoginError(
@@ -317,6 +379,7 @@ export default function App() {
 
       const hasSession = Boolean(data.session);
       setIsAuthenticated(hasSession);
+      applyUserProfile(data.session?.user ?? null);
       setRouteStack([hasSession ? "dashboard" : "login"]);
       setSessionReady(true);
       if (hasSession) {
@@ -329,6 +392,7 @@ export default function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const hasSession = Boolean(session);
       setIsAuthenticated(hasSession);
+      applyUserProfile(session?.user ?? null);
       setRouteStack([hasSession ? "dashboard" : "login"]);
       setActiveTab("Home");
       if (hasSession) {
@@ -807,6 +871,50 @@ export default function App() {
     }
   };
 
+  const updateProfile = async () => {
+    const trimmedName = profileNameInput.trim();
+
+    if (!trimmedName) {
+      setProfileError("Name is required.");
+      setProfileSuccess("");
+      return;
+    }
+
+    if (!currentUser) {
+      setProfileError("Please login again before updating your profile.");
+      setProfileSuccess("");
+      return;
+    }
+
+    setProfileLoading(true);
+    setProfileError("");
+    setProfileSuccess("");
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        full_name: trimmedName,
+        display_name: trimmedName,
+      },
+    });
+
+    setProfileLoading(false);
+
+    if (error) {
+      setProfileError(
+        friendlyAuthError(error.message, "Unable to update profile. Please try again."),
+      );
+      return;
+    }
+
+    applyUserProfile(data.user ?? currentUser);
+    setDoctorProfile((previousProfile) => ({
+      ...previousProfile,
+      name: trimmedName,
+    }));
+    setProfileNameInput(trimmedName);
+    setProfileSuccess("Profile has been updated.");
+  };
+
   const resendOtp = () => {
     if (otpTimer > 0) {
       return;
@@ -832,6 +940,9 @@ export default function App() {
     }
 
     setIsAuthenticated(false);
+    applyUserProfile(null);
+    setSourceRecommendations([]);
+    setSourceRecommendationError("");
     setOtpTarget(null);
     setAuthSuccess("Logged out successfully.");
     go("login", "reset");
@@ -1187,7 +1298,9 @@ export default function App() {
         </View>
         <View style={styles.headerTextBlock}>
           <Text style={styles.headerTitle}>Hinduja Antibiotic Guide</Text>
-          <Text style={styles.headerDoctor}>Dr. Ananya Sharma</Text>
+          <Text style={styles.headerDoctor}>
+            {doctorProfile.name || doctorProfile.email || "Authenticated doctor"}
+          </Text>
         </View>
         <TouchableOpacity activeOpacity={0.8} onPress={() => goTab("Alerts")}>
           <Text style={styles.bell}>⌂</Text>
@@ -1410,16 +1523,31 @@ export default function App() {
       "Profile",
       <View>
         <View style={styles.profileBadge}>
-          <Text style={styles.profileInitial}>AS</Text>
+          <Text style={styles.profileInitial}>
+            {initialsForName(doctorProfile.name, doctorProfile.email)}
+          </Text>
         </View>
-        <Text style={styles.profileName}>Dr. Ananya Sharma</Text>
-        <Text style={styles.profileMeta}>Infectious Disease Specialist</Text>
+        <Text style={styles.profileName}>
+          {doctorProfile.name || "Name not set"}
+        </Text>
+        <Text style={styles.profileMeta}>
+          {doctorProfile.email || "Email not available"}
+        </Text>
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Access</Text>
           <Text style={styles.infoCardBody}>
             Authorized doctor account · Offline enabled · Activity audited
           </Text>
         </View>
+        <PrimaryButton
+          label="Edit Profile"
+          onPress={() => {
+            setProfileNameInput(doctorProfile.name);
+            setProfileError("");
+            setProfileSuccess("");
+            go("editProfile");
+          }}
+        />
         <PrimaryButton
           label="Logout"
           onPress={() => {
@@ -1429,6 +1557,71 @@ export default function App() {
           red
         />
       </View>,
+    );
+
+  const EditProfile = () =>
+    appShell(
+      <View>
+        <View style={styles.editProfileCard}>
+          <Text style={styles.editProfileTitle}>Edit Profile</Text>
+          {profileSuccess ? (
+            <View style={styles.successBox}>
+              <Text style={styles.successText}>{profileSuccess}</Text>
+            </View>
+          ) : null}
+          {profileError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{profileError}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.fieldLabel}>Name *</Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputIcon}>○</Text>
+            <TextInput
+              value={profileNameInput}
+              onChangeText={(value) => {
+                setProfileNameInput(value);
+                setProfileError("");
+                setProfileSuccess("");
+              }}
+              placeholder="Enter your name"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="words"
+              autoCorrect={false}
+              textContentType="name"
+              autoComplete="name"
+              style={[styles.textInput, webTextInputReset]}
+            />
+          </View>
+          <Text style={styles.fieldLabel}>Email *</Text>
+          <View style={[styles.inputWrap, styles.readOnlyInputWrap]}>
+            <Text style={styles.inputIcon}>✉</Text>
+            <TextInput
+              value={doctorProfile.email}
+              editable={false}
+              selectTextOnFocus={false}
+              placeholder="Authenticated email"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              style={[styles.textInput, styles.readOnlyTextInput, webTextInputReset]}
+            />
+          </View>
+          <Text style={styles.readOnlyHint}>
+            Email changes require a verified Supabase email update flow.
+          </Text>
+          <PrimaryButton
+            label="Update Profile"
+            onPress={() => {
+              void updateProfile();
+            }}
+            loading={profileLoading}
+          />
+        </View>
+      </View>,
+      "Edit Profile",
+      false,
     );
 
   const InfectionSite = () =>
@@ -1995,6 +2188,8 @@ export default function App() {
         return Alerts();
       case "profile":
         return Profile();
+      case "editProfile":
+        return EditProfile();
       case "infectionSite":
         return InfectionSite();
       case "setting":
@@ -2446,6 +2641,49 @@ const makeStyles = (p: Palette) =>
       fontWeight: "700",
       textAlign: "center",
       marginBottom: 18,
+    },
+    editProfileCard: {
+      backgroundColor: p.card,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: p.border,
+      padding: 18,
+      shadowColor: p.shadow,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.08,
+      shadowRadius: 14,
+      elevation: 2,
+    },
+    editProfileTitle: {
+      color: p.blue2,
+      fontSize: 22,
+      lineHeight: 28,
+      fontWeight: "900",
+      marginBottom: 14,
+      textAlign: "center",
+    },
+    fieldLabel: {
+      color: p.text,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "900",
+      marginBottom: 8,
+      marginTop: 10,
+    },
+    readOnlyInputWrap: {
+      backgroundColor: "#F1F6FC",
+      borderColor: "#CADBEC",
+    },
+    readOnlyTextInput: {
+      color: p.muted,
+    },
+    readOnlyHint: {
+      color: p.muted,
+      fontSize: 11,
+      lineHeight: 16,
+      fontWeight: "700",
+      marginTop: -6,
+      marginBottom: 14,
     },
     footerRow: {
       flexDirection: "row",
