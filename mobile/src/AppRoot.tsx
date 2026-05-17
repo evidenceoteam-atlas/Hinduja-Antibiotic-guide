@@ -303,6 +303,7 @@ const matchStopWords = new Set([
   "protocols",
   "therapy",
   "treatment",
+  "tract",
 ]);
 
 const splitMatchTokens = (value: string | null | undefined) =>
@@ -315,8 +316,135 @@ const hasSharedToken = (left: string, right: string) => {
   return splitMatchTokens(right).some((token) => leftTokens.has(token));
 };
 
+type InfectionCategory =
+  | "BSI"
+  | "UTI"
+  | "RTI"
+  | "CNS"
+  | "SSTI"
+  | "IAI"
+  | "FN";
+
+const infectionCategorySynonyms: Record<InfectionCategory, string[]> = {
+  BSI: [
+    "BSI",
+    "Blood Stream Infection",
+    "Bloodstream Infection",
+    "Blood stream infection bsi",
+    "Bacteremia",
+    "Bacteraemia",
+    "Sepsis",
+  ],
+  UTI: ["UTI", "Urinary Tract Infection", "Urinary infection", "Urosepsis"],
+  RTI: [
+    "RTI",
+    "Respiratory Tract Infection",
+    "Respiratory infection",
+    "Pneumonia",
+    "CAP",
+    "HCAP",
+    "VAP",
+    "HAP",
+    "Lung abscess",
+  ],
+  CNS: [
+    "CNS",
+    "CNS Infection",
+    "Central Nervous System Infection",
+    "Meningitis",
+    "Encephalitis",
+    "Brain abscess",
+  ],
+  SSTI: [
+    "SSTI",
+    "Skin and Soft Tissue Infection",
+    "Skin & Soft Tissue Infection",
+    "Skin Soft Tissue Infection",
+    "Cellulitis",
+    "Pyomyositis",
+    "Necrotizing fasciitis",
+    "Diabetic foot infection",
+  ],
+  IAI: [
+    "IAI",
+    "Intra-abdominal",
+    "Intra abdominal",
+    "Intra-abdominal Infection",
+    "Intra abdominal infection",
+    "Intra-abdominal sepsis",
+    "Intra abdominal sepsis",
+    "Liver abscess",
+  ],
+  FN: [
+    "FN",
+    "Febrile Neutropenia",
+    "Febrile neutropenic",
+    "Neutropenic fever",
+  ],
+};
+
+const synonymMatchesText = (synonym: string, normalizedText: string) => {
+  const normalizedSynonym = normalizeMatchText(synonym);
+
+  return (
+    normalizedSynonym.length > 0 &&
+    (normalizedText.includes(normalizedSynonym) ||
+      normalizedSynonym.includes(normalizedText) ||
+      hasSharedToken(normalizedSynonym, normalizedText))
+  );
+};
+
+const canonicalInfectionCategory = (
+  value: string | null | undefined,
+): InfectionCategory | null => {
+  const normalizedValue = normalizeMatchText(value);
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const exactCode = normalizedValue.toUpperCase() as InfectionCategory;
+  if (Object.keys(infectionCategorySynonyms).includes(exactCode)) {
+    return exactCode;
+  }
+
+  const orderedCategories: InfectionCategory[] = [
+    "BSI",
+    "UTI",
+    "RTI",
+    "CNS",
+    "SSTI",
+    "IAI",
+    "FN",
+  ];
+
+  return (
+    orderedCategories.find((category) =>
+      infectionCategorySynonyms[category].some((synonym) =>
+        synonymMatchesText(synonym, normalizedValue),
+      ),
+    ) ?? null
+  );
+};
+
 const sourceValue = (value: string | null | undefined) =>
   value?.trim() || notSpecifiedInSource;
+
+const distinctValues = (
+  rows: SourceRecommendation[],
+  field: keyof SourceRecommendation,
+) =>
+  Array.from(
+    new Set(
+      rows
+        .map((row) => row[field])
+        .filter(
+          (value): value is string =>
+            typeof value === "string" && value.trim().length > 0,
+        )
+        .map((value) => value.trim()),
+    ),
+  ).sort((left, right) => left.localeCompare(right));
 
 export default function App() {
   const dark = useColorScheme() === "dark";
@@ -578,8 +706,23 @@ export default function App() {
   };
 
   const infectionMatchesSelection = (item: SourceRecommendation) => {
+    const sourceCategory =
+      canonicalInfectionCategory(item.infection_site) ??
+      canonicalInfectionCategory(item.syndrome) ??
+      canonicalInfectionCategory(item.section_heading) ??
+      canonicalInfectionCategory(item.source_quote);
+    const selectedCategory =
+      canonicalInfectionCategory(selectedSite.code) ??
+      canonicalInfectionCategory(selectedSite.label);
+
+    if (sourceCategory && selectedCategory) {
+      return sourceCategory === selectedCategory;
+    }
+
     const sourceInfection = normalizeMatchText(
-      `${item.infection_site ?? ""} ${item.syndrome ?? ""}`,
+      `${item.infection_site ?? ""} ${item.syndrome ?? ""} ${
+        item.section_heading ?? ""
+      } ${item.source_quote ?? ""}`,
     );
 
     if (!sourceInfection) {
@@ -617,6 +760,21 @@ export default function App() {
 
     return filteredRows.length > 0 ? filteredRows : rows;
   };
+
+  const recommendationDebugValues = useMemo(
+    () => ({
+      syndrome: distinctValues(sourceRecommendations, "syndrome"),
+      infection_site: distinctValues(sourceRecommendations, "infection_site"),
+      setting: distinctValues(sourceRecommendations, "setting"),
+      acquisition: distinctValues(sourceRecommendations, "acquisition"),
+      risk_type: distinctValues(sourceRecommendations, "risk_type"),
+      severity_category: distinctValues(
+        sourceRecommendations,
+        "severity_category",
+      ),
+    }),
+    [sourceRecommendations],
+  );
 
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -784,20 +942,37 @@ export default function App() {
       return;
     }
 
+    const approvedRows = (data ?? []) as SourceRecommendation[];
+
     console.log(
-      `[clinical recommendations] Supabase rows returned: ${(data ?? []).length}`,
+      `[clinical recommendations] Supabase rows returned: ${approvedRows.length}`,
     );
-    setSourceRecommendations((data ?? []) as SourceRecommendation[]);
+    console.log("[clinical recommendations] distinct database values", {
+      syndrome: distinctValues(approvedRows, "syndrome"),
+      infection_site: distinctValues(approvedRows, "infection_site"),
+      setting: distinctValues(approvedRows, "setting"),
+      acquisition: distinctValues(approvedRows, "acquisition"),
+      risk_type: distinctValues(approvedRows, "risk_type"),
+      severity_category: distinctValues(approvedRows, "severity_category"),
+    });
+    setSourceRecommendations(approvedRows);
   };
 
   const selectedSourceRecommendations = useMemo(() => {
+    const selectedInfectionText = `${selectedSite.code} ${selectedSite.label}`;
+    const selectedCategory =
+      canonicalInfectionCategory(selectedSite.code) ??
+      canonicalInfectionCategory(selectedSite.label);
+
     console.log("[clinical recommendations] selected filters", {
       infectionSiteCode: selectedSite.code,
       infectionSiteLabel: selectedSite.label,
+      normalizedInfectionCategory: selectedCategory,
       setting,
       acquisition,
       riskType,
       approvedRowsLoaded: sourceRecommendations.length,
+      distinctDatabaseValues: recommendationDebugValues,
     });
 
     const infectionRows = sourceRecommendations.filter(infectionMatchesSelection);
@@ -805,6 +980,19 @@ export default function App() {
     console.log(
       `[clinical recommendations] infection/syndrome base match returned ${infectionRows.length} rows`,
     );
+
+    if (infectionRows.length === 0) {
+      console.log(
+        "[clinical recommendations] zero infection matches; no approved row matched selected infection synonyms",
+        {
+          selectedInfectionText,
+          selectedCategory,
+          availableInfectionSites: recommendationDebugValues.infection_site,
+          availableSyndromes: recommendationDebugValues.syndrome,
+        },
+      );
+      return [];
+    }
 
     let matchedRows = infectionRows;
 
@@ -823,7 +1011,14 @@ export default function App() {
     );
 
     return matchedRows;
-  }, [acquisition, riskType, selectedSite, setting, sourceRecommendations]);
+  }, [
+    acquisition,
+    recommendationDebugValues,
+    riskType,
+    selectedSite,
+    setting,
+    sourceRecommendations,
+  ]);
 
   const failClosedMessage =
     "No approved recommendation available. Refer institutional guideline / ID specialist.";
