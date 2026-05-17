@@ -1416,21 +1416,9 @@ export default function App() {
     setAuthSuccess("");
     setOtpTimer(otpResendSeconds);
 
-    const signInOptions: {
-      shouldCreateUser: true;
-      data?: Record<string, string>;
-    } = { shouldCreateUser: true };
-
-    if (target.name?.trim()) {
-      signInOptions.data = {
-        full_name: target.name.trim(),
-        display_name: target.name.trim(),
-      };
-    }
-
     const { error } = await supabase.auth.signInWithOtp({
       email: target.value,
-      options: signInOptions,
+      options: { shouldCreateUser: true },
     });
 
     setAuthLoading(false);
@@ -1545,7 +1533,7 @@ export default function App() {
     setSignupError("");
     setAuthSuccess("");
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       email: otpTarget.value,
       token: otp,
       type: "email",
@@ -1556,6 +1544,20 @@ export default function App() {
     if (error) {
       setLoginError("Invalid OTP. Please try again.");
       return;
+    }
+
+    const verifiedUser = data.user;
+    const verifiedName = otpTarget.name?.trim();
+
+    if (verifiedUser && verifiedName) {
+      const { data: profileData } = await supabase.auth.updateUser({
+        data: {
+          full_name: verifiedName,
+          display_name: verifiedName,
+        },
+      });
+
+      applyUserProfile(profileData.user ?? verifiedUser);
     }
   };
 
@@ -1952,7 +1954,7 @@ export default function App() {
       </View>
       <Text style={styles.otpTitle}>Verify OTP</Text>
       <Text style={styles.otpSubtitle}>
-        Enter the 6 digit OTP sent to{"\n"}
+        Enter the 6-digit code sent to your email.{"\n"}
         {otpTarget?.value || "your registered contact"}
       </Text>
       <View style={styles.otpRow}>
