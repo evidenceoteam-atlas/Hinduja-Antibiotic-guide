@@ -223,8 +223,6 @@ const otpLength = 6;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
 const otpPattern = new RegExp(`^\\d{${otpLength}}$`);
-const notSpecifiedInSource = "Not specified";
-
 const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
 const otpCooldownText = (remainingSeconds: number) =>
   `Resend available in ${remainingSeconds}s`;
@@ -427,9 +425,6 @@ const canonicalInfectionCategory = (
   );
 };
 
-const sourceValue = (value: string | null | undefined) =>
-  value?.trim() || notSpecifiedInSource;
-
 const meaninglessDrugFragments = new Set([
   "therapy",
   "dose",
@@ -449,7 +444,7 @@ const meaninglessDrugFragments = new Set([
 ]);
 
 const meaningfulDrugPattern =
-  /(amoxicillin|clavulanate|cef|azithro|doxy|mero|imipenem|doripenem|piperacillin|tazobactam|vancomycin|teicoplanin|linezolid|daptomycin|aztreonam|metronidazole|clindamycin|colistin|polymyxin|fosfomycin|tigecycline|ampicillin|sulbactam|gentamicin|penicillin|cefazolin|ceftazidime|avibactam|cloxacillin|flucloxacillin|acyclovir|dexamethasone|caspofungin|micafungin|fluconazole|voriconazole|ertapenem|amikacin|levofloxacin|ciprofloxacin|trimethoprim|sulfamethoxazole|nitrofurantoin|carbapenem|glycopeptide)/i;
+  /(amoxicillin|amoxyclav|co-amox|coamox|clavulanate|cef|azithro|doxy|mero|imipenem|doripenem|piperacillin|pip|tazobactam|tazo|vancomycin|teicoplanin|linezolid|daptomycin|aztreonam|metronidazole|clindamycin|colistin|polymyxin|fosfomycin|tigecycline|ampicillin|sulbactam|gentamicin|penicillin|cefazolin|ceftazidime|avibactam|cloxacillin|flucloxacillin|acyclovir|dexamethasone|caspofungin|micafungin|fluconazole|voriconazole|ertapenem|amikacin|levofloxacin|ciprofloxacin|trimethoprim|sulfamethoxazole|co-trimoxazole|cotrimoxazole|tmp-smx|nitrofurantoin|carbapenem|glycopeptide)/i;
 
 const hasMeaningfulTreatment = (item: SourceRecommendation) => {
   const drug = item.drug?.trim();
@@ -479,7 +474,7 @@ const hasMeaningfulTreatment = (item: SourceRecommendation) => {
     return false;
   }
 
-  return meaningfulDrugPattern.test(drug) || drug.includes("/") || drug.includes("-");
+  return meaningfulDrugPattern.test(drug);
 };
 
 const hasMeaningfulText = (value: string | null | undefined) => {
@@ -491,6 +486,12 @@ const hasMeaningfulText = (value: string | null | undefined) => {
       !["not specified", "none", "nil", "na"].includes(normalized),
   );
 };
+
+const hasDisplayValue = (value: string | null | undefined) =>
+  Boolean(value?.trim());
+
+const clinicalFieldScore = (value: string | null | undefined) =>
+  hasDisplayValue(value) ? 1 : 0;
 
 const recommendationIdentity = (item: SourceRecommendation) =>
   [
@@ -1016,7 +1017,30 @@ export default function App() {
       fieldMatches(item.risk_type, riskType),
     );
 
-    const cleanRows = cleanRecommendationRows(matchedRows).slice(0, 8);
+    const recommendationScore = (item: SourceRecommendation) => {
+      const scenarioScore =
+        (item.setting && fieldMatches(item.setting, setting) ? 3 : 0) +
+        (item.acquisition && fieldMatches(item.acquisition, acquisition)
+          ? 3
+          : 0) +
+        (item.risk_type && fieldMatches(item.risk_type, riskType) ? 4 : 0);
+      const completenessScore =
+        clinicalFieldScore(item.dose) * 3 +
+        clinicalFieldScore(item.route) * 2 +
+        clinicalFieldScore(item.frequency) * 2 +
+        clinicalFieldScore(item.duration);
+      const safetyScore =
+        (hasMeaningfulText(item.renal_adjustment) ? 1 : 0) +
+        (hasMeaningfulText(item.allergy_warning) ? 1 : 0) +
+        (hasMeaningfulText(item.stewardship_note) ? 1 : 0) +
+        (hasMeaningfulText(item.id_consult_trigger) ? 1 : 0);
+
+      return scenarioScore + completenessScore + safetyScore;
+    };
+
+    const cleanRows = cleanRecommendationRows(matchedRows)
+      .sort((left, right) => recommendationScore(right) - recommendationScore(left))
+      .slice(0, 6);
 
     return cleanRows;
   }, [
@@ -1040,6 +1064,14 @@ export default function App() {
   );
   const meaningfulConsultRecommendations = selectedSourceRecommendations.filter(
     (item) => hasMeaningfulText(item.id_consult_trigger),
+  );
+  const recommendedTreatmentRecommendations = selectedSourceRecommendations.slice(
+    0,
+    Math.min(3, selectedSourceRecommendations.length),
+  );
+  const alternativeTreatmentRecommendations = selectedSourceRecommendations.slice(
+    recommendedTreatmentRecommendations.length,
+    6,
   );
   const clearAuthMessages = () => {
     setLoginError("");
@@ -1918,12 +1950,20 @@ export default function App() {
   }: {
     label: string;
     value: string | null | undefined;
-  }) => (
-    <View style={styles.recommendationField}>
-      <Text style={styles.recommendationFieldLabel}>{label}</Text>
-      <Text style={styles.recommendationFieldValue}>{sourceValue(value)}</Text>
-    </View>
-  );
+  }) => {
+    const displayValue = value?.trim();
+
+    if (!displayValue) {
+      return null;
+    }
+
+    return (
+      <View style={styles.recommendationField}>
+        <Text style={styles.recommendationFieldLabel}>{label}</Text>
+        <Text style={styles.recommendationFieldValue}>{displayValue}</Text>
+      </View>
+    );
+  };
 
   const SourceRecommendationCard = ({
     item,
@@ -1935,7 +1975,7 @@ export default function App() {
     <View style={styles.therapyCard}>
       <Text style={styles.rank}>{index + 1}</Text>
       <View style={styles.therapyBody}>
-        <Text style={styles.therapyName}>{sourceValue(item.drug)}</Text>
+        <Text style={styles.therapyName}>{item.drug?.trim()}</Text>
         <View style={styles.recommendationGrid}>
           <RecommendationField label="Dose" value={item.dose} />
           <RecommendationField label="Route" value={item.route} />
@@ -1977,12 +2017,12 @@ export default function App() {
               {sourceRecommendationError || failClosedMessage}
             </Text>
           ) : (
-            selectedSourceRecommendations.map((item) => (
+            selectedSourceRecommendations
+              .filter((item) => hasDisplayValue(item.duration))
+              .map((item) => (
               <View key={item.id} style={styles.durationRow}>
-                <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
-                <Text style={styles.infoCardBody}>
-                  {sourceValue(item.duration)}
-                </Text>
+                <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
+                <Text style={styles.infoCardBody}>{item.duration?.trim()}</Text>
               </View>
             ))
           )}
@@ -2016,20 +2056,20 @@ export default function App() {
           ) : (
             meaningfulWarningRecommendations.map((item) => (
               <View key={item.id} style={styles.durationRow}>
-                <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
+                <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
                 {hasMeaningfulText(item.stewardship_note) ? (
                   <Text style={styles.infoCardBody}>
-                    Stewardship: {sourceValue(item.stewardship_note)}
+                    Stewardship: {item.stewardship_note?.trim()}
                   </Text>
                 ) : null}
                 {hasMeaningfulText(item.allergy_warning) ? (
                   <Text style={styles.infoCardBody}>
-                    Allergy: {sourceValue(item.allergy_warning)}
+                    Allergy: {item.allergy_warning?.trim()}
                   </Text>
                 ) : null}
                 {hasMeaningfulText(item.renal_adjustment) ? (
                   <Text style={styles.infoCardBody}>
-                    Renal: {sourceValue(item.renal_adjustment)}
+                    Renal: {item.renal_adjustment?.trim()}
                   </Text>
                 ) : null}
               </View>
@@ -2351,7 +2391,7 @@ export default function App() {
             {riskType} - {riskLabel}
           </Text>
         </View>
-        <Text style={styles.resultSection}>Approved Treatment Protocol</Text>
+        <Text style={styles.resultSection}>Recommended Treatment Protocol</Text>
         {sourceRecommendationLoading ? (
           <View style={styles.noteBlue}>
             <Text style={styles.noteText}>Loading approved treatment data...</Text>
@@ -2363,9 +2403,23 @@ export default function App() {
             </Text>
           </View>
         ) : (
-          selectedSourceRecommendations.map((item, index) => (
-            <SourceRecommendationCard key={item.id} item={item} index={index} />
-          ))
+          <View>
+            {recommendedTreatmentRecommendations.map((item, index) => (
+              <SourceRecommendationCard key={item.id} item={item} index={index} />
+            ))}
+            {alternativeTreatmentRecommendations.length > 0 ? (
+              <View style={styles.alternativeSection}>
+                <Text style={styles.resultSection}>Alternative Options</Text>
+                {alternativeTreatmentRecommendations.map((item, index) => (
+                  <SourceRecommendationCard
+                    key={item.id}
+                    item={item}
+                    index={index}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
         )}
         <PrimaryButton
           label="View Details"
@@ -2402,7 +2456,7 @@ export default function App() {
         </View>
         {protocolDetailTab === "Notes" && (
           <View>
-            <Text style={styles.detailsTitle}>Treatment Summary</Text>
+            <Text style={styles.detailsTitle}>Recommended Treatment Protocol</Text>
             {selectedSourceRecommendations.length === 0 ? (
               <View style={[styles.noteBlue, styles.actionAlert]}>
                 <Text style={[styles.noteText, styles.actionBodyRed]}>
@@ -2410,9 +2464,27 @@ export default function App() {
                 </Text>
               </View>
             ) : (
-              selectedSourceRecommendations.map((item, index) => (
-                <SourceRecommendationCard key={item.id} item={item} index={index} />
-              ))
+              <View>
+                {recommendedTreatmentRecommendations.map((item, index) => (
+                  <SourceRecommendationCard
+                    key={item.id}
+                    item={item}
+                    index={index}
+                  />
+                ))}
+                {alternativeTreatmentRecommendations.length > 0 ? (
+                  <View style={styles.alternativeSection}>
+                    <Text style={styles.resultSection}>Alternative Options</Text>
+                    {alternativeTreatmentRecommendations.map((item, index) => (
+                      <SourceRecommendationCard
+                        key={item.id}
+                        item={item}
+                        index={index}
+                      />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
             )}
           </View>
         )}
@@ -2449,7 +2521,7 @@ export default function App() {
 
                 return (
                   <View key={item.id} style={[styles.noteBlue, styles.actionAlert]}>
-                    <Text style={styles.therapyName}>{sourceValue(item.drug)}</Text>
+                    <Text style={styles.therapyName}>{item.drug?.trim()}</Text>
                     {warnings.map(([label, value]) => (
                       <RecommendationField
                         key={`${item.id}-${label}`}
@@ -2490,7 +2562,7 @@ export default function App() {
                   >
                     <Text style={styles.listIcon}>□</Text>
                     <Text style={styles.listText}>
-                      {sourceValue(item.id_consult_trigger)}
+                      {item.id_consult_trigger?.trim()}
                     </Text>
                     <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
@@ -2689,20 +2761,20 @@ export default function App() {
               )
               .map((item) => (
               <View key={item.id} style={styles.durationRow}>
-                <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
+                <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
                 {hasMeaningfulText(item.stewardship_note) ? (
                   <Text style={styles.infoCardBody}>
-                    Stewardship: {sourceValue(item.stewardship_note)}
+                    Stewardship: {item.stewardship_note?.trim()}
                   </Text>
                 ) : null}
                 {hasMeaningfulText(item.id_consult_trigger) ? (
                   <Text style={styles.infoCardBody}>
-                    ID consult: {sourceValue(item.id_consult_trigger)}
+                    ID consult: {item.id_consult_trigger?.trim()}
                   </Text>
                 ) : null}
                 {hasMeaningfulText(item.contraindication) ? (
                   <Text style={styles.infoCardBody}>
-                    Contraindication: {sourceValue(item.contraindication)}
+                    Contraindication: {item.contraindication?.trim()}
                   </Text>
                 ) : null}
               </View>
@@ -3785,6 +3857,9 @@ const makeStyles = (p: Palette) =>
       lineHeight: 19,
       fontWeight: "900",
       marginBottom: 8,
+    },
+    alternativeSection: {
+      marginTop: 8,
     },
     therapyCard: {
       minHeight: 58,
