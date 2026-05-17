@@ -154,6 +154,12 @@ const questions = [
 
 type BottomTab = "Home" | "Guidelines" | "Duration" | "Alerts" | "Profile";
 type ProtocolDetailTab = "Notes" | "Warnings" | "ID Consult";
+type DrawerMenuItem = {
+  label: string;
+  icon: ComponentProps<typeof Feather>["name"];
+  action: () => void;
+  danger?: boolean;
+};
 type OtpTarget = {
   value: string;
 };
@@ -353,6 +359,7 @@ export default function App() {
   const [otpTarget, setOtpTarget] = useState<OtpTarget | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -715,8 +722,24 @@ export default function App() {
   };
 
   const goTab = (tab: BottomTab) => {
+    setDrawerOpen(false);
     setActiveTab(tab);
     go(tabRoutes[tab]);
+  };
+
+  const goHome = () => {
+    setDrawerOpen(false);
+    setActiveTab("Home");
+    go("dashboard", "reset");
+  };
+
+  const goEditProfile = () => {
+    setDrawerOpen(false);
+    setActiveTab("Profile");
+    setProfileNameInput(doctorProfile.name);
+    setProfileError("");
+    setProfileSuccess("");
+    go("editProfile");
   };
 
   const openSearchResult = (result: SearchResult) => {
@@ -1028,6 +1051,7 @@ export default function App() {
   };
 
   const logout = async () => {
+    setDrawerOpen(false);
     setAuthLoading(true);
     const { error } = await supabase.auth.signOut();
     setAuthLoading(false);
@@ -1065,11 +1089,15 @@ export default function App() {
           <Text style={styles.topIconText}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.topTitle}>{title}</Text>
-        <View style={styles.topIcon}>
-          <Text style={styles.topIconText}>
-            {screen === "protocolResult" ? "□" : ""}
-          </Text>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.84}
+          onPress={goHome}
+          style={styles.topIcon}
+          accessibilityRole="button"
+          accessibilityLabel="Go to home"
+        >
+          <Feather name="home" size={21} strokeWidth={2.5} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
       {progress && <StepDots />}
       <ScrollView
@@ -1388,22 +1416,127 @@ export default function App() {
     </View>
   );
 
+  const drawerMenuItems: DrawerMenuItem[] = [
+    { label: "Home", icon: "home", action: goHome },
+    { label: "Guidelines", icon: "book-open", action: () => goTab("Guidelines") },
+    { label: "Duration", icon: "clock", action: () => goTab("Duration") },
+    { label: "Alerts", icon: "bell", action: () => goTab("Alerts") },
+    { label: "Profile", icon: "user", action: () => goTab("Profile") },
+    { label: "Edit Profile", icon: "edit-3", action: goEditProfile },
+    {
+      label: "Logout",
+      icon: "log-out",
+      action: () => {
+        void logout();
+      },
+      danger: true,
+    },
+  ];
+
+  const AppHeader = () => (
+    <View style={styles.dashboardHeader}>
+      <TouchableOpacity
+        activeOpacity={0.84}
+        onPress={() => setDrawerOpen(true)}
+        style={styles.headerButton}
+        accessibilityRole="button"
+        accessibilityLabel="Open navigation menu"
+      >
+        <Feather name="menu" size={22} strokeWidth={2.6} color="#FFFFFF" />
+      </TouchableOpacity>
+      <View style={styles.headerTextBlock}>
+        <Text style={styles.headerTitle}>Hinduja Antibiotic Guide</Text>
+        <Text style={styles.headerDoctor}>
+          {doctorProfile.name || doctorProfile.email || "Authenticated doctor"}
+        </Text>
+      </View>
+      <TouchableOpacity
+        activeOpacity={0.84}
+        onPress={goHome}
+        style={styles.headerButton}
+        accessibilityRole="button"
+        accessibilityLabel="Go to home"
+      >
+        <Feather name="home" size={21} strokeWidth={2.5} color="#FFFFFF" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const SideDrawer = () =>
+    drawerOpen ? (
+      <View style={styles.drawerLayer} pointerEvents="box-none">
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setDrawerOpen(false)}
+          style={styles.drawerBackdrop}
+          accessibilityRole="button"
+          accessibilityLabel="Close navigation menu"
+        />
+        <View style={styles.drawerPanel}>
+          <View style={styles.drawerHeader}>
+            <View style={styles.drawerBadge}>
+              <Text style={styles.drawerBadgeText}>
+                {initialsForName(doctorProfile.name, doctorProfile.email)}
+              </Text>
+            </View>
+            <View style={styles.drawerIdentity}>
+              <Text style={styles.drawerTitle}>Clinical Menu</Text>
+              <Text style={styles.drawerName}>
+                {doctorProfile.name || "Authenticated doctor"}
+              </Text>
+              <Text style={styles.drawerEmail}>
+                {doctorProfile.email || "Email not available"}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.drawerItems}>
+            {drawerMenuItems.map((item) => (
+              <TouchableOpacity
+                key={item.label}
+                activeOpacity={0.86}
+                onPress={item.action}
+                style={[
+                  styles.drawerItem,
+                  item.danger && styles.drawerItemDanger,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+              >
+                <Feather
+                  name={item.icon}
+                  size={19}
+                  strokeWidth={2.4}
+                  color={item.danger ? palette.red : palette.blue}
+                />
+                <Text
+                  style={[
+                    styles.drawerItemText,
+                    item.danger && styles.drawerItemTextDanger,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+                <Feather
+                  name="chevron-right"
+                  size={18}
+                  strokeWidth={2.2}
+                  color={item.danger ? palette.red : palette.muted}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.drawerFooter}>
+            <Text style={styles.drawerFooterText}>
+              Source-linked recommendations only. Clinical judgment required.
+            </Text>
+          </View>
+        </View>
+      </View>
+    ) : null;
+
   const Dashboard = () => (
     <View style={styles.dashboardScreen}>
-      <View style={styles.dashboardHeader}>
-        <View style={styles.menuBox}>
-          <Text style={styles.menuText}>≡</Text>
-        </View>
-        <View style={styles.headerTextBlock}>
-          <Text style={styles.headerTitle}>Hinduja Antibiotic Guide</Text>
-          <Text style={styles.headerDoctor}>
-            {doctorProfile.name || doctorProfile.email || "Authenticated doctor"}
-          </Text>
-        </View>
-        <TouchableOpacity activeOpacity={0.8} onPress={() => goTab("Alerts")}>
-          <Text style={styles.bell}>⌂</Text>
-        </TouchableOpacity>
-      </View>
+      <AppHeader />
       <ScrollView
         contentContainerStyle={styles.dashboardBody}
         showsVerticalScrollIndicator={false}
@@ -1481,6 +1614,7 @@ export default function App() {
         </View>
       </ScrollView>
       <BottomTabs />
+      <SideDrawer />
     </View>
   );
 
@@ -1528,27 +1662,16 @@ export default function App() {
 
   const TabPage = (title: string, children: ReactNode) => (
     <View style={styles.dashboardScreen}>
-      <View style={styles.dashboardHeader}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={back}
-          style={styles.menuBox}
-        >
-          <Text style={styles.menuText}>‹</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTextBlock}>
-          <Text style={styles.headerTitle}>{title}</Text>
-          <Text style={styles.headerDoctor}>Hinduja Antibiotic Guide</Text>
-        </View>
-        <View style={styles.menuBox} />
-      </View>
+      <AppHeader />
       <ScrollView
         contentContainerStyle={styles.dashboardBody}
         showsVerticalScrollIndicator={false}
       >
+        <Text style={styles.tabPageTitle}>{title}</Text>
         {children}
       </ScrollView>
       <BottomTabs />
+      <SideDrawer />
     </View>
   );
 
@@ -2890,14 +3013,15 @@ const makeStyles = (p: Palette) =>
       flexDirection: "row",
       alignItems: "center",
     },
-    menuBox: {
-      width: 34,
-      height: 34,
+    headerButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: "rgba(255,255,255,0.14)",
       alignItems: "center",
       justifyContent: "center",
     },
-    menuText: { color: "#FFFFFF", fontSize: 24, fontWeight: "900" },
-    headerTextBlock: { flex: 1 },
+    headerTextBlock: { flex: 1, paddingHorizontal: 12 },
     headerTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
     headerDoctor: {
       color: "#D7E8FF",
@@ -2905,7 +3029,126 @@ const makeStyles = (p: Palette) =>
       fontWeight: "700",
       marginTop: 2,
     },
-    bell: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
+    tabPageTitle: {
+      color: p.blue2,
+      fontSize: 18,
+      lineHeight: 24,
+      fontWeight: "900",
+      marginBottom: 14,
+    },
+    drawerLayer: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      zIndex: 50,
+    },
+    drawerBackdrop: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: "rgba(11, 40, 80, 0.36)",
+    },
+    drawerPanel: {
+      width: "82%",
+      maxWidth: 338,
+      minHeight: "100%",
+      backgroundColor: p.card,
+      borderTopRightRadius: 18,
+      borderBottomRightRadius: 18,
+      paddingTop: 26,
+      paddingHorizontal: 16,
+      paddingBottom: 22,
+      shadowColor: p.shadow,
+      shadowOffset: { width: 10, height: 0 },
+      shadowOpacity: 0.2,
+      shadowRadius: 22,
+      elevation: 22,
+    },
+    drawerHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: p.border,
+      marginBottom: 14,
+    },
+    drawerBadge: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      backgroundColor: p.blue,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    drawerBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 17,
+      lineHeight: 22,
+      fontWeight: "900",
+    },
+    drawerIdentity: { flex: 1 },
+    drawerTitle: {
+      color: p.blue2,
+      fontSize: 15,
+      lineHeight: 20,
+      fontWeight: "900",
+    },
+    drawerName: {
+      color: p.text,
+      fontSize: 12,
+      lineHeight: 17,
+      fontWeight: "800",
+      marginTop: 2,
+    },
+    drawerEmail: {
+      color: p.muted,
+      fontSize: 10,
+      lineHeight: 15,
+      fontWeight: "700",
+      marginTop: 1,
+    },
+    drawerItems: { gap: 8 },
+    drawerItem: {
+      minHeight: 48,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: "#F8FBFF",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 11,
+      paddingHorizontal: 12,
+    },
+    drawerItemDanger: {
+      backgroundColor: "#FFF6F6",
+      borderColor: "#F5C4C4",
+      marginTop: 8,
+    },
+    drawerItemText: {
+      flex: 1,
+      color: p.text,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "900",
+    },
+    drawerItemTextDanger: { color: p.red },
+    drawerFooter: {
+      marginTop: 16,
+      borderRadius: 8,
+      backgroundColor: p.soft,
+      padding: 12,
+    },
+    drawerFooterText: {
+      color: p.muted,
+      fontSize: 11,
+      lineHeight: 16,
+      fontWeight: "700",
+    },
     dashboardBody: { padding: 14, paddingBottom: 112 },
     searchBox: {
       height: 52,
