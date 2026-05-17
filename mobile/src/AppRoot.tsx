@@ -17,9 +17,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { isSupabaseConfigured, supabase, supabaseUrl } from "./supabase";
-
-declare const __DEV__: boolean | undefined;
+import { isSupabaseConfigured, supabase } from "./supabase";
 
 type Screen =
   | "login"
@@ -94,15 +92,6 @@ type SourceRecommendation = {
   section_heading: string | null;
   source_quote: string;
   extracted_at: string;
-};
-
-type ClinicalDataDebugState = {
-  supabaseUrl: string;
-  hasSession: boolean;
-  approvedCount: number | null;
-  sampleRows: SourceRecommendation[];
-  errorMessage: string | null;
-  lastCheckedAt: string | null;
 };
 
 type Palette = {
@@ -234,8 +223,7 @@ const otpLength = 6;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
 const otpPattern = new RegExp(`^\\d{${otpLength}}$`);
-const notSpecifiedInSource = "Not specified in source";
-const isDevelopment = typeof __DEV__ !== "undefined" ? __DEV__ : false;
+const notSpecifiedInSource = "Not specified";
 
 const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
 const otpCooldownText = (remainingSeconds: number) =>
@@ -442,21 +430,94 @@ const canonicalInfectionCategory = (
 const sourceValue = (value: string | null | undefined) =>
   value?.trim() || notSpecifiedInSource;
 
-const distinctValues = (
-  rows: SourceRecommendation[],
-  field: keyof SourceRecommendation,
-) =>
-  Array.from(
-    new Set(
-      rows
-        .map((row) => row[field])
-        .filter(
-          (value): value is string =>
-            typeof value === "string" && value.trim().length > 0,
-        )
-        .map((value) => value.trim()),
-    ),
-  ).sort((left, right) => left.localeCompare(right));
+const meaninglessDrugFragments = new Set([
+  "therapy",
+  "dose",
+  "suspected",
+  "aerobic",
+  "units sd followed by",
+  "units ld followed by",
+  "doses followed by",
+  "followed by",
+  "site based icmr antibiotic",
+  "antibiotic",
+  "antibiotics",
+  "treatment",
+  "empiric therapy",
+  "clavulanate",
+  "antitoxin effect in",
+]);
+
+const meaningfulDrugPattern =
+  /(amoxicillin|clavulanate|cef|azithro|doxy|mero|imipenem|doripenem|piperacillin|tazobactam|vancomycin|teicoplanin|linezolid|daptomycin|aztreonam|metronidazole|clindamycin|colistin|polymyxin|fosfomycin|tigecycline|ampicillin|sulbactam|gentamicin|penicillin|cefazolin|ceftazidime|avibactam|cloxacillin|flucloxacillin|acyclovir|dexamethasone|caspofungin|micafungin|fluconazole|voriconazole|ertapenem|amikacin|levofloxacin|ciprofloxacin|trimethoprim|sulfamethoxazole|nitrofurantoin|carbapenem|glycopeptide)/i;
+
+const hasMeaningfulTreatment = (item: SourceRecommendation) => {
+  const drug = item.drug?.trim();
+
+  if (!drug) {
+    return false;
+  }
+
+  const normalizedDrug = normalizeMatchText(drug);
+  if (
+    !normalizedDrug ||
+    normalizedDrug.length < 3 ||
+    meaninglessDrugFragments.has(normalizedDrug)
+  ) {
+    return false;
+  }
+
+  if (/^(or|and|plus|with|without)\b/i.test(drug) || /^(\+|\+\/-)/.test(drug)) {
+    return false;
+  }
+
+  if (/[+/-]$/.test(drug.trim())) {
+    return false;
+  }
+
+  if (/^(suspected|aerobic|anaerobic|therapy|dose|duration)$/i.test(drug)) {
+    return false;
+  }
+
+  return meaningfulDrugPattern.test(drug) || drug.includes("/") || drug.includes("-");
+};
+
+const hasMeaningfulText = (value: string | null | undefined) => {
+  const normalized = normalizeMatchText(value);
+  return Boolean(
+    normalized &&
+      normalized.length > 6 &&
+      !meaninglessDrugFragments.has(normalized) &&
+      !["not specified", "none", "nil", "na"].includes(normalized),
+  );
+};
+
+const recommendationIdentity = (item: SourceRecommendation) =>
+  [
+    normalizeMatchText(item.drug),
+    normalizeMatchText(item.dose),
+    normalizeMatchText(item.route),
+    normalizeMatchText(item.frequency),
+    normalizeMatchText(item.duration),
+  ].join("|");
+
+const cleanRecommendationRows = (rows: SourceRecommendation[]) => {
+  const seen = new Set<string>();
+
+  return rows.filter((item) => {
+    if (!hasMeaningfulTreatment(item)) {
+      return false;
+    }
+
+    const identity = recommendationIdentity(item);
+    if (seen.has(identity)) {
+      return false;
+    }
+
+    seen.add(identity);
+    return true;
+  });
+};
 
 export default function App() {
   const dark = useColorScheme() === "dark";
@@ -538,15 +599,6 @@ export default function App() {
     useState(false);
   const [sourceRecommendationError, setSourceRecommendationError] =
     useState("");
-  const [clinicalDataDebug, setClinicalDataDebug] =
-    useState<ClinicalDataDebugState>({
-      supabaseUrl,
-      hasSession: false,
-      approvedCount: null,
-      sampleRows: [],
-      errorMessage: null,
-      lastCheckedAt: null,
-    });
   const isAuthScreen =
     screen === "login" || screen === "signup" || screen === "otp";
 
@@ -770,84 +822,12 @@ export default function App() {
 
   const applyProgressiveFilter = (
     rows: SourceRecommendation[],
-    label: string,
     predicate: (item: SourceRecommendation) => boolean,
   ) => {
     const filteredRows = rows.filter(predicate);
 
-    console.log(
-      `[clinical recommendations] ${label} filter retained ${filteredRows.length}/${rows.length} rows`,
-    );
-
     return filteredRows.length > 0 ? filteredRows : rows;
   };
-
-  const runClinicalDataDebugQuery = async () => {
-    if (!isSupabaseConfigured) {
-      setClinicalDataDebug({
-        supabaseUrl,
-        hasSession: false,
-        approvedCount: null,
-        sampleRows: [],
-        errorMessage: "Supabase is not configured.",
-        lastCheckedAt: new Date().toISOString(),
-      });
-      return {
-        count: null,
-        sampleRows: [] as SourceRecommendation[],
-        errorMessage: "Supabase is not configured.",
-      };
-    }
-
-    const { data: sessionData } = await supabase.auth.getSession();
-    const hasSession = Boolean(sessionData.session);
-
-    console.log(
-      "[clinical recommendations] runtime debug query: approved_clinical_recommendations_with_source select * limit 5",
-    );
-
-    const { data, error, count } = await supabase
-      .from("approved_clinical_recommendations_with_source")
-      .select("*", { count: "exact" })
-      .limit(5);
-
-    const sampleRows = ((data ?? []) as SourceRecommendation[]).slice(0, 3);
-    const errorMessage = error?.message ?? null;
-
-    setClinicalDataDebug({
-      supabaseUrl,
-      hasSession,
-      approvedCount: count ?? (data?.length ?? null),
-      sampleRows,
-      errorMessage,
-      lastCheckedAt: new Date().toISOString(),
-    });
-
-    console.log("[clinical recommendations] runtime debug result", {
-      supabaseUrl,
-      hasSession,
-      approvedCount: count,
-      sampleRows,
-      errorMessage,
-    });
-
-    return { count: count ?? null, sampleRows, errorMessage };
-  };
-
-  const recommendationDebugValues = useMemo(
-    () => ({
-      syndrome: distinctValues(sourceRecommendations, "syndrome"),
-      infection_site: distinctValues(sourceRecommendations, "infection_site"),
-      setting: distinctValues(sourceRecommendations, "setting"),
-      acquisition: distinctValues(sourceRecommendations, "acquisition"),
-      risk_type: distinctValues(sourceRecommendations, "risk_type"),
-      severity_category: distinctValues(
-        sourceRecommendations,
-        "severity_category",
-      ),
-    }),
-    [sourceRecommendations],
-  );
 
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -995,11 +975,6 @@ export default function App() {
 
     setSourceRecommendationLoading(true);
     setSourceRecommendationError("");
-    const debugResult = await runClinicalDataDebugQuery();
-
-    console.log(
-      "[clinical recommendations] Supabase query: approved_clinical_recommendations_with_source select * order syndrome asc",
-    );
 
     const { data, error } = await supabase
       .from("approved_clinical_recommendations_with_source")
@@ -1009,13 +984,6 @@ export default function App() {
     setSourceRecommendationLoading(false);
 
     if (error) {
-      if ((debugResult.count ?? 0) > 0 && debugResult.sampleRows.length > 0) {
-        setSourceRecommendations(debugResult.sampleRows);
-        setSourceRecommendationError("");
-        setSourceRecommendationLoading(false);
-        return;
-      }
-
       setSourceRecommendations([]);
       setSourceRecommendationError(
         "No approved recommendation available. Refer institutional guideline / ID specialist.",
@@ -1025,78 +993,34 @@ export default function App() {
 
     const approvedRows = (data ?? []) as SourceRecommendation[];
 
-    console.log(
-      `[clinical recommendations] Supabase rows returned: ${approvedRows.length}`,
-    );
-    console.log("[clinical recommendations] distinct database values", {
-      syndrome: distinctValues(approvedRows, "syndrome"),
-      infection_site: distinctValues(approvedRows, "infection_site"),
-      setting: distinctValues(approvedRows, "setting"),
-      acquisition: distinctValues(approvedRows, "acquisition"),
-      risk_type: distinctValues(approvedRows, "risk_type"),
-      severity_category: distinctValues(approvedRows, "severity_category"),
-    });
     setSourceRecommendations(approvedRows);
     setSourceRecommendationError("");
   };
 
   const selectedSourceRecommendations = useMemo(() => {
-    const selectedInfectionText = `${selectedSite.code} ${selectedSite.label}`;
-    const selectedCategory =
-      canonicalInfectionCategory(selectedSite.code) ??
-      canonicalInfectionCategory(selectedSite.label);
-
-    console.log("[clinical recommendations] selected filters", {
-      infectionSiteCode: selectedSite.code,
-      infectionSiteLabel: selectedSite.label,
-      normalizedInfectionCategory: selectedCategory,
-      setting,
-      acquisition,
-      riskType,
-      approvedRowsLoaded: sourceRecommendations.length,
-      distinctDatabaseValues: recommendationDebugValues,
-    });
-
     const infectionRows = sourceRecommendations.filter(infectionMatchesSelection);
 
-    console.log(
-      `[clinical recommendations] infection/syndrome base match returned ${infectionRows.length} rows`,
-    );
-
     if (infectionRows.length === 0) {
-      console.log(
-        "[clinical recommendations] zero infection matches; falling back to all approved rows so readable source data is visible",
-        {
-          selectedInfectionText,
-          selectedCategory,
-          availableInfectionSites: recommendationDebugValues.infection_site,
-          availableSyndromes: recommendationDebugValues.syndrome,
-          fallbackRowCount: sourceRecommendations.length,
-        },
-      );
-      return sourceRecommendations;
+      return [];
     }
 
     let matchedRows = infectionRows;
 
-    matchedRows = applyProgressiveFilter(matchedRows, "setting", (item) =>
+    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
       fieldMatches(item.setting, setting),
     );
-    matchedRows = applyProgressiveFilter(matchedRows, "acquisition", (item) =>
+    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
       fieldMatches(item.acquisition, acquisition),
     );
-    matchedRows = applyProgressiveFilter(matchedRows, "risk", (item) =>
+    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
       fieldMatches(item.risk_type, riskType),
     );
 
-    console.log(
-      `[clinical recommendations] progressive matching returned ${matchedRows.length} rows`,
-    );
+    const cleanRows = cleanRecommendationRows(matchedRows).slice(0, 8);
 
-    return matchedRows;
+    return cleanRows;
   }, [
     acquisition,
-    recommendationDebugValues,
     riskType,
     selectedSite,
     setting,
@@ -1105,6 +1029,18 @@ export default function App() {
 
   const failClosedMessage =
     "No approved recommendation available. Refer institutional guideline / ID specialist.";
+  const meaningfulWarningRecommendations = selectedSourceRecommendations.filter(
+    (item) =>
+      hasMeaningfulText(item.renal_adjustment) ||
+      hasMeaningfulText(item.hepatic_adjustment) ||
+      hasMeaningfulText(item.pregnancy_lactation_caution) ||
+      hasMeaningfulText(item.allergy_warning) ||
+      hasMeaningfulText(item.contraindication) ||
+      hasMeaningfulText(item.stewardship_note),
+  );
+  const meaningfulConsultRecommendations = selectedSourceRecommendations.filter(
+    (item) => hasMeaningfulText(item.id_consult_trigger),
+  );
   const clearAuthMessages = () => {
     setLoginError("");
     setSignupError("");
@@ -1805,65 +1741,10 @@ export default function App() {
           </View>
           <View style={styles.drawerFooter}>
             <Text style={styles.drawerFooterText}>
-              Source-linked recommendations only. Clinical judgment required.
+              Approved recommendations only. Clinical judgment required.
             </Text>
           </View>
         </View>
-      </View>
-    ) : null;
-
-  const ClinicalDataDebugPanel = () =>
-    isDevelopment ? (
-      <View style={styles.debugPanel}>
-        <Text style={styles.debugTitle}>Clinical Data Debug</Text>
-        <Text style={styles.debugLine}>Supabase URL: {supabaseUrl || "Not configured"}</Text>
-        <Text style={styles.debugLine}>
-          Auth session: {clinicalDataDebug.hasSession ? "present" : "missing"}
-        </Text>
-        <Text style={styles.debugLine}>
-          Approved recommendations count:{" "}
-          {clinicalDataDebug.approvedCount ?? "Unknown"}
-        </Text>
-        <Text style={styles.debugLine}>
-          Last checked: {clinicalDataDebug.lastCheckedAt ?? "Not checked"}
-        </Text>
-        {clinicalDataDebug.errorMessage ? (
-          <Text style={styles.debugError}>
-            Supabase error: {clinicalDataDebug.errorMessage}
-          </Text>
-        ) : null}
-        {clinicalDataDebug.sampleRows.length > 0 ? (
-          <View style={styles.debugRows}>
-            <Text style={styles.debugSubTitle}>First approved rows</Text>
-            {clinicalDataDebug.sampleRows.slice(0, 3).map((row, index) => (
-              <View key={row.id ?? index} style={styles.debugRow}>
-                <Text style={styles.debugRowTitle}>
-                  {index + 1}. {sourceValue(row.drug)}
-                </Text>
-                <Text style={styles.debugLine}>
-                  {sourceValue(row.infection_site)} · {sourceValue(row.syndrome)}
-                </Text>
-                <Text style={styles.debugLine}>
-                  {sourceValue(row.dose)} · {sourceValue(row.route)} ·{" "}
-                  {sourceValue(row.frequency)}
-                </Text>
-                <Text style={styles.debugLine}>
-                  Source: {sourceValue(row.source_filename)}
-                  {row.page_number ? ` · page ${row.page_number}` : ""}
-                </Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-        <TouchableOpacity
-          activeOpacity={0.86}
-          style={styles.debugButton}
-          onPress={() => {
-            void runClinicalDataDebugQuery();
-          }}
-        >
-          <Text style={styles.debugButtonText}>Recheck approved view</Text>
-        </TouchableOpacity>
       </View>
     ) : null;
 
@@ -1874,7 +1755,6 @@ export default function App() {
         contentContainerStyle={styles.dashboardBody}
         showsVerticalScrollIndicator={false}
       >
-        <ClinicalDataDebugPanel />
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>⌕</Text>
           <TextInput
@@ -2056,28 +1936,30 @@ export default function App() {
       <Text style={styles.rank}>{index + 1}</Text>
       <View style={styles.therapyBody}>
         <Text style={styles.therapyName}>{sourceValue(item.drug)}</Text>
-        <RecommendationField label="Dose" value={item.dose} />
-        <RecommendationField label="Route" value={item.route} />
-        <RecommendationField label="Frequency" value={item.frequency} />
-        <RecommendationField label="Duration" value={item.duration} />
-        <RecommendationField
-          label="Renal adjustment"
-          value={item.renal_adjustment}
-        />
-        <RecommendationField label="Allergy warning" value={item.allergy_warning} />
-        <RecommendationField
-          label="Stewardship note"
-          value={item.stewardship_note}
-        />
-        <View style={styles.sourceQuoteBox}>
-          <Text style={styles.recommendationFieldLabel}>Source quote</Text>
-          <Text style={styles.detailText}>{sourceValue(item.source_quote)}</Text>
-          <Text style={styles.detailText}>
-            {item.source_filename}
-            {item.page_number ? ` · page ${item.page_number}` : ""}
-            {item.section_heading ? ` · ${item.section_heading}` : ""}
-          </Text>
+        <View style={styles.recommendationGrid}>
+          <RecommendationField label="Dose" value={item.dose} />
+          <RecommendationField label="Route" value={item.route} />
+          <RecommendationField label="Frequency" value={item.frequency} />
+          <RecommendationField label="Duration" value={item.duration} />
         </View>
+        {hasMeaningfulText(item.renal_adjustment) ? (
+          <RecommendationField
+            label="Renal adjustment"
+            value={item.renal_adjustment}
+          />
+        ) : null}
+        {hasMeaningfulText(item.allergy_warning) ? (
+          <RecommendationField
+            label="Allergy warning"
+            value={item.allergy_warning}
+          />
+        ) : null}
+        {hasMeaningfulText(item.stewardship_note) ? (
+          <RecommendationField
+            label="Stewardship note"
+            value={item.stewardship_note}
+          />
+        ) : null}
       </View>
     </View>
   );
@@ -2127,23 +2009,29 @@ export default function App() {
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
+          ) : meaningfulWarningRecommendations.length === 0 ? (
+            <Text style={styles.infoCardBody}>
+              No specific warnings documented in approved data for the current recommendations.
+            </Text>
           ) : (
-            selectedSourceRecommendations.map((item) => (
+            meaningfulWarningRecommendations.map((item) => (
               <View key={item.id} style={styles.durationRow}>
                 <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
-                <Text style={styles.infoCardBody}>
-                  Stewardship: {sourceValue(item.stewardship_note)}
-                </Text>
-                <Text style={styles.infoCardBody}>
-                  Allergy: {sourceValue(item.allergy_warning)}
-                </Text>
-                <Text style={styles.infoCardBody}>
-                  Renal: {sourceValue(item.renal_adjustment)}
-                </Text>
-                <Text style={styles.detailText}>
-                  Source: {item.source_filename}
-                  {item.page_number ? ` · page ${item.page_number}` : ""}
-                </Text>
+                {hasMeaningfulText(item.stewardship_note) ? (
+                  <Text style={styles.infoCardBody}>
+                    Stewardship: {sourceValue(item.stewardship_note)}
+                  </Text>
+                ) : null}
+                {hasMeaningfulText(item.allergy_warning) ? (
+                  <Text style={styles.infoCardBody}>
+                    Allergy: {sourceValue(item.allergy_warning)}
+                  </Text>
+                ) : null}
+                {hasMeaningfulText(item.renal_adjustment) ? (
+                  <Text style={styles.infoCardBody}>
+                    Renal: {sourceValue(item.renal_adjustment)}
+                  </Text>
+                ) : null}
               </View>
             ))
           )}
@@ -2152,7 +2040,7 @@ export default function App() {
             style={styles.actionButton}
             onPress={() => go("stewardshipAlert")}
           >
-            <Text style={styles.actionButtonText}>Open Source Review</Text>
+            <Text style={styles.actionButtonText}>Open Warnings</Text>
           </TouchableOpacity>
         </View>
       </View>,
@@ -2463,11 +2351,10 @@ export default function App() {
             {riskType} - {riskLabel}
           </Text>
         </View>
-        <Text style={styles.resultSection}>Approved Source-Based Therapy</Text>
-        <ClinicalDataDebugPanel />
+        <Text style={styles.resultSection}>Approved Treatment Protocol</Text>
         {sourceRecommendationLoading ? (
           <View style={styles.noteBlue}>
-            <Text style={styles.noteText}>Loading approved source data...</Text>
+            <Text style={styles.noteText}>Loading approved treatment data...</Text>
           </View>
         ) : selectedSourceRecommendations.length === 0 ? (
           <View style={[styles.noteBlue, styles.actionAlert]}>
@@ -2515,7 +2402,7 @@ export default function App() {
         </View>
         {protocolDetailTab === "Notes" && (
           <View>
-            <Text style={styles.detailsTitle}>Source Evidence</Text>
+            <Text style={styles.detailsTitle}>Treatment Summary</Text>
             {selectedSourceRecommendations.length === 0 ? (
               <View style={[styles.noteBlue, styles.actionAlert]}>
                 <Text style={[styles.noteText, styles.actionBodyRed]}>
@@ -2523,59 +2410,56 @@ export default function App() {
                 </Text>
               </View>
             ) : (
-              selectedSourceRecommendations.map((item) => (
-                <View key={item.id} style={styles.noteBlue}>
-                  <Text style={styles.noteText}>
-                    {item.source_quote || "Source quote missing"}
-                  </Text>
-                  <Text style={styles.detailText}>
-                    {item.source_filename}
-                    {item.page_number ? ` · page ${item.page_number}` : ""}
-                    {item.section_heading ? ` · ${item.section_heading}` : ""}
-                  </Text>
-                </View>
+              selectedSourceRecommendations.map((item, index) => (
+                <SourceRecommendationCard key={item.id} item={item} index={index} />
               ))
             )}
           </View>
         )}
         {protocolDetailTab === "Warnings" && (
           <View>
-            <Text style={styles.detailsTitle}>Source-Linked Warnings</Text>
+            <Text style={styles.detailsTitle}>Clinical Warnings</Text>
             {selectedSourceRecommendations.length === 0 ? (
               <View style={[styles.noteBlue, styles.actionAlert]}>
                 <Text style={[styles.noteText, styles.actionBodyRed]}>
                   {failClosedMessage}
                 </Text>
               </View>
+            ) : meaningfulWarningRecommendations.length === 0 ? (
+              <View style={styles.noteBlue}>
+                <Text style={styles.noteText}>
+                  No specific warnings documented in approved data for the current recommendations.
+                </Text>
+              </View>
             ) : (
-              selectedSourceRecommendations.map((item) => (
-                <View key={item.id} style={[styles.noteBlue, styles.actionAlert]}>
-                  <RecommendationField
-                    label="Renal adjustment"
-                    value={item.renal_adjustment}
-                  />
-                  <RecommendationField
-                    label="Hepatic adjustment"
-                    value={item.hepatic_adjustment}
-                  />
-                  <RecommendationField
-                    label="Pregnancy/lactation caution"
-                    value={item.pregnancy_lactation_caution}
-                  />
-                  <RecommendationField
-                    label="Allergy warning"
-                    value={item.allergy_warning}
-                  />
-                  <RecommendationField
-                    label="Contraindication"
-                    value={item.contraindication}
-                  />
-                  <RecommendationField
-                    label="Stewardship note"
-                    value={item.stewardship_note}
-                  />
-                </View>
-              ))
+              meaningfulWarningRecommendations.map((item) => {
+                const warnings = ([
+                  ["Renal adjustment", item.renal_adjustment],
+                  ["Hepatic adjustment", item.hepatic_adjustment],
+                  [
+                    "Pregnancy/lactation caution",
+                    item.pregnancy_lactation_caution,
+                  ],
+                  ["Allergy warning", item.allergy_warning],
+                  ["Contraindication", item.contraindication],
+                  ["Stewardship note", item.stewardship_note],
+                ] as Array<[string, string | null]>).filter(([, value]) =>
+                  hasMeaningfulText(value),
+                );
+
+                return (
+                  <View key={item.id} style={[styles.noteBlue, styles.actionAlert]}>
+                    <Text style={styles.therapyName}>{sourceValue(item.drug)}</Text>
+                    {warnings.map(([label, value]) => (
+                      <RecommendationField
+                        key={`${item.id}-${label}`}
+                        label={label}
+                        value={value}
+                      />
+                    ))}
+                  </View>
+                );
+              })
             )}
           </View>
         )}
@@ -2590,21 +2474,27 @@ export default function App() {
                   {failClosedMessage}
                 </Text>
               </View>
+            ) : meaningfulConsultRecommendations.length === 0 ? (
+              <View style={styles.noteBlue}>
+                <Text style={styles.noteText}>
+                  No specific ID consult trigger documented in approved data for the current recommendations.
+                </Text>
+              </View>
             ) : (
-              selectedSourceRecommendations.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  activeOpacity={0.86}
-                  style={styles.listCard}
-                  onPress={() => go("stewardshipAlert")}
-                >
-                  <Text style={styles.listIcon}>□</Text>
-                  <Text style={styles.listText}>
-                    {sourceValue(item.id_consult_trigger)}
-                  </Text>
-                  <Text style={styles.chevron}>›</Text>
-                </TouchableOpacity>
-              ))
+              meaningfulConsultRecommendations.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    activeOpacity={0.86}
+                    style={styles.listCard}
+                    onPress={() => go("stewardshipAlert")}
+                  >
+                    <Text style={styles.listIcon}>□</Text>
+                    <Text style={styles.listText}>
+                      {sourceValue(item.id_consult_trigger)}
+                    </Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </TouchableOpacity>
+                ))
             )}
           </View>
         )}
@@ -2777,30 +2667,44 @@ export default function App() {
     appShell(
       <View>
         <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Source-Linked Stewardship</Text>
+          <Text style={styles.infoCardTitle}>Stewardship Guidance</Text>
           {sourceRecommendationLoading ? (
             <ActivityIndicator color={palette.blue} />
           ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
+          ) : meaningfulWarningRecommendations.length === 0 &&
+            meaningfulConsultRecommendations.length === 0 ? (
+            <Text style={styles.infoCardBody}>
+              No specific stewardship, warning, or ID consult trigger documented in approved data for the current recommendations.
+            </Text>
           ) : (
-            selectedSourceRecommendations.map((item) => (
+            selectedSourceRecommendations
+              .filter(
+                (item) =>
+                  hasMeaningfulText(item.stewardship_note) ||
+                  hasMeaningfulText(item.id_consult_trigger) ||
+                  hasMeaningfulText(item.contraindication),
+              )
+              .map((item) => (
               <View key={item.id} style={styles.durationRow}>
                 <Text style={styles.infoCardTitle}>{sourceValue(item.drug)}</Text>
-                <Text style={styles.infoCardBody}>
-                  Stewardship: {sourceValue(item.stewardship_note)}
-                </Text>
-                <Text style={styles.infoCardBody}>
-                  ID consult: {sourceValue(item.id_consult_trigger)}
-                </Text>
-                <Text style={styles.infoCardBody}>
-                  Contraindication: {sourceValue(item.contraindication)}
-                </Text>
-                <Text style={styles.detailText}>
-                  Source: {item.source_filename}
-                  {item.page_number ? ` · page ${item.page_number}` : ""}
-                </Text>
+                {hasMeaningfulText(item.stewardship_note) ? (
+                  <Text style={styles.infoCardBody}>
+                    Stewardship: {sourceValue(item.stewardship_note)}
+                  </Text>
+                ) : null}
+                {hasMeaningfulText(item.id_consult_trigger) ? (
+                  <Text style={styles.infoCardBody}>
+                    ID consult: {sourceValue(item.id_consult_trigger)}
+                  </Text>
+                ) : null}
+                {hasMeaningfulText(item.contraindication) ? (
+                  <Text style={styles.infoCardBody}>
+                    Contraindication: {sourceValue(item.contraindication)}
+                  </Text>
+                ) : null}
               </View>
             ))
           )}
@@ -3484,70 +3388,6 @@ const makeStyles = (p: Palette) =>
       lineHeight: 16,
       fontWeight: "700",
     },
-    debugPanel: {
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: "#B7D5F4",
-      backgroundColor: "#F4FAFF",
-      padding: 13,
-      marginBottom: 14,
-    },
-    debugTitle: {
-      color: p.blue2,
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "900",
-      marginBottom: 7,
-    },
-    debugSubTitle: {
-      color: p.text,
-      fontSize: 12,
-      lineHeight: 17,
-      fontWeight: "900",
-      marginTop: 8,
-      marginBottom: 6,
-    },
-    debugLine: {
-      color: p.text,
-      fontSize: 10,
-      lineHeight: 15,
-      fontWeight: "700",
-    },
-    debugError: {
-      color: p.red,
-      fontSize: 10,
-      lineHeight: 15,
-      fontWeight: "900",
-      marginTop: 6,
-    },
-    debugRows: { marginTop: 4 },
-    debugRow: {
-      borderTopWidth: 1,
-      borderTopColor: "#D5E9FA",
-      paddingTop: 7,
-      marginTop: 7,
-    },
-    debugRowTitle: {
-      color: p.blue2,
-      fontSize: 11,
-      lineHeight: 16,
-      fontWeight: "900",
-    },
-    debugButton: {
-      minHeight: 36,
-      borderRadius: 8,
-      backgroundColor: p.blue,
-      alignItems: "center",
-      justifyContent: "center",
-      marginTop: 10,
-      paddingHorizontal: 12,
-    },
-    debugButtonText: {
-      color: "#FFFFFF",
-      fontSize: 11,
-      lineHeight: 15,
-      fontWeight: "900",
-    },
     dashboardBody: { padding: 14, paddingBottom: 112 },
     searchBox: {
       height: 52,
@@ -3980,7 +3820,14 @@ const makeStyles = (p: Palette) =>
       lineHeight: 18,
       fontWeight: "900",
     },
+    recommendationGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
     recommendationField: {
+      minWidth: "47%",
+      flexGrow: 1,
       borderTopWidth: 1,
       borderTopColor: p.border,
       paddingTop: 7,
@@ -3998,12 +3845,6 @@ const makeStyles = (p: Palette) =>
       fontSize: 12,
       lineHeight: 17,
       fontWeight: "700",
-    },
-    sourceQuoteBox: {
-      borderTopWidth: 1,
-      borderTopColor: p.border,
-      paddingTop: 8,
-      marginTop: 2,
     },
     durationRow: {
       borderTopWidth: 1,
