@@ -168,6 +168,7 @@ type DrawerMenuItem = {
 };
 type OtpTarget = {
   value: string;
+  name?: string;
 };
 type GuidelineSectionKey = "empiric" | "renal" | "carbapenem";
 type GuidelineSectionItem = {
@@ -270,9 +271,7 @@ const paletteFor = (_dark: boolean): Palette => ({
 const otpResendSeconds = 10;
 const otpLength = 6;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phonePattern = /^\+[1-9]\d{7,14}$/;
 const otpPattern = new RegExp(`^\\d{${otpLength}}$`);
-const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
 const otpCooldownText = (remainingSeconds: number) =>
   `Resend available in ${remainingSeconds}s`;
 const otpRequestReceivedMessage =
@@ -614,17 +613,10 @@ export default function App() {
   const [authSuccess, setAuthSuccess] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const [loginError, setLoginError] = useState("");
-  const [employeeId, setEmployeeId] = useState("");
+  const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
-  const [signupPhone, setSignupPhone] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showSignupPassword, setShowSignupPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [signupError, setSignupError] = useState("");
   const [otp, setOtp] = useState("");
   const [otpTimer, setOtpTimer] = useState(0);
@@ -737,33 +729,17 @@ export default function App() {
       }
 
       [data-testid="login-email-input"],
-      [data-testid="login-password-input"],
-      [data-testid="signup-employee-input"],
+      [data-testid="signup-name-input"],
       [data-testid="signup-email-input"],
-      [data-testid="signup-phone-input"],
-      [data-testid="signup-password-input"],
-      [data-testid="signup-confirm-password-input"],
       [data-testid="login-email-input"]:focus,
-      [data-testid="login-password-input"]:focus,
-      [data-testid="signup-employee-input"]:focus,
+      [data-testid="signup-name-input"]:focus,
       [data-testid="signup-email-input"]:focus,
-      [data-testid="signup-phone-input"]:focus,
-      [data-testid="signup-password-input"]:focus,
-      [data-testid="signup-confirm-password-input"]:focus,
       [data-testid="login-email-input"] input,
-      [data-testid="login-password-input"] input,
-      [data-testid="signup-employee-input"] input,
+      [data-testid="signup-name-input"] input,
       [data-testid="signup-email-input"] input,
-      [data-testid="signup-phone-input"] input,
-      [data-testid="signup-password-input"] input,
-      [data-testid="signup-confirm-password-input"] input,
       [data-testid="login-email-input"] input:focus,
-      [data-testid="login-password-input"] input:focus,
-      [data-testid="signup-employee-input"] input:focus,
-      [data-testid="signup-email-input"] input:focus,
-      [data-testid="signup-phone-input"] input:focus,
-      [data-testid="signup-password-input"] input:focus,
-      [data-testid="signup-confirm-password-input"] input:focus {
+      [data-testid="signup-name-input"] input:focus,
+      [data-testid="signup-email-input"] input:focus {
         background: transparent !important;
         border: 0 !important;
         outline: none !important;
@@ -1421,6 +1397,11 @@ export default function App() {
     clearAuthMessages();
   };
 
+  const updateSignupName = (value: string) => {
+    setSignupName(value);
+    clearAuthMessages();
+  };
+
   const sendOtp = async (target: OtpTarget) => {
     if (!isSupabaseConfigured) {
       setLoginError(
@@ -1435,8 +1416,21 @@ export default function App() {
     setAuthSuccess("");
     setOtpTimer(otpResendSeconds);
 
+    const signInOptions: {
+      shouldCreateUser: true;
+      data?: Record<string, string>;
+    } = { shouldCreateUser: true };
+
+    if (target.name?.trim()) {
+      signInOptions.data = {
+        full_name: target.name.trim(),
+        display_name: target.name.trim(),
+      };
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email: target.value,
+      options: signInOptions,
     });
 
     setAuthLoading(false);
@@ -1475,10 +1469,10 @@ export default function App() {
 
   const signup = () => {
     const newDoctorEmail = signupEmail.trim().toLowerCase();
-    const newDoctorPhone = normalizePhone(signupPhone.trim());
+    const newDoctorName = signupName.trim();
 
-    if (employeeId.trim().length === 0) {
-      setSignupError("Employee ID is required.");
+    if (newDoctorName.length === 0) {
+      setSignupError("Name is required.");
       return;
     }
 
@@ -1487,14 +1481,9 @@ export default function App() {
       return;
     }
 
-    if (!phonePattern.test(newDoctorPhone)) {
-      setSignupError("Enter phone number with country code, e.g. +91XXXXXXXXXX.");
-      return;
-    }
-
     setSignupError("");
     setEmail(newDoctorEmail);
-    void sendOtp({ value: newDoctorEmail });
+    void sendOtp({ value: newDoctorEmail, name: newDoctorName });
   };
 
   const back = () => {
@@ -1751,13 +1740,43 @@ export default function App() {
   const Login = () => (
     <View style={styles.centerScreen}>
       <LogoHeader />
+      <Text style={styles.authTitle}>Sign up</Text>
+      <Text style={styles.authSubtitle}>Sign up to continue</Text>
       <View style={styles.inputWrap}>
-        <Text style={styles.inputIcon}>✉</Text>
+        <Feather
+          name="user"
+          size={18}
+          strokeWidth={2.3}
+          color="#5C6F86"
+          style={styles.inputFeatherIcon}
+        />
         <TextInput
-          testID="login-email-input"
+          testID="signup-name-input"
+          accessibilityLabel="Name"
+          value={signupName}
+          onChangeText={updateSignupName}
+          placeholder="Name"
+          placeholderTextColor="#94A3B8"
+          autoCapitalize="words"
+          autoCorrect={false}
+          textContentType="name"
+          autoComplete="name"
+          style={[styles.textInput, webTextInputReset]}
+        />
+      </View>
+      <View style={styles.inputWrap}>
+        <Feather
+          name="mail"
+          size={18}
+          strokeWidth={2.3}
+          color="#5C6F86"
+          style={styles.inputFeatherIcon}
+        />
+        <TextInput
+          testID="signup-email-input"
           accessibilityLabel="Hospital email"
-          value={email}
-          onChangeText={updateLoginEmail}
+          value={signupEmail}
+          onChangeText={updateSignupEmail}
           placeholder="doctor@hindujahospital.com"
           placeholderTextColor="#94A3B8"
           autoCapitalize="none"
@@ -1785,6 +1804,11 @@ export default function App() {
           <Text style={styles.errorText}>{loginError}</Text>
         </View>
       ) : null}
+      {signupError ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{signupError}</Text>
+        </View>
+      ) : null}
       {authSuccess ? (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{authSuccess}</Text>
@@ -1794,20 +1818,21 @@ export default function App() {
         <Text style={styles.cooldownText}>{otpCooldownText(otpTimer)}</Text>
       ) : null}
       <PrimaryButton
-        label="Send Email OTP"
-        onPress={login}
+        label="Sign up with Email OTP"
+        onPress={signup}
         loading={authLoading}
       />
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => {
           setLoginError("");
+          setSignupError("");
           go("signup");
         }}
         style={styles.authLinkRow}
       >
-        <Text style={styles.authMuted}>New doctor?</Text>
-        <Text style={styles.authLink}> Create Account</Text>
+        <Text style={styles.authMuted}>Already have an account?</Text>
+        <Text style={styles.authLink}> Login</Text>
       </TouchableOpacity>
       <View style={styles.doctorOnly}>
         <Text style={styles.smallShield}>⌂</Text>
@@ -1832,27 +1857,21 @@ export default function App() {
   const Signup = () => (
     <View style={styles.centerScreen}>
       <LogoHeader />
+      <Text style={styles.authTitle}>Login</Text>
+      <Text style={styles.authSubtitle}>Continue with Email OTP</Text>
       <View style={styles.inputWrap}>
-        <Text style={styles.inputIcon}>⊙</Text>
-        <TextInput
-          testID="signup-employee-input"
-          value={employeeId}
-          onChangeText={setEmployeeId}
-          placeholder="Employee ID"
-          placeholderTextColor="#94A3B8"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          textContentType="username"
-          autoComplete="username"
-          style={[styles.textInput, webTextInputReset]}
+        <Feather
+          name="mail"
+          size={18}
+          strokeWidth={2.3}
+          color="#5C6F86"
+          style={styles.inputFeatherIcon}
         />
-      </View>
-      <View style={styles.inputWrap}>
-        <Text style={styles.inputIcon}>✉</Text>
         <TextInput
-          testID="signup-email-input"
-          value={signupEmail}
-          onChangeText={updateSignupEmail}
+          testID="login-email-input"
+          accessibilityLabel="Hospital email"
+          value={email}
+          onChangeText={updateLoginEmail}
           placeholder="doctor@hindujahospital.com"
           placeholderTextColor="#94A3B8"
           autoCapitalize="none"
@@ -1863,25 +1882,26 @@ export default function App() {
           style={[styles.textInput, webTextInputReset]}
         />
       </View>
-      <View style={styles.inputWrap}>
-        <Text style={styles.inputIcon}>☎</Text>
-        <TextInput
-          testID="signup-phone-input"
-          value={signupPhone}
-          onChangeText={setSignupPhone}
-          placeholder="+91XXXXXXXXXX"
-          placeholderTextColor="#94A3B8"
-          keyboardType="phone-pad"
-          autoCapitalize="none"
-          autoCorrect={false}
-          textContentType="telephoneNumber"
-          autoComplete="tel"
-          style={[styles.textInput, webTextInputReset]}
-        />
-      </View>
+      <TouchableOpacity
+        activeOpacity={0.82}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: keepLoggedIn }}
+        onPress={() => setKeepLoggedIn((previousValue) => !previousValue)}
+        style={styles.keepRow}
+      >
+        <View style={[styles.checkbox, keepLoggedIn && styles.checkboxActive]}>
+          {keepLoggedIn ? <Text style={styles.checkboxMark}>✓</Text> : null}
+        </View>
+        <Text style={styles.keepText}>Keep me logged in</Text>
+      </TouchableOpacity>
       {signupError ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{signupError}</Text>
+        </View>
+      ) : null}
+      {loginError ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{loginError}</Text>
         </View>
       ) : null}
       {authSuccess ? (
@@ -1889,21 +1909,25 @@ export default function App() {
           <Text style={styles.successText}>{authSuccess}</Text>
         </View>
       ) : null}
+      {otpTimer > 0 ? (
+        <Text style={styles.cooldownText}>{otpCooldownText(otpTimer)}</Text>
+      ) : null}
       <PrimaryButton
-        label="Create Account with Email OTP"
-        onPress={signup}
+        label="Login with Email OTP"
+        onPress={login}
         loading={authLoading}
       />
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => {
           setSignupError("");
+          setLoginError("");
           go("login", "replace");
         }}
         style={styles.authLinkRow}
       >
-        <Text style={styles.authMuted}>Already have an account?</Text>
-        <Text style={styles.authLink}> Login</Text>
+        <Text style={styles.authMuted}>Need access?</Text>
+        <Text style={styles.authLink}> Sign up</Text>
       </TouchableOpacity>
       <View style={styles.doctorOnly}>
         <Text style={styles.smallShield}>⌂</Text>
@@ -3562,6 +3586,22 @@ const makeStyles = (p: Palette) =>
       fontWeight: "700",
       marginTop: 5,
     },
+    authTitle: {
+      color: "#0B2850",
+      fontSize: 24,
+      lineHeight: 30,
+      fontWeight: "900",
+      textAlign: "center",
+      marginBottom: 4,
+    },
+    authSubtitle: {
+      color: "#5C6F86",
+      fontSize: 13,
+      lineHeight: 19,
+      fontWeight: "800",
+      textAlign: "center",
+      marginBottom: 18,
+    },
     inputWrap: {
       height: 52,
       flexDirection: "row",
@@ -3574,6 +3614,7 @@ const makeStyles = (p: Palette) =>
       backgroundColor: "#FFFFFF",
     },
     inputIcon: { color: "#5C6F86", fontSize: 18, marginRight: 10 },
+    inputFeatherIcon: { marginRight: 10 },
     textInput: {
       flex: 1,
       width: "100%",
@@ -3622,19 +3663,6 @@ const makeStyles = (p: Palette) =>
       fontSize: 12,
       lineHeight: 16,
       fontWeight: "800",
-    },
-    passwordEyeButton: {
-      width: 34,
-      height: 34,
-      alignItems: "center",
-      justifyContent: "center",
-      marginLeft: 6,
-    },
-    passwordEyeIcon: {
-      color: "#5C6F86",
-      fontSize: 18,
-      lineHeight: 22,
-      fontWeight: "900",
     },
     otpHeaderRow: {
       height: 34,
