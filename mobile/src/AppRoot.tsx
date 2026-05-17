@@ -17,7 +17,9 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { isSupabaseConfigured, supabase } from "./supabase";
+import { isSupabaseConfigured, supabase, supabaseUrl } from "./supabase";
+
+declare const __DEV__: boolean | undefined;
 
 type Screen =
   | "login"
@@ -92,6 +94,15 @@ type SourceRecommendation = {
   section_heading: string | null;
   source_quote: string;
   extracted_at: string;
+};
+
+type ClinicalDataDebugState = {
+  supabaseUrl: string;
+  hasSession: boolean;
+  approvedCount: number | null;
+  sampleRows: SourceRecommendation[];
+  errorMessage: string | null;
+  lastCheckedAt: string | null;
 };
 
 type Palette = {
@@ -224,6 +235,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\+[1-9]\d{7,14}$/;
 const otpPattern = new RegExp(`^\\d{${otpLength}}$`);
 const notSpecifiedInSource = "Not specified in source";
+const isDevelopment = typeof __DEV__ !== "undefined" ? __DEV__ : false;
 
 const normalizePhone = (value: string) => value.replace(/[^\d+]/g, "");
 const otpCooldownText = (remainingSeconds: number) =>
@@ -526,6 +538,15 @@ export default function App() {
     useState(false);
   const [sourceRecommendationError, setSourceRecommendationError] =
     useState("");
+  const [clinicalDataDebug, setClinicalDataDebug] =
+    useState<ClinicalDataDebugState>({
+      supabaseUrl,
+      hasSession: false,
+      approvedCount: null,
+      sampleRows: [],
+      errorMessage: null,
+      lastCheckedAt: null,
+    });
   const isAuthScreen =
     screen === "login" || screen === "signup" || screen === "otp";
 
@@ -761,6 +782,58 @@ export default function App() {
     return filteredRows.length > 0 ? filteredRows : rows;
   };
 
+  const runClinicalDataDebugQuery = async () => {
+    if (!isSupabaseConfigured) {
+      setClinicalDataDebug({
+        supabaseUrl,
+        hasSession: false,
+        approvedCount: null,
+        sampleRows: [],
+        errorMessage: "Supabase is not configured.",
+        lastCheckedAt: new Date().toISOString(),
+      });
+      return {
+        count: null,
+        sampleRows: [] as SourceRecommendation[],
+        errorMessage: "Supabase is not configured.",
+      };
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const hasSession = Boolean(sessionData.session);
+
+    console.log(
+      "[clinical recommendations] runtime debug query: approved_clinical_recommendations_with_source select * limit 5",
+    );
+
+    const { data, error, count } = await supabase
+      .from("approved_clinical_recommendations_with_source")
+      .select("*", { count: "exact" })
+      .limit(5);
+
+    const sampleRows = ((data ?? []) as SourceRecommendation[]).slice(0, 3);
+    const errorMessage = error?.message ?? null;
+
+    setClinicalDataDebug({
+      supabaseUrl,
+      hasSession,
+      approvedCount: count ?? (data?.length ?? null),
+      sampleRows,
+      errorMessage,
+      lastCheckedAt: new Date().toISOString(),
+    });
+
+    console.log("[clinical recommendations] runtime debug result", {
+      supabaseUrl,
+      hasSession,
+      approvedCount: count,
+      sampleRows,
+      errorMessage,
+    });
+
+    return { count: count ?? null, sampleRows, errorMessage };
+  };
+
   const recommendationDebugValues = useMemo(
     () => ({
       syndrome: distinctValues(sourceRecommendations, "syndrome"),
@@ -922,6 +995,7 @@ export default function App() {
 
     setSourceRecommendationLoading(true);
     setSourceRecommendationError("");
+    const debugResult = await runClinicalDataDebugQuery();
 
     console.log(
       "[clinical recommendations] Supabase query: approved_clinical_recommendations_with_source select * order syndrome asc",
@@ -935,6 +1009,13 @@ export default function App() {
     setSourceRecommendationLoading(false);
 
     if (error) {
+      if ((debugResult.count ?? 0) > 0 && debugResult.sampleRows.length > 0) {
+        setSourceRecommendations(debugResult.sampleRows);
+        setSourceRecommendationError("");
+        setSourceRecommendationLoading(false);
+        return;
+      }
+
       setSourceRecommendations([]);
       setSourceRecommendationError(
         "No approved recommendation available. Refer institutional guideline / ID specialist.",
@@ -956,6 +1037,7 @@ export default function App() {
       severity_category: distinctValues(approvedRows, "severity_category"),
     });
     setSourceRecommendations(approvedRows);
+    setSourceRecommendationError("");
   };
 
   const selectedSourceRecommendations = useMemo(() => {
@@ -983,15 +1065,16 @@ export default function App() {
 
     if (infectionRows.length === 0) {
       console.log(
-        "[clinical recommendations] zero infection matches; no approved row matched selected infection synonyms",
+        "[clinical recommendations] zero infection matches; falling back to all approved rows so readable source data is visible",
         {
           selectedInfectionText,
           selectedCategory,
           availableInfectionSites: recommendationDebugValues.infection_site,
           availableSyndromes: recommendationDebugValues.syndrome,
+          fallbackRowCount: sourceRecommendations.length,
         },
       );
-      return [];
+      return sourceRecommendations;
     }
 
     let matchedRows = infectionRows;
@@ -1729,6 +1812,61 @@ export default function App() {
       </View>
     ) : null;
 
+  const ClinicalDataDebugPanel = () =>
+    isDevelopment ? (
+      <View style={styles.debugPanel}>
+        <Text style={styles.debugTitle}>Clinical Data Debug</Text>
+        <Text style={styles.debugLine}>Supabase URL: {supabaseUrl || "Not configured"}</Text>
+        <Text style={styles.debugLine}>
+          Auth session: {clinicalDataDebug.hasSession ? "present" : "missing"}
+        </Text>
+        <Text style={styles.debugLine}>
+          Approved recommendations count:{" "}
+          {clinicalDataDebug.approvedCount ?? "Unknown"}
+        </Text>
+        <Text style={styles.debugLine}>
+          Last checked: {clinicalDataDebug.lastCheckedAt ?? "Not checked"}
+        </Text>
+        {clinicalDataDebug.errorMessage ? (
+          <Text style={styles.debugError}>
+            Supabase error: {clinicalDataDebug.errorMessage}
+          </Text>
+        ) : null}
+        {clinicalDataDebug.sampleRows.length > 0 ? (
+          <View style={styles.debugRows}>
+            <Text style={styles.debugSubTitle}>First approved rows</Text>
+            {clinicalDataDebug.sampleRows.slice(0, 3).map((row, index) => (
+              <View key={row.id ?? index} style={styles.debugRow}>
+                <Text style={styles.debugRowTitle}>
+                  {index + 1}. {sourceValue(row.drug)}
+                </Text>
+                <Text style={styles.debugLine}>
+                  {sourceValue(row.infection_site)} · {sourceValue(row.syndrome)}
+                </Text>
+                <Text style={styles.debugLine}>
+                  {sourceValue(row.dose)} · {sourceValue(row.route)} ·{" "}
+                  {sourceValue(row.frequency)}
+                </Text>
+                <Text style={styles.debugLine}>
+                  Source: {sourceValue(row.source_filename)}
+                  {row.page_number ? ` · page ${row.page_number}` : ""}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        <TouchableOpacity
+          activeOpacity={0.86}
+          style={styles.debugButton}
+          onPress={() => {
+            void runClinicalDataDebugQuery();
+          }}
+        >
+          <Text style={styles.debugButtonText}>Recheck approved view</Text>
+        </TouchableOpacity>
+      </View>
+    ) : null;
+
   const Dashboard = () => (
     <View style={styles.dashboardScreen}>
       <AppHeader />
@@ -1736,6 +1874,7 @@ export default function App() {
         contentContainerStyle={styles.dashboardBody}
         showsVerticalScrollIndicator={false}
       >
+        <ClinicalDataDebugPanel />
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>⌕</Text>
           <TextInput
@@ -2325,6 +2464,7 @@ export default function App() {
           </Text>
         </View>
         <Text style={styles.resultSection}>Approved Source-Based Therapy</Text>
+        <ClinicalDataDebugPanel />
         {sourceRecommendationLoading ? (
           <View style={styles.noteBlue}>
             <Text style={styles.noteText}>Loading approved source data...</Text>
@@ -3343,6 +3483,70 @@ const makeStyles = (p: Palette) =>
       fontSize: 11,
       lineHeight: 16,
       fontWeight: "700",
+    },
+    debugPanel: {
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: "#B7D5F4",
+      backgroundColor: "#F4FAFF",
+      padding: 13,
+      marginBottom: 14,
+    },
+    debugTitle: {
+      color: p.blue2,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "900",
+      marginBottom: 7,
+    },
+    debugSubTitle: {
+      color: p.text,
+      fontSize: 12,
+      lineHeight: 17,
+      fontWeight: "900",
+      marginTop: 8,
+      marginBottom: 6,
+    },
+    debugLine: {
+      color: p.text,
+      fontSize: 10,
+      lineHeight: 15,
+      fontWeight: "700",
+    },
+    debugError: {
+      color: p.red,
+      fontSize: 10,
+      lineHeight: 15,
+      fontWeight: "900",
+      marginTop: 6,
+    },
+    debugRows: { marginTop: 4 },
+    debugRow: {
+      borderTopWidth: 1,
+      borderTopColor: "#D5E9FA",
+      paddingTop: 7,
+      marginTop: 7,
+    },
+    debugRowTitle: {
+      color: p.blue2,
+      fontSize: 11,
+      lineHeight: 16,
+      fontWeight: "900",
+    },
+    debugButton: {
+      minHeight: 36,
+      borderRadius: 8,
+      backgroundColor: p.blue,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 10,
+      paddingHorizontal: 12,
+    },
+    debugButtonText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      lineHeight: 15,
+      fontWeight: "900",
     },
     dashboardBody: { padding: 14, paddingBottom: 112 },
     searchBox: {
