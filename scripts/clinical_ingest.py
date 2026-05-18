@@ -68,7 +68,7 @@ DOSE_RE = re.compile(
     r"(?:^|[\n;:]|\bOR\b|\+)\s*"
     r"(?P<drug>[A-Z][A-Za-z][A-Za-z\-/() ]{1,70}?)\s+"
     r"(?P<dose>(?:\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?\s*)?(?:mg/kg/day|mg/kg/d|mg/kg|mg|gm|g|mU|mil U/day|lac units|U/day))"
-    r"(?P<trailing>(?:\s+(?:IV|PO|oral|loading dose|LD|followed by|then|q\d+(?:-\d+)?h|q\d+(?:-\d+)?hr|q\d+(?:-\d+)? hrs|q\d+(?:-\d+)? hourly|q\d+d|q\d+|BD|TDS|QDS|OD|daily|tds|hrly|every \d+-\d+ hrs|every \d+ hrs|in \d+-\d+ doses|single dose|x \d+ doses|for \d+ days|\d+-\d+d|\d+d|\d+-\d+ weeks|\d+ weeks|day|days|weeks|months|/day|/d|\+/-|\+|OR|and|with|target trough concentration|\(|\)|\d+|[-–])){0,22})",
+    r"(?P<trailing>(?:\s+(?:IV|PO|oral|loading dose|LD|followed by|then|q\d+(?:-\d+)?h|q\d+(?:-\d+)?hr|q\d+(?:-\d+)? hrs|q\d+(?:-\d+)? hourly|q\d+d|q\d+|BD|TDS|QDS|OD|daily|tds|hrly|every \d+[-–]\d+ hrs|every \d+ hrs|in \d+[-–]\d+ doses|single dose|x \d+ doses|for \d+\s*[-–]\s*\d+\s*(?:days?|weeks?|months?)|for \d+\s*(?:days?|weeks?|months?)|\d+\s*[-–]\s*\d+d|\d+d|\d+\s*[-–]\s*\d+\s*weeks?|\d+\s*weeks?|day|days|week|weeks|month|months|/day|/d|\+/-|\+|OR|and|with|target trough concentration|\(|\)|\d+|[-–])){0,22})",
     re.IGNORECASE,
 )
 
@@ -77,7 +77,10 @@ FREQUENCY_RE = re.compile(
     re.IGNORECASE,
 )
 ROUTE_RE = re.compile(r"\b(IV|PO|oral)\b", re.IGNORECASE)
-DURATION_RE = re.compile(r"\b(\d+\s*-\s*\d+\s*(?:days|day|d|weeks|months)|\d+\s*(?:days|day|d|weeks|months))\b", re.IGNORECASE)
+DURATION_RE = re.compile(
+    r"\b(\d+\s*(?:-|–|to)\s*\d+\s*(?:days?|d|weeks?|months?)|\d+\s*(?:days?|d|weeks?|months?))\b",
+    re.IGNORECASE,
+)
 
 
 

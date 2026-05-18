@@ -8,6 +8,7 @@ from scripts.clinical_ingest import (
     candidate_blocks,
     extract_local_empiric_rows,
     extract_site_guideline_rows,
+    parse_drug_details,
     SourceFile,
     validate_recommendation,
 )
@@ -160,6 +161,30 @@ Ceftriaxone 1g IV q12h + Azithromycin 500mg OD
     assert any(row.syndrome == "CAP" and row.drug == "Amoxicillin-clavulanate" for row in rows)
     assert any(row.dose == "1.2g" and row.route == "IV" and row.frequency == "q8h" for row in rows)
     assert any(row.drug == "Ceftriaxone" and row.dose == "1g" for row in rows)
+
+
+def test_drug_detail_parser_captures_explicit_duration_phrases():
+    assert parse_drug_details("Ceftriaxone 1g IV q12h for 7 days") == (
+        "Ceftriaxone",
+        "1g",
+        "IV",
+        "q12h",
+        "7 days",
+    )
+    assert parse_drug_details("Meropenem 1g IV q8h for 10–14 days") == (
+        "Meropenem",
+        "1g",
+        "IV",
+        "q8h",
+        "10–14 days",
+    )
+    assert parse_drug_details("Vancomycin 1g IV q12h for 2 weeks") == (
+        "Vancomycin",
+        "1g",
+        "IV",
+        "q12h",
+        "2 weeks",
+    )
 
 
 def test_local_empiric_extracts_explicit_context_and_treatment_text():

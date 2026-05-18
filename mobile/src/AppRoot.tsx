@@ -1107,9 +1107,32 @@ export default function App() {
     recommendedTreatmentRecommendations.length,
     6,
   );
-  const durationRecommendations = selectedSourceRecommendations.filter((item) =>
-    hasDisplayValue(item.duration),
+  const durationRecommendations = useMemo(
+    () =>
+      selectedSourceRecommendations.filter((item) =>
+        hasDisplayValue(item.duration),
+      ),
+    [selectedSourceRecommendations],
   );
+  const durationProtocolGroups = useMemo(() => {
+    const groups = new Map<string, SourceRecommendation[]>();
+
+    durationRecommendations.forEach((item) => {
+      const duration = item.duration?.trim();
+
+      if (!duration) {
+        return;
+      }
+
+      const key = normalizeMatchText(duration);
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    });
+
+    return Array.from(groups.values()).map((items) => ({
+      duration: items[0]?.duration?.trim() ?? "",
+      items,
+    }));
+  }, [durationRecommendations]);
   const approvedCleanRecommendations = useMemo(
     () => cleanRecommendationRows(sourceRecommendations),
     [sourceRecommendations],
@@ -2467,18 +2490,27 @@ export default function App() {
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
-          ) : durationRecommendations.length === 0 ? (
+          ) : durationProtocolGroups.length === 0 ? (
             <Text style={styles.infoCardBody}>
-              Duration not specified in approved guide data.
+              Duration not available in the current protocol.
             </Text>
           ) : (
-            durationRecommendations.map((item) => (
-              <View key={item.id} style={styles.durationCard}>
-                <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
-                <RecommendationField label="Dose" value={item.dose} />
-                <RecommendationField label="Route" value={item.route} />
-                <RecommendationField label="Frequency" value={item.frequency} />
-                <RecommendationField label="Duration" value={item.duration} />
+            durationProtocolGroups.map((group) => (
+              <View key={group.duration} style={styles.durationCard}>
+                <Text style={styles.durationValue}>
+                  Recommended Duration: {group.duration}
+                </Text>
+                {group.items.map((item) => (
+                  <View key={item.id} style={styles.durationTreatmentRow}>
+                    <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
+                    <RecommendationField label="Dose" value={item.dose} />
+                    <RecommendationField label="Route" value={item.route} />
+                    <RecommendationField
+                      label="Frequency"
+                      value={item.frequency}
+                    />
+                  </View>
+                ))}
               </View>
             ))
           )}
@@ -2679,23 +2711,54 @@ export default function App() {
         <Text style={styles.questionTitle}>
           Where is the patient{"\n"}currently admitted?
         </Text>
-        {["ICU", "Ward"].map((item) => (
-          <TouchableOpacity
-            key={item}
-            activeOpacity={0.86}
-            style={[
-              styles.choiceCard,
-              setting === item && styles.choiceCardActive,
-            ]}
-            onPress={() => {
-              setSetting(item);
-              go("acquisition");
-            }}
-          >
-            <Text style={styles.bedIcon}>▱</Text>
-            <Text style={styles.choiceText}>{item}</Text>
-          </TouchableOpacity>
-        ))}
+        {["ICU", "Ward"].map((item) => {
+          const isSelected = setting === item;
+
+          return (
+            <TouchableOpacity
+              key={item}
+              activeOpacity={0.86}
+              style={[
+                styles.choiceCard,
+                isSelected && styles.choiceCardActive,
+              ]}
+              onPress={() => {
+                setSetting(item);
+                go("acquisition");
+              }}
+            >
+              <View
+                style={[
+                  styles.selectionIconBadge,
+                  isSelected && styles.selectionIconBadgeActive,
+                ]}
+              >
+                <Feather
+                  name={
+                    item === "ICU"
+                      ? "activity"
+                      : ("home" as ComponentProps<typeof Feather>["name"])
+                  }
+                  size={23}
+                  color={isSelected ? "#FFFFFF" : palette.blue}
+                />
+              </View>
+              <View style={styles.selectionTextBlock}>
+                <Text style={styles.choiceText}>{item}</Text>
+              </View>
+              <View
+                style={[
+                  styles.selectionRadio,
+                  isSelected && styles.selectionRadioActive,
+                ]}
+              >
+                {isSelected ? (
+                  <Feather name="check" size={13} color="#FFFFFF" />
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
         <View style={styles.noteBox}>
           <Text style={styles.noteIcon}>i</Text>
           <Text style={styles.noteText}>
@@ -2713,44 +2776,72 @@ export default function App() {
         <Text style={styles.questionTitle}>
           What is the acquisition{"\n"}of infection?
         </Text>
-        {["Community-acquired", "Hospital-acquired"].map((item) => (
-          <TouchableOpacity
-            key={item}
-            activeOpacity={0.86}
-            style={[
-              styles.acqCard,
-              acquisition === item && styles.acqCardActive,
-            ]}
-            onPress={() => {
-              setAcquisition(item);
-              go("riskAssessment");
-            }}
-          >
-            <Text
+        {["Community-acquired", "Hospital-acquired"].map((item) => {
+          const isSelected = acquisition === item;
+          const isHospitalAcquired = item === "Hospital-acquired";
+
+          return (
+            <TouchableOpacity
+              key={item}
+              activeOpacity={0.86}
               style={[
-                styles.acqIcon,
-                item === "Hospital-acquired" && styles.acqIconRed,
+                styles.acqCard,
+                isSelected && styles.acqCardActive,
               ]}
+              onPress={() => {
+                setAcquisition(item);
+                go("riskAssessment");
+              }}
             >
-              {item === "Community-acquired" ? "♙" : "▥"}
-            </Text>
-            <View>
-              <Text
+              <View
                 style={[
-                  styles.acqTitle,
-                  item === "Hospital-acquired" && styles.acqTitleRed,
+                  styles.selectionIconBadge,
+                  isSelected && styles.selectionIconBadgeActive,
+                  isHospitalAcquired &&
+                    !isSelected &&
+                    styles.selectionIconBadgeRed,
                 ]}
               >
-                {item}
-              </Text>
-              <Text style={styles.acqSub}>
-                {item === "Community-acquired"
-                  ? "(No recent hospital exposure)"
-                  : "(Recent hospital exposure)"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+                <Feather
+                  name={isHospitalAcquired ? "shield" : "globe"}
+                  size={22}
+                  color={
+                    isSelected
+                      ? "#FFFFFF"
+                      : isHospitalAcquired
+                        ? palette.red
+                        : palette.blue
+                  }
+                />
+              </View>
+              <View style={styles.selectionTextBlock}>
+                <Text
+                  style={[
+                    styles.acqTitle,
+                    isHospitalAcquired && styles.acqTitleRed,
+                  ]}
+                >
+                  {item}
+                </Text>
+                <Text style={styles.acqSub}>
+                  {isHospitalAcquired
+                    ? "(Recent hospital exposure)"
+                    : "(No recent hospital exposure)"}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.selectionRadio,
+                  isSelected && styles.selectionRadioActive,
+                ]}
+              >
+                {isSelected ? (
+                  <Feather name="check" size={13} color="#FFFFFF" />
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
         <View style={styles.noteBox}>
           <Text style={styles.noteIcon}>i</Text>
           <Text style={styles.noteText}>
@@ -4376,18 +4467,54 @@ const makeStyles = (p: Palette) =>
       borderWidth: 1,
       borderColor: p.border,
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "space-between",
       marginBottom: 15,
       flexDirection: "row",
-      gap: 22,
+      gap: 14,
+      paddingHorizontal: 18,
       shadowColor: p.shadow,
       shadowOffset: { width: 0, height: 7 },
       shadowOpacity: 0.08,
       shadowRadius: 14,
       elevation: 2,
     },
-    choiceCardActive: { borderColor: p.blue },
-    bedIcon: { color: p.blue, fontSize: 40, fontWeight: "900" },
+    choiceCardActive: {
+      borderColor: p.blue,
+      backgroundColor: p.soft,
+    },
+    selectionIconBadge: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: p.soft,
+      borderWidth: 1,
+      borderColor: p.border,
+    },
+    selectionIconBadgeActive: {
+      backgroundColor: p.blue,
+      borderColor: p.blue,
+    },
+    selectionIconBadgeRed: {
+      backgroundColor: p.soft,
+      borderColor: p.border,
+    },
+    selectionTextBlock: { flex: 1 },
+    selectionRadio: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: p.border,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: p.card,
+    },
+    selectionRadioActive: {
+      backgroundColor: p.blue,
+      borderColor: p.blue,
+    },
     choiceText: {
       color: p.text,
       fontSize: 22,
@@ -4422,9 +4549,10 @@ const makeStyles = (p: Palette) =>
       paddingHorizontal: 18,
       marginBottom: 16,
     },
-    acqCardActive: { borderColor: p.blue },
-    acqIcon: { color: p.blue, fontSize: 33, width: 44, fontWeight: "900" },
-    acqIconRed: { color: p.red },
+    acqCardActive: {
+      borderColor: p.blue,
+      backgroundColor: p.soft,
+    },
     acqTitle: {
       color: p.blue2,
       fontSize: 17,
@@ -4604,6 +4732,19 @@ const makeStyles = (p: Palette) =>
       paddingTop: 11,
       marginTop: 11,
       gap: 7,
+    },
+    durationValue: {
+      color: p.blue2,
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: "900",
+    },
+    durationTreatmentRow: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 9,
+      marginTop: 4,
+      gap: 6,
     },
     therapyDose: {
       color: p.text,
