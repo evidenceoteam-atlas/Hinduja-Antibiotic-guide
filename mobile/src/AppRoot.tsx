@@ -1712,10 +1712,7 @@ export default function App() {
       {loading ? (
         <ActivityIndicator color="#FFFFFF" />
       ) : (
-        <>
-          <Text style={styles.primaryButtonText}>{label}</Text>
-          <Text style={styles.buttonArrow}>→</Text>
-        </>
+        <Text style={styles.primaryButtonText}>{label}</Text>
       )}
     </TouchableOpacity>
   );
@@ -1742,8 +1739,6 @@ export default function App() {
   const Login = () => (
     <View style={styles.centerScreen}>
       <LogoHeader />
-      <Text style={styles.authTitle}>Sign up</Text>
-      <Text style={styles.authSubtitle}>Sign up to continue</Text>
       <View style={styles.inputWrap}>
         <Feather
           name="user"
@@ -3777,32 +3772,29 @@ const makeStyles = (p: Palette) =>
       marginBottom: 8,
     },
     primaryButton: {
-      height: 54,
-      borderRadius: 9,
+      minHeight: 52,
+      borderRadius: 12,
       backgroundColor: p.blue,
       alignItems: "center",
       justifyContent: "center",
-      flexDirection: "row",
       marginTop: 6,
+      paddingHorizontal: 22,
+      paddingVertical: 14,
       shadowColor: p.blue,
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.26,
-      shadowRadius: 18,
-      elevation: 5,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.18,
+      shadowRadius: 16,
+      elevation: 4,
     },
     redButton: { backgroundColor: p.red, shadowColor: p.red },
     disabledButton: { opacity: 0.66 },
     primaryButtonText: {
       color: "#FFFFFF",
-      fontSize: 15,
+      fontSize: 14,
       lineHeight: 20,
-      fontWeight: "900",
-    },
-    buttonArrow: {
-      color: "#FFFFFF",
-      fontSize: 21,
-      fontWeight: "900",
-      marginLeft: 14,
+      fontWeight: "700",
+      letterSpacing: 0.2,
+      textAlign: "center",
     },
     doctorOnly: {
       flexDirection: "row",
@@ -4771,16 +4763,29 @@ const makeStyles = (p: Palette) =>
     },
     actionBodyRed: { color: p.red, fontWeight: "900" },
     actionButton: {
-      height: 38,
-      minWidth: 128,
-      borderRadius: 5,
+      minHeight: 40,
+      minWidth: 132,
+      borderRadius: 10,
       backgroundColor: p.blue,
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 18,
+      paddingVertical: 10,
+      shadowColor: p.blue,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.14,
+      shadowRadius: 12,
+      elevation: 3,
     },
-    actionButtonRed: { backgroundColor: p.red },
-    actionButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
+    actionButtonRed: { backgroundColor: p.red, shadowColor: p.red },
+    actionButtonText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      lineHeight: 17,
+      fontWeight: "700",
+      letterSpacing: 0.2,
+      textAlign: "center",
+    },
     reportPreview: {
       borderRadius: 8,
       borderWidth: 1,
