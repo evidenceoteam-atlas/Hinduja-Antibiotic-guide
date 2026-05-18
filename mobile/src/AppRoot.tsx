@@ -42,6 +42,7 @@ type Screen =
   | "classification"
   | "protocolResult"
   | "protocolDetails"
+  | "actions"
   | "savedCases"
   | "reports"
   | "shareView"
@@ -3059,11 +3060,6 @@ export default function App() {
   const ProtocolDetails = () =>
     appShell(
       <View>
-        {actionMessage ? (
-          <View style={styles.successBanner}>
-            <Text style={styles.successBannerText}>{actionMessage}</Text>
-          </View>
-        ) : null}
         <View style={styles.infoCard}>
           <Text style={styles.detailsTitle}>Clinical Scenario</Text>
           <Text style={styles.infoCardBody}>
@@ -3136,7 +3132,23 @@ export default function App() {
             response are available.
           </Text>
         </View>
-        <Text style={styles.detailsTitle}>Actions</Text>
+        <PrimaryButton
+          label="Continue to Actions"
+          onPress={() => go("actions")}
+        />
+      </View>,
+      "Protocol Details",
+      false,
+    );
+
+  const Actions = () =>
+    appShell(
+      <View>
+        {actionMessage ? (
+          <View style={styles.successBanner}>
+            <Text style={styles.successBannerText}>{actionMessage}</Text>
+          </View>
+        ) : null}
         <View style={styles.actionsGrid}>
           <ActionCard
             title="Save to My Cases"
@@ -3165,9 +3177,16 @@ export default function App() {
               go("shareView");
             }}
           />
+          <ActionCard
+            title="Back to Details"
+            body="Return to the clinical details and approved treatment protocol."
+            button="Back"
+            icon="arrow-left"
+            onPress={() => go("protocolDetails")}
+          />
         </View>
       </View>,
-      "Protocol Details",
+      "Actions",
       false,
     );
 
@@ -3522,6 +3541,8 @@ export default function App() {
         return ProtocolResult();
       case "protocolDetails":
         return ProtocolDetails();
+      case "actions":
+        return Actions();
       case "savedCases":
         return SavedCases();
       case "reports":
