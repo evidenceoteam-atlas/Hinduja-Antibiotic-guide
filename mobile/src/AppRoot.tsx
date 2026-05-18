@@ -42,7 +42,6 @@ type Screen =
   | "classification"
   | "protocolResult"
   | "protocolDetails"
-  | "actions"
   | "savedCases"
   | "reports"
   | "shareView"
@@ -561,6 +560,33 @@ const cleanRecommendationRows = (rows: SourceRecommendation[]) => {
     }
 
     const identity = recommendationIdentity(item);
+    if (seen.has(identity)) {
+      return false;
+    }
+
+    seen.add(identity);
+    return true;
+  });
+};
+
+const durationIdentity = (item: SourceRecommendation) =>
+  [
+    normalizeMatchText(item.duration),
+    hasMeaningfulTreatment(item) ? normalizeMatchText(item.drug) : "",
+    normalizeMatchText(item.dose),
+    normalizeMatchText(item.route),
+    normalizeMatchText(item.frequency),
+  ].join("|");
+
+const cleanDurationRows = (rows: SourceRecommendation[]) => {
+  const seen = new Set<string>();
+
+  return rows.filter((item) => {
+    if (!hasDisplayValue(item.duration)) {
+      return false;
+    }
+
+    const identity = durationIdentity(item);
     if (seen.has(identity)) {
       return false;
     }
@@ -1142,7 +1168,7 @@ export default function App() {
 
     const matchedRows = progressivelyMatchScenarioRows(infectionRows);
 
-    return cleanRecommendationRows(matchedRows).sort(
+    return cleanDurationRows(matchedRows).sort(
       (left, right) =>
         scoreSourceRecommendation(right) - scoreSourceRecommendation(left),
     );
@@ -2549,7 +2575,9 @@ export default function App() {
                 </Text>
                 {group.items.map((item) => (
                   <View key={item.id} style={styles.durationTreatmentRow}>
-                    <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
+                    {hasMeaningfulTreatment(item) ? (
+                      <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
+                    ) : null}
                     <RecommendationField label="Dose" value={item.dose} />
                     <RecommendationField label="Route" value={item.route} />
                     <RecommendationField
@@ -3031,164 +3059,84 @@ export default function App() {
   const ProtocolDetails = () =>
     appShell(
       <View>
-        <View style={styles.tabsRow}>
-          {(["Notes", "Warnings", "ID Consult"] as ProtocolDetailTab[]).map(
-            (tab) => (
-              <TouchableOpacity
-                key={tab}
-                activeOpacity={0.82}
-                onPress={() => setProtocolDetailTab(tab)}
-                style={styles.tabButton}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    protocolDetailTab === tab && styles.tabActive,
-                  ]}
-                >
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ),
-          )}
-        </View>
-        {protocolDetailTab === "Notes" && (
-          <View>
-            <Text style={styles.detailsTitle}>Recommended Treatment Protocol</Text>
-            {selectedSourceRecommendations.length === 0 ? (
-              <View style={[styles.noteBlue, styles.actionAlert]}>
-                <Text style={[styles.noteText, styles.actionBodyRed]}>
-                  {failClosedMessage}
-                </Text>
-              </View>
-            ) : (
-              <View>
-                {recommendedTreatmentRecommendations.map((item, index) => (
-                  <SourceRecommendationCard
-                    key={item.id}
-                    item={item}
-                    index={index}
-                  />
-                ))}
-                {alternativeTreatmentRecommendations.length > 0 ? (
-                  <View style={styles.alternativeSection}>
-                    <Text style={styles.resultSection}>Alternative Options</Text>
-                    {alternativeTreatmentRecommendations.map((item, index) => (
-                      <SourceRecommendationCard
-                        key={item.id}
-                        item={item}
-                        index={index}
-                      />
-                    ))}
-                  </View>
-                ) : null}
-              </View>
-            )}
-          </View>
-        )}
-        {protocolDetailTab === "Warnings" && (
-          <View>
-            <Text style={styles.detailsTitle}>Clinical Warnings</Text>
-            {selectedSourceRecommendations.length === 0 ? (
-              <View style={[styles.noteBlue, styles.actionAlert]}>
-                <Text style={[styles.noteText, styles.actionBodyRed]}>
-                  {failClosedMessage}
-                </Text>
-              </View>
-            ) : meaningfulWarningRecommendations.length === 0 ? (
-              <View style={styles.noteBlue}>
-                <Text style={styles.noteText}>
-                  No specific warnings documented in approved data for the current recommendations.
-                </Text>
-              </View>
-            ) : (
-              meaningfulWarningRecommendations.map((item) => {
-                const warnings = ([
-                  ["Renal adjustment", item.renal_adjustment],
-                  ["Hepatic adjustment", item.hepatic_adjustment],
-                  [
-                    "Pregnancy/lactation caution",
-                    item.pregnancy_lactation_caution,
-                  ],
-                  ["Allergy warning", item.allergy_warning],
-                  ["Contraindication", item.contraindication],
-                  ["Stewardship note", item.stewardship_note],
-                ] as Array<[string, string | null]>).filter(([, value]) =>
-                  hasMeaningfulText(value),
-                );
-
-                return (
-                  <View key={item.id} style={[styles.noteBlue, styles.actionAlert]}>
-                    <Text style={styles.therapyName}>{item.drug?.trim()}</Text>
-                    {warnings.map(([label, value]) => (
-                      <RecommendationField
-                        key={`${item.id}-${label}`}
-                        label={label}
-                        value={value}
-                      />
-                    ))}
-                  </View>
-                );
-              })
-            )}
-          </View>
-        )}
-        {protocolDetailTab === "ID Consult" && (
-          <View>
-            <Text style={styles.detailsTitle}>
-              Infectious Disease Consult Guidance
-            </Text>
-            {selectedSourceRecommendations.length === 0 ? (
-              <View style={[styles.noteBlue, styles.actionAlert]}>
-                <Text style={[styles.noteText, styles.actionBodyRed]}>
-                  {failClosedMessage}
-                </Text>
-              </View>
-            ) : meaningfulConsultRecommendations.length === 0 ? (
-              <View style={styles.noteBlue}>
-                <Text style={styles.noteText}>
-                  No specific ID consult trigger documented in approved data for the current recommendations.
-                </Text>
-              </View>
-            ) : (
-              meaningfulConsultRecommendations.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    activeOpacity={0.86}
-                    style={styles.listCard}
-                    onPress={() => go("stewardshipAlert")}
-                  >
-                    <View style={styles.guidelineIconBadge}>
-                      <Feather
-                        name="alert-circle"
-                        size={21}
-                        strokeWidth={2.4}
-                        color={palette.blue}
-                      />
-                    </View>
-                    <Text style={styles.listText}>
-                      {item.id_consult_trigger?.trim()}
-                    </Text>
-                    <Text style={styles.chevron}>›</Text>
-                  </TouchableOpacity>
-                ))
-            )}
-          </View>
-        )}
-        <PrimaryButton label="Actions" onPress={() => go("actions")} />
-      </View>,
-      "Protocol Details",
-      false,
-    );
-
-  const Actions = () =>
-    appShell(
-      <View>
         {actionMessage ? (
           <View style={styles.successBanner}>
             <Text style={styles.successBannerText}>{actionMessage}</Text>
           </View>
         ) : null}
+        <View style={styles.infoCard}>
+          <Text style={styles.detailsTitle}>Clinical Scenario</Text>
+          <Text style={styles.infoCardBody}>
+            Infection Site: {selectedSite.label}
+          </Text>
+          <Text style={styles.infoCardBody}>Setting: {setting}</Text>
+          <Text style={styles.infoCardBody}>Acquisition: {acquisition}</Text>
+          <Text style={styles.infoCardBody}>
+            Risk Level: {riskType} - {riskLabel}
+          </Text>
+        </View>
+        <View>
+          <Text style={styles.detailsTitle}>Recommended Treatment Protocol</Text>
+          {sourceRecommendationLoading ? (
+            <View style={styles.noteBlue}>
+              <Text style={styles.noteText}>Loading approved treatment data...</Text>
+            </View>
+          ) : selectedSourceRecommendations.length === 0 ? (
+            <View style={[styles.noteBlue, styles.actionAlert]}>
+              <Text style={[styles.noteText, styles.actionBodyRed]}>
+                {sourceRecommendationError || failClosedMessage}
+              </Text>
+            </View>
+          ) : (
+            <View>
+              {recommendedTreatmentRecommendations.map((item, index) => (
+                <SourceRecommendationCard
+                  key={item.id}
+                  item={item}
+                  index={index}
+                />
+              ))}
+              {alternativeTreatmentRecommendations.length > 0 ? (
+                <View style={styles.alternativeSection}>
+                  <Text style={styles.resultSection}>Alternative Options</Text>
+                  {alternativeTreatmentRecommendations.map((item, index) => (
+                    <SourceRecommendationCard
+                      key={item.id}
+                      item={item}
+                      index={index}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
+        {shouldShowStewardshipAlert ? (
+          <View style={[styles.noteBlue, styles.actionAlert]}>
+            <Text style={[styles.actionTitle, styles.actionTitleRed]}>
+              Stewardship Guidance
+            </Text>
+            <Text style={styles.detailLabel}>Reason</Text>
+            <Text style={styles.actionBodyRed}>{stewardshipAlertReason}</Text>
+            <Text style={styles.detailLabel}>Recommended action</Text>
+            <Text style={styles.actionBodyRed}>{stewardshipAlertAction}</Text>
+            <TouchableOpacity
+              activeOpacity={0.86}
+              style={[styles.actionButton, styles.actionButtonRed]}
+              onPress={() => go("stewardshipAlert")}
+            >
+              <Text style={styles.actionButtonText}>View Alert</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitle}>Review Trigger</Text>
+          <Text style={styles.infoCardBody}>
+            Reassess duration when cultures, source control, and clinical
+            response are available.
+          </Text>
+        </View>
+        <Text style={styles.detailsTitle}>Actions</Text>
         <View style={styles.actionsGrid}>
           <ActionCard
             title="Save to My Cases"
@@ -3219,7 +3167,7 @@ export default function App() {
           />
         </View>
       </View>,
-      "Actions",
+      "Protocol Details",
       false,
     );
 
@@ -3274,7 +3222,7 @@ export default function App() {
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>No saved cases yet</Text>
             <Text style={styles.infoCardBody}>
-              Save a selected protocol from Actions to create a case report.
+              Save a selected protocol from Protocol Details to create a case report.
             </Text>
           </View>
         ) : (
@@ -3574,8 +3522,6 @@ export default function App() {
         return ProtocolResult();
       case "protocolDetails":
         return ProtocolDetails();
-      case "actions":
-        return Actions();
       case "savedCases":
         return SavedCases();
       case "reports":
