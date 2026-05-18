@@ -813,6 +813,21 @@ export default function App() {
     );
   };
 
+  const riskMatchesSelection = (item: SourceRecommendation) => {
+    const sourceRiskValues = [item.risk_type, item.severity_category].filter(
+      hasDisplayValue,
+    );
+
+    if (sourceRiskValues.length === 0) {
+      return true;
+    }
+
+    return sourceRiskValues.some(
+      (value) =>
+        fieldMatches(value, riskType) || fieldMatches(value, riskLabel),
+    );
+  };
+
   const infectionMatchesSelection = (item: SourceRecommendation) => {
     const sourceCategory =
       canonicalInfectionCategory(item.infection_site) ??
@@ -862,6 +877,43 @@ export default function App() {
     const filteredRows = rows.filter(predicate);
 
     return filteredRows.length > 0 ? filteredRows : rows;
+  };
+
+  const progressivelyMatchScenarioRows = (rows: SourceRecommendation[]) => {
+    let matchedRows = rows;
+
+    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
+      fieldMatches(item.setting, setting),
+    );
+    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
+      fieldMatches(item.acquisition, acquisition),
+    );
+    matchedRows = applyProgressiveFilter(matchedRows, riskMatchesSelection);
+
+    return matchedRows;
+  };
+
+  const scoreSourceRecommendation = (item: SourceRecommendation) => {
+    const hasSourceRisk =
+      hasDisplayValue(item.risk_type) || hasDisplayValue(item.severity_category);
+    const scenarioScore =
+      (item.setting && fieldMatches(item.setting, setting) ? 3 : 0) +
+      (item.acquisition && fieldMatches(item.acquisition, acquisition)
+        ? 3
+        : 0) +
+      (hasSourceRisk && riskMatchesSelection(item) ? 4 : 0);
+    const completenessScore =
+      clinicalFieldScore(item.dose) * 3 +
+      clinicalFieldScore(item.route) * 2 +
+      clinicalFieldScore(item.frequency) * 2 +
+      clinicalFieldScore(item.duration);
+    const safetyScore =
+      (hasMeaningfulText(item.renal_adjustment) ? 1 : 0) +
+      (hasMeaningfulText(item.allergy_warning) ? 1 : 0) +
+      (hasMeaningfulText(item.stewardship_note) ? 1 : 0) +
+      (hasMeaningfulText(item.id_consult_trigger) ? 1 : 0);
+
+    return scenarioScore + completenessScore + safetyScore;
   };
 
   const searchResults = useMemo(() => {
@@ -1039,41 +1091,13 @@ export default function App() {
       return [];
     }
 
-    let matchedRows = infectionRows;
-
-    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
-      fieldMatches(item.setting, setting),
-    );
-    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
-      fieldMatches(item.acquisition, acquisition),
-    );
-    matchedRows = applyProgressiveFilter(matchedRows, (item) =>
-      fieldMatches(item.risk_type, riskType),
-    );
-
-    const recommendationScore = (item: SourceRecommendation) => {
-      const scenarioScore =
-        (item.setting && fieldMatches(item.setting, setting) ? 3 : 0) +
-        (item.acquisition && fieldMatches(item.acquisition, acquisition)
-          ? 3
-          : 0) +
-        (item.risk_type && fieldMatches(item.risk_type, riskType) ? 4 : 0);
-      const completenessScore =
-        clinicalFieldScore(item.dose) * 3 +
-        clinicalFieldScore(item.route) * 2 +
-        clinicalFieldScore(item.frequency) * 2 +
-        clinicalFieldScore(item.duration);
-      const safetyScore =
-        (hasMeaningfulText(item.renal_adjustment) ? 1 : 0) +
-        (hasMeaningfulText(item.allergy_warning) ? 1 : 0) +
-        (hasMeaningfulText(item.stewardship_note) ? 1 : 0) +
-        (hasMeaningfulText(item.id_consult_trigger) ? 1 : 0);
-
-      return scenarioScore + completenessScore + safetyScore;
-    };
+    const matchedRows = progressivelyMatchScenarioRows(infectionRows);
 
     const cleanRows = cleanRecommendationRows(matchedRows)
-      .sort((left, right) => recommendationScore(right) - recommendationScore(left))
+      .sort(
+        (left, right) =>
+          scoreSourceRecommendation(right) - scoreSourceRecommendation(left),
+      )
       .slice(0, 6);
 
     return cleanRows;
@@ -1107,12 +1131,34 @@ export default function App() {
     recommendedTreatmentRecommendations.length,
     6,
   );
+  const selectedDurationRecommendations = useMemo(() => {
+    const infectionRows = sourceRecommendations
+      .filter(infectionMatchesSelection)
+      .filter((item) => hasDisplayValue(item.duration));
+
+    if (infectionRows.length === 0) {
+      return [];
+    }
+
+    const matchedRows = progressivelyMatchScenarioRows(infectionRows);
+
+    return cleanRecommendationRows(matchedRows).sort(
+      (left, right) =>
+        scoreSourceRecommendation(right) - scoreSourceRecommendation(left),
+    );
+  }, [
+    acquisition,
+    riskType,
+    selectedSite,
+    setting,
+    sourceRecommendations,
+  ]);
   const durationRecommendations = useMemo(
     () =>
-      selectedSourceRecommendations.filter((item) =>
+      selectedDurationRecommendations.filter((item) =>
         hasDisplayValue(item.duration),
       ),
-    [selectedSourceRecommendations],
+    [selectedDurationRecommendations],
   );
   const durationProtocolGroups = useMemo(() => {
     const groups = new Map<string, SourceRecommendation[]>();
@@ -2486,7 +2532,8 @@ export default function App() {
           </Text>
           {sourceRecommendationLoading ? (
             <ActivityIndicator color={palette.blue} />
-          ) : selectedSourceRecommendations.length === 0 ? (
+          ) : selectedSourceRecommendations.length === 0 &&
+            durationProtocolGroups.length === 0 ? (
             <Text style={styles.infoCardBody}>
               {sourceRecommendationError || failClosedMessage}
             </Text>
@@ -2733,15 +2780,19 @@ export default function App() {
                   isSelected && styles.selectionIconBadgeActive,
                 ]}
               >
-                <Feather
-                  name={
-                    item === "ICU"
-                      ? "activity"
-                      : ("home" as ComponentProps<typeof Feather>["name"])
-                  }
-                  size={23}
-                  color={isSelected ? "#FFFFFF" : palette.blue}
-                />
+                {item === "ICU" ? (
+                  <Feather
+                    name="activity"
+                    size={23}
+                    color={isSelected ? "#FFFFFF" : palette.blue}
+                  />
+                ) : (
+                  <FontAwesome
+                    name="hospital-o"
+                    size={22}
+                    color={isSelected ? "#FFFFFF" : palette.blue}
+                  />
+                )}
               </View>
               <View style={styles.selectionTextBlock}>
                 <Text style={styles.choiceText}>{item}</Text>

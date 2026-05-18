@@ -164,6 +164,13 @@ Ceftriaxone 1g IV q12h + Azithromycin 500mg OD
 
 
 def test_drug_detail_parser_captures_explicit_duration_phrases():
+    assert parse_drug_details("Azithromycin 500mg PO OD for 5 days") == (
+        "Azithromycin",
+        "500mg",
+        "PO",
+        "OD",
+        "5 days",
+    )
     assert parse_drug_details("Ceftriaxone 1g IV q12h for 7 days") == (
         "Ceftriaxone",
         "1g",
