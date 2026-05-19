@@ -24,6 +24,8 @@ import {
 } from "react-native";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
+declare const __DEV__: boolean | undefined;
+
 type Screen =
   | "login"
   | "signup"
@@ -268,20 +270,57 @@ const paletteFor = (_dark: boolean): Palette => ({
   shadow: "#174B7C",
 });
 
-const otpResendSeconds = 10;
+const otpResendSeconds = 60;
 const otpLength = 6;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const otpPattern = new RegExp(`^\\d{${otpLength}}$`);
 const otpCooldownText = (remainingSeconds: number) =>
   `Resend available in ${remainingSeconds}s`;
-const otpRequestReceivedMessage =
-  "OTP request received. Please check your email inbox or try again later.";
+const otpSentMessage = "OTP sent. Please check your email inbox and spam folder.";
+const otpRateLimitMessage =
+  "Too many OTP requests. Please wait a few minutes before trying again.";
+const otpDeliveryIssueMessage =
+  "OTP could not be sent. Please contact administrator.";
+
+const emailDomainOnly = (email: string) => email.split("@")[1]?.toLowerCase() ?? "";
+
+const isRateLimitAuthError = (
+  error: { message?: string; status?: number; code?: string } | null | undefined,
+) => {
+  const normalizedMessage = (error?.message ?? "").toLowerCase();
+  const normalizedCode = (error?.code ?? "").toLowerCase();
+
+  return (
+    error?.status === 429 ||
+    normalizedCode.includes("rate") ||
+    normalizedMessage.includes("rate limit") ||
+    normalizedMessage.includes("too many")
+  );
+};
+
+const logOtpRequestFailure = (
+  error: { message?: string; status?: number; code?: string } | null | undefined,
+  email: string,
+) => {
+  if (typeof __DEV__ === "undefined" || !__DEV__) {
+    return;
+  }
+
+  console.warn("[auth:email-otp]", {
+    method: "supabase.auth.signInWithOtp",
+    timestamp: new Date().toISOString(),
+    emailDomain: emailDomainOnly(email),
+    code: error?.code ?? null,
+    status: error?.status ?? null,
+    message: error?.message ?? null,
+  });
+};
 
 const friendlyAuthError = (message: string | undefined, fallback: string) => {
   const normalized = (message ?? "").toLowerCase();
 
   if (normalized.includes("rate limit") || normalized.includes("too many")) {
-    return otpRequestReceivedMessage;
+    return otpRateLimitMessage;
   }
 
   if (
@@ -1520,23 +1559,20 @@ export default function App() {
     setAuthLoading(false);
 
     if (error) {
-      const message = friendlyAuthError(
-        error.message,
-        "Unable to send OTP. Please check your email address and try again.",
-      );
-      if (message === otpRequestReceivedMessage) {
-        setAuthSuccess(message);
-      } else {
-        setLoginError(message);
-        setSignupError(message);
-      }
+      logOtpRequestFailure(error, target.value);
+
+      const message = isRateLimitAuthError(error)
+        ? otpRateLimitMessage
+        : otpDeliveryIssueMessage;
+      setLoginError(message);
+      setSignupError(message);
       return;
     }
 
     setOtpTarget(target);
     setOtp("");
     setOtpTimer(otpResendSeconds);
-    setAuthSuccess("OTP sent to your email.");
+    setAuthSuccess(otpSentMessage);
     go("otp");
   };
 
@@ -1914,6 +1950,7 @@ export default function App() {
         label="Sign up with Email OTP"
         onPress={signup}
         loading={authLoading}
+        disabled={otpTimer > 0}
       />
       <TouchableOpacity
         activeOpacity={0.82}
@@ -2009,6 +2046,7 @@ export default function App() {
         label="Login with Email OTP"
         onPress={login}
         loading={authLoading}
+        disabled={otpTimer > 0}
       />
       <TouchableOpacity
         activeOpacity={0.82}
