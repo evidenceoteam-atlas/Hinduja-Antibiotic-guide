@@ -6,6 +6,7 @@ from scripts.clinical_ingest import (
     DraftRecommendation,
     SourceSpan,
     candidate_blocks,
+    extract_febrile_neutropenia_rows,
     extract_local_empiric_rows,
     extract_site_guideline_rows,
     parse_drug_details,
@@ -212,6 +213,57 @@ Patient Risk Stratification and Empiric choice
     assert rows[0].setting == "ICU"
     assert rows[0].acquisition == "Community-acquired"
     assert {row.drug for row in rows} >= {"Cefoperazone-Sulbactam", "Piperacillin-Tazobactam"}
+
+
+def test_febrile_neutropenia_extracts_source_backed_regimen_and_duration():
+    source = SourceFile("guide.pdf", "/tmp/guide.pdf", "abc", "application/pdf")
+    text = """Gram-negative pathogens
+Enterobacteriaceae
+Pseudomonas aeruginosa
+Polymixin B to be started empirically if stool CRE screen positive
+Piperacillin tazobactam 4.5g IV q6-8h OR
+Meropenem 2g q8h OR
+Imipenem 1g q6-8h OR
+Doripenem 500mg-1g q8h +/-
+Vancomycin 15mg/kg IV 12h OR Teicoplanin 12mg/kg/d q12h x 3 doses followed by 12mg/kg/d +/-
+CRE Risk factors:
+Polymixin B IV 15 lac units SD followed by 5 lac units q8h/ Colistin 9mU SD followed by 4.5mU 12hrly
+Ceftazidime avibactam + Aztreonam (ID consult advised)
+Febrile neutropenia
+Malignant otitis externa
+DURATION OF TREATMENT
+Febrile Neutropenia If source identified, treat as per site of infection
+Discontinue antibiotic if no source identified & patient has been afebrile for at least two days and ANC is ≥500 cells/microL with a consistently increasing trend
+Deep Neck space infection 2-3 weeks
+"""
+
+    rows = extract_febrile_neutropenia_rows(
+        source,
+        7,
+        text,
+        "2026-05-16T00:00:00+00:00",
+    )
+
+    assert {row.infection_site for row in rows} == {"Febrile Neutropenia"}
+    assert {row.syndrome for row in rows} == {"Febrile Neutropenia"}
+    assert any(
+        row.drug == "Piperacillin tazobactam"
+        and row.dose == "4.5g"
+        and row.route == "IV"
+        and row.frequency == "q6-8h"
+        for row in rows
+    )
+    assert any(row.drug == "Meropenem" and row.dose == "2g" for row in rows)
+    assert any(
+        row.drug == "Ceftazidime avibactam + Aztreonam"
+        and row.id_consult_trigger
+        for row in rows
+    )
+    assert any(
+        row.duration
+        == "Discontinue antibiotic if no source identified & patient has been afebrile for at least two days and ANC is ≥500 cells/microL with a consistently increasing trend"
+        for row in rows
+    )
 
 
 def test_no_fixture_contains_static_antibiotic_fallbacks():

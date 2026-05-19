@@ -34,6 +34,7 @@ def test_mobile_otp_request_is_button_driven_and_rate_limited():
     assert "void sendOtp" not in source.split("onChangeText={updateLoginEmail}")[1].split(
         "placeholder="
     )[0]
+    assert "setOtpTimer(0);" in source
 
 
 def test_mobile_otp_user_messages_do_not_fake_success_on_errors():
@@ -59,3 +60,18 @@ def test_mobile_otp_screen_accepts_six_numeric_digits():
     assert 'setLoginError("Enter the 6 digit OTP.");' in source
     assert 'inputMode="numeric"' in source
     assert 'keyboardType="number-pad"' in source
+
+
+def test_mobile_auth_diagnostics_are_sanitized_and_gated():
+    source = app_source()
+
+    assert "debugAuth" in source
+    assert "Auth Health Check" in source
+    assert "emailDomainOnly" in source
+    assert "target.value" not in source.split('method: "supabase.auth.signInWithOtp"')[1].split(
+        "});"
+    )[0]
+    assert "serviceWorkerActive" in source
+    assert "cacheStorageAvailable" in source
+    assert "expectedSupabaseHostname" in source
+    assert "ebnmtviysnhljrymfngc.supabase.co" in source

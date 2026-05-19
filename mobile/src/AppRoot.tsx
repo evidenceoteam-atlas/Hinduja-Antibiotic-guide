@@ -22,14 +22,20 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { isSupabaseConfigured, supabase } from "./supabase";
+import { isSupabaseConfigured, supabase, supabaseUrl } from "./supabase";
 
 declare const __DEV__: boolean | undefined;
+declare const process:
+  | {
+      env?: Record<string, string | undefined>;
+    }
+  | undefined;
 
 type Screen =
   | "login"
   | "signup"
   | "otp"
+  | "authHealth"
   | "dashboard"
   | "guidelines"
   | "guidelineSection"
@@ -172,6 +178,28 @@ type OtpTarget = {
   value: string;
   name?: string;
 };
+type OtpRequestDiagnostic = {
+  id: string;
+  timestamp: string;
+  supabaseHost: string;
+  supabaseProjectMatchesExpected: boolean;
+  buildId: string;
+  appVersion: string;
+  environment: string;
+  emailDomain: string;
+  buttonClickFired: boolean;
+  signInWithOtpCalled: boolean;
+  success: boolean;
+  errorCode: string | null;
+  errorMessage: string | null;
+  status: number | null;
+  cooldownBeforeRequest: number;
+  platform: string;
+  browserInfo: string;
+  serviceWorkerSupported: boolean;
+  serviceWorkerActive: boolean;
+  cacheStorageAvailable: boolean;
+};
 type GuidelineSectionKey = "empiric" | "renal" | "carbapenem";
 type GuidelineSectionItem = {
   key: GuidelineSectionKey;
@@ -281,8 +309,70 @@ const otpRateLimitMessage =
   "Too many OTP requests. Please wait a few minutes before trying again.";
 const otpDeliveryIssueMessage =
   "OTP could not be sent. Please contact administrator.";
+const expectedSupabaseHostname = "ebnmtviysnhljrymfngc.supabase.co";
+const appVersion = "1.0.0";
+const env = process?.env ?? {};
+const appBuildId =
+  env.EXPO_PUBLIC_APP_BUILD_ID ??
+  env.EXPO_PUBLIC_VERCEL_GIT_COMMIT_SHA ??
+  env.VERCEL_GIT_COMMIT_SHA ??
+  "local-dev";
+const shortBuildId = appBuildId.length > 12 ? appBuildId.slice(0, 12) : appBuildId;
 
 const emailDomainOnly = (email: string) => email.split("@")[1]?.toLowerCase() ?? "";
+
+const safeHostname = (url: string) => {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+};
+
+const supabaseHostname = safeHostname(supabaseUrl);
+const supabaseProjectMatchesExpected =
+  supabaseHostname === expectedSupabaseHostname;
+
+const authDebugEnabled = () => {
+  if (typeof __DEV__ !== "undefined" && __DEV__) {
+    return true;
+  }
+
+  if (Platform.OS !== "web") {
+    return false;
+  }
+
+  const webLocation = (globalThis as unknown as {
+    location?: { search?: string };
+  }).location;
+
+  return new URLSearchParams(webLocation?.search ?? "").get("debugAuth") === "true";
+};
+
+const getBrowserInfo = () => {
+  const webNavigator = (globalThis as unknown as {
+    navigator?: { userAgent?: string };
+  }).navigator;
+
+  return Platform.OS === "web"
+    ? webNavigator?.userAgent ?? "web browser unavailable"
+    : Platform.OS;
+};
+
+const getCacheDiagnostics = () => {
+  const webGlobal = globalThis as unknown as {
+    navigator?: { serviceWorker?: { controller?: unknown } };
+    caches?: unknown;
+  };
+
+  return {
+    serviceWorkerSupported:
+      Platform.OS === "web" && Boolean(webGlobal.navigator?.serviceWorker),
+    serviceWorkerActive:
+      Platform.OS === "web" && Boolean(webGlobal.navigator?.serviceWorker?.controller),
+    cacheStorageAvailable: Platform.OS === "web" && Boolean(webGlobal.caches),
+  };
+};
 
 const isRateLimitAuthError = (
   error: { message?: string; status?: number; code?: string } | null | undefined,
@@ -716,8 +806,16 @@ export default function App() {
     null,
   );
   const [actionMessage, setActionMessage] = useState("");
+  const [authDiagnostics, setAuthDiagnostics] = useState<OtpRequestDiagnostic[]>(
+    [],
+  );
+  const [authHealthEmail, setAuthHealthEmail] = useState("");
   const isAuthScreen =
-    screen === "login" || screen === "signup" || screen === "otp";
+    screen === "login" ||
+    screen === "signup" ||
+    screen === "otp" ||
+    screen === "authHealth";
+  const canShowAuthDiagnostics = authDebugEnabled();
 
   const applyUserProfile = (user: User | null) => {
     const nextProfile = profileFromUser(user);
@@ -733,6 +831,14 @@ export default function App() {
     if (!isSupabaseConfigured) {
       setLoginError(
         "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
+      );
+      setSessionReady(true);
+      return;
+    }
+
+    if (!supabaseProjectMatchesExpected) {
+      setLoginError(
+        `Supabase project mismatch. Expected ${expectedSupabaseHostname}; app is using ${supabaseHostname || "an empty URL"}.`,
       );
       setSessionReady(true);
       return;
@@ -1177,6 +1283,10 @@ export default function App() {
 
   const failClosedMessage =
     "No approved recommendation available. Refer institutional guideline / ID specialist.";
+  const activeFailClosedMessage =
+    selectedSite.code === "FN"
+      ? "No approved Febrile Neutropenia protocol available in the current guide."
+      : failClosedMessage;
   const meaningfulWarningRecommendations = selectedSourceRecommendations.filter(
     (item) =>
       hasMeaningfulText(item.renal_adjustment) ||
@@ -1363,7 +1473,7 @@ export default function App() {
       `Risk Level: ${reportCase.riskLevel}`,
       "",
       "Recommended Treatment Protocol",
-      protocolLines || failClosedMessage,
+      protocolLines || activeFailClosedMessage,
       ...(stewardshipLines.length > 0
         ? ["", "Stewardship Guidance", ...stewardshipLines]
         : []),
@@ -1398,7 +1508,7 @@ export default function App() {
   `;
   const saveCurrentCase = () => {
     if (selectedSourceRecommendations.length === 0) {
-      setActionMessage(failClosedMessage);
+      setActionMessage(activeFailClosedMessage);
       return;
     }
 
@@ -1524,11 +1634,17 @@ export default function App() {
 
   const updateLoginEmail = (value: string) => {
     setEmail(value);
+    setOtpTimer(0);
+    setOtp("");
+    setOtpTarget(null);
     clearAuthMessages();
   };
 
   const updateSignupEmail = (value: string) => {
     setSignupEmail(value);
+    setOtpTimer(0);
+    setOtp("");
+    setOtpTarget(null);
     clearAuthMessages();
   };
 
@@ -1537,11 +1653,64 @@ export default function App() {
     clearAuthMessages();
   };
 
-  const sendOtp = async (target: OtpTarget) => {
+  const recordAuthDiagnostic = (diagnostic: OtpRequestDiagnostic) => {
+    setAuthDiagnostics((previousDiagnostics) => [
+      diagnostic,
+      ...previousDiagnostics.slice(0, 9),
+    ]);
+  };
+
+  const sendOtp = async (target: OtpTarget, navigateToOtp = true) => {
+    const cooldownBeforeRequest = otpTimer;
+    const cacheDiagnostics = getCacheDiagnostics();
+    const baseDiagnostic: OtpRequestDiagnostic = {
+      id: `${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      supabaseHost: supabaseHostname || "missing",
+      supabaseProjectMatchesExpected,
+      buildId: appBuildId,
+      appVersion,
+      environment:
+        Platform.OS === "web"
+          ? typeof __DEV__ !== "undefined" && __DEV__
+            ? "web-local-dev"
+            : "web-production"
+          : Platform.OS,
+      emailDomain: emailDomainOnly(target.value),
+      buttonClickFired: true,
+      signInWithOtpCalled: false,
+      success: false,
+      errorCode: null,
+      errorMessage: null,
+      status: null,
+      cooldownBeforeRequest,
+      platform: Platform.OS,
+      browserInfo: getBrowserInfo(),
+      ...cacheDiagnostics,
+    };
+
     if (!isSupabaseConfigured) {
+      recordAuthDiagnostic({
+        ...baseDiagnostic,
+        errorCode: "missing_supabase_config",
+        errorMessage:
+          "Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY",
+      });
       setLoginError(
         "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
       );
+      return;
+    }
+
+    if (!supabaseProjectMatchesExpected) {
+      const message = `Supabase project mismatch: ${supabaseHostname || "missing"}`;
+      recordAuthDiagnostic({
+        ...baseDiagnostic,
+        errorCode: "supabase_project_mismatch",
+        errorMessage: message,
+      });
+      setLoginError(message);
+      setSignupError(message);
       return;
     }
 
@@ -1560,6 +1729,13 @@ export default function App() {
 
     if (error) {
       logOtpRequestFailure(error, target.value);
+      recordAuthDiagnostic({
+        ...baseDiagnostic,
+        signInWithOtpCalled: true,
+        errorCode: error.code ?? null,
+        errorMessage: error.message ?? null,
+        status: error.status ?? null,
+      });
 
       const message = isRateLimitAuthError(error)
         ? otpRateLimitMessage
@@ -1573,7 +1749,14 @@ export default function App() {
     setOtp("");
     setOtpTimer(otpResendSeconds);
     setAuthSuccess(otpSentMessage);
-    go("otp");
+    recordAuthDiagnostic({
+      ...baseDiagnostic,
+      signInWithOtpCalled: true,
+      success: true,
+    });
+    if (navigateToOtp) {
+      go("otp");
+    }
   };
 
   const login = () => {
@@ -1979,8 +2162,19 @@ export default function App() {
       <View style={styles.footerRow}>
         <Text style={styles.versionText}>Version 1.0.0</Text>
         <Text style={styles.offlineDot}>●</Text>
+        <Text style={styles.versionText}>Build {shortBuildId}</Text>
+        <Text style={styles.offlineDot}>●</Text>
         <Text style={styles.versionText}>Offline Enabled</Text>
       </View>
+      {canShowAuthDiagnostics ? (
+        <TouchableOpacity
+          activeOpacity={0.82}
+          onPress={() => go("authHealth")}
+          style={styles.authLinkRow}
+        >
+          <Text style={styles.authLink}>Auth Health Check</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 
@@ -2069,8 +2263,19 @@ export default function App() {
       <View style={styles.footerRow}>
         <Text style={styles.versionText}>Version 1.0.0</Text>
         <Text style={styles.offlineDot}>●</Text>
+        <Text style={styles.versionText}>Build {shortBuildId}</Text>
+        <Text style={styles.offlineDot}>●</Text>
         <Text style={styles.versionText}>Offline Enabled</Text>
       </View>
+      {canShowAuthDiagnostics ? (
+        <TouchableOpacity
+          activeOpacity={0.82}
+          onPress={() => go("authHealth")}
+          style={styles.authLinkRow}
+        >
+          <Text style={styles.authLink}>Auth Health Check</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 
@@ -2143,6 +2348,151 @@ export default function App() {
       </View>
     </View>
   );
+
+  const DiagnosticRow = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: string | number | boolean | null;
+  }) => (
+    <View style={styles.diagnosticRow}>
+      <Text style={styles.recommendationFieldLabel}>{label}</Text>
+      <Text style={styles.recommendationFieldValue}>
+        {value === null ? "none" : String(value)}
+      </Text>
+    </View>
+  );
+
+  const AuthHealth = () => {
+    const latestDiagnostic = authDiagnostics[0] ?? null;
+
+    return (
+      <View style={styles.centerScreen}>
+        <LogoHeader />
+        <Text style={styles.otpTitle}>OTP Health Check</Text>
+        <Text style={styles.otpSubtitle}>
+          Sanitized diagnostics for Email OTP delivery. Full email addresses and
+          keys are never shown.
+        </Text>
+        <View style={styles.infoCard}>
+          <DiagnosticRow label="Supabase host" value={supabaseHostname || "missing"} />
+          <DiagnosticRow
+            label="Expected project"
+            value={expectedSupabaseHostname}
+          />
+          <DiagnosticRow
+            label="Project matches"
+            value={supabaseProjectMatchesExpected}
+          />
+          <DiagnosticRow label="Build" value={shortBuildId} />
+          <DiagnosticRow label="Version" value={appVersion} />
+          <DiagnosticRow label="Platform" value={Platform.OS} />
+          <DiagnosticRow
+            label="Service worker active"
+            value={getCacheDiagnostics().serviceWorkerActive}
+          />
+        </View>
+        <View style={styles.inputWrap}>
+          <Feather
+            name="mail"
+            size={18}
+            strokeWidth={2.3}
+            color="#5C6F86"
+            style={styles.inputFeatherIcon}
+          />
+          <TextInput
+            accessibilityLabel="OTP health check email"
+            value={authHealthEmail}
+            onChangeText={(value) => {
+              setAuthHealthEmail(value);
+              clearAuthMessages();
+            }}
+            placeholder="doctor@example.com"
+            placeholderTextColor="#94A3B8"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            autoComplete="email"
+            style={[styles.textInput, webTextInputReset]}
+          />
+        </View>
+        <PrimaryButton
+          label="Send Test OTP"
+          onPress={() => {
+            const targetEmail = authHealthEmail.trim().toLowerCase();
+            if (!emailPattern.test(targetEmail)) {
+              setLoginError("Enter a valid email address.");
+              return;
+            }
+            void sendOtp({ value: targetEmail }, false);
+          }}
+          loading={authLoading}
+          disabled={otpTimer > 0}
+        />
+        {loginError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{loginError}</Text>
+          </View>
+        ) : null}
+        {authSuccess ? (
+          <View style={styles.successBox}>
+            <Text style={styles.successText}>{authSuccess}</Text>
+          </View>
+        ) : null}
+        {latestDiagnostic ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Latest OTP Request</Text>
+            <DiagnosticRow label="Timestamp" value={latestDiagnostic.timestamp} />
+            <DiagnosticRow
+              label="Email domain"
+              value={latestDiagnostic.emailDomain || "missing"}
+            />
+            <DiagnosticRow
+              label="Button click fired"
+              value={latestDiagnostic.buttonClickFired}
+            />
+            <DiagnosticRow
+              label="signInWithOtp called"
+              value={latestDiagnostic.signInWithOtpCalled}
+            />
+            <DiagnosticRow label="Success" value={latestDiagnostic.success} />
+            <DiagnosticRow
+              label="Error code"
+              value={latestDiagnostic.errorCode}
+            />
+            <DiagnosticRow
+              label="Error message"
+              value={latestDiagnostic.errorMessage}
+            />
+            <DiagnosticRow label="Status" value={latestDiagnostic.status} />
+            <DiagnosticRow
+              label="Cooldown before request"
+              value={latestDiagnostic.cooldownBeforeRequest}
+            />
+            <DiagnosticRow
+              label="Service worker supported"
+              value={latestDiagnostic.serviceWorkerSupported}
+            />
+            <DiagnosticRow
+              label="Service worker active"
+              value={latestDiagnostic.serviceWorkerActive}
+            />
+            <DiagnosticRow
+              label="Cache storage available"
+              value={latestDiagnostic.cacheStorageAvailable}
+            />
+            <DiagnosticRow
+              label="Browser/platform"
+              value={latestDiagnostic.browserInfo}
+            />
+          </View>
+        ) : null}
+        <PrimaryButton label="Back" onPress={back} />
+      </View>
+    );
+  };
 
   const drawerMenuItems: DrawerMenuItem[] = [
     { label: "Home", icon: "home", action: goHome },
@@ -2600,7 +2950,7 @@ export default function App() {
           ) : selectedSourceRecommendations.length === 0 &&
             durationProtocolGroups.length === 0 ? (
             <Text style={styles.infoCardBody}>
-              {sourceRecommendationError || failClosedMessage}
+              {sourceRecommendationError || activeFailClosedMessage}
             </Text>
           ) : durationProtocolGroups.length === 0 ? (
             <Text style={styles.infoCardBody}>
@@ -2649,7 +2999,7 @@ export default function App() {
             <ActivityIndicator color={palette.blue} />
           ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
-              {sourceRecommendationError || failClosedMessage}
+              {sourceRecommendationError || activeFailClosedMessage}
             </Text>
           ) : meaningfulWarningRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
@@ -3064,7 +3414,7 @@ export default function App() {
         ) : selectedSourceRecommendations.length === 0 ? (
           <View style={[styles.noteBlue, styles.actionAlert]}>
             <Text style={[styles.noteText, styles.actionBodyRed]}>
-              {sourceRecommendationError || failClosedMessage}
+              {sourceRecommendationError || activeFailClosedMessage}
             </Text>
           </View>
         ) : (
@@ -3118,7 +3468,7 @@ export default function App() {
           ) : selectedSourceRecommendations.length === 0 ? (
             <View style={[styles.noteBlue, styles.actionAlert]}>
               <Text style={[styles.noteText, styles.actionBodyRed]}>
-                {sourceRecommendationError || failClosedMessage}
+                {sourceRecommendationError || activeFailClosedMessage}
               </Text>
             </View>
           ) : (
@@ -3466,7 +3816,7 @@ export default function App() {
           {reportCase.recommendations.length === 0 ? (
             <View style={[styles.noteBlue, styles.actionAlert]}>
               <Text style={[styles.noteText, styles.actionBodyRed]}>
-                {failClosedMessage}
+                {activeFailClosedMessage}
               </Text>
             </View>
           ) : (
@@ -3504,7 +3854,7 @@ export default function App() {
             <ActivityIndicator color={palette.blue} />
           ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
-              {sourceRecommendationError || failClosedMessage}
+              {sourceRecommendationError || activeFailClosedMessage}
             </Text>
           ) : !shouldShowStewardshipAlert ? (
             <Text style={styles.infoCardBody}>
@@ -3551,6 +3901,8 @@ export default function App() {
         return Signup();
       case "otp":
         return Otp();
+      case "authHealth":
+        return AuthHealth();
       case "dashboard":
         return Dashboard();
       case "guidelines":
@@ -4775,6 +5127,12 @@ const makeStyles = (p: Palette) =>
       fontSize: 12,
       lineHeight: 17,
       fontWeight: "700",
+    },
+    diagnosticRow: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingVertical: 8,
+      gap: 3,
     },
     durationRow: {
       borderTopWidth: 1,

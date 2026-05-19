@@ -78,7 +78,59 @@ FREQUENCY_RE = re.compile(
 )
 ROUTE_RE = re.compile(r"\b(IV|PO|oral)\b", re.IGNORECASE)
 DURATION_RE = re.compile(
-    r"\b(\d+\s*(?:-|–|to)\s*\d+\s*(?:days?|d|weeks?|months?)|\d+\s*(?:days?|d|weeks?|months?))\b",
+    r"\b(\d+\s*(?:-|–|to)\s*\d+\s*(?:days?|d|weeks?|months?)|\d+\s*(?:days?|d|weeks?|months?)|until\s+(?:afebrile|anc recovery|culture results|clinical response)[^.;,\n]*)\b",
+    re.IGNORECASE,
+)
+
+FN_TREATMENT_PATTERNS: list[tuple[str, str, str | None, str | None, str | None, str | None]] = [
+    (
+        r"Piperacillin\s+tazobactam\s+4\.5g\s+IV\s+q6-8h",
+        "Piperacillin tazobactam",
+        "4.5g",
+        "IV",
+        "q6-8h",
+        None,
+    ),
+    (r"Meropenem\s+2g\s+(?:IV\s+)?q8h", "Meropenem", "2g", None, "q8h", None),
+    (r"Imipenem\s+1g\s+q6-8h", "Imipenem", "1g", None, "q6-8h", None),
+    (r"Doripenem\s+500mg-1g\s+q8h", "Doripenem", "500mg-1g", None, "q8h", None),
+    (r"Vancomycin\s+15mg/kg\s+IV\s+12h", "Vancomycin", "15mg/kg", "IV", "12h", None),
+    (
+        r"Teicoplanin\s+12mg/kg/d\s+q12h\s+x\s+3\s+doses\s+followed\s+by\s+12mg/kg/d",
+        "Teicoplanin",
+        "12mg/kg/d",
+        None,
+        "q12h x 3 doses followed by 12mg/kg/d",
+        None,
+    ),
+    (
+        r"Polymixin\s+B\s+IV\s+15\s+lac\s+units\s+SD\s+followed\s+by\s+5\s+lac\s+units\s+q8h",
+        "Polymixin B",
+        "15 lac units SD followed by 5 lac units",
+        "IV",
+        "q8h",
+        "CRE Risk factors",
+    ),
+    (
+        r"Colistin\s+9mU\s+SD\s+followed\s+by\s+4\.5mU\s+12hrly",
+        "Colistin",
+        "9mU SD followed by 4.5mU",
+        None,
+        "12hrly",
+        "CRE Risk factors",
+    ),
+    (
+        r"Ceftazidime\s+avibactam\s+\+\s+Aztreonam",
+        "Ceftazidime avibactam + Aztreonam",
+        None,
+        None,
+        None,
+        "CRE Risk factors",
+    ),
+]
+
+FN_DURATION_RE = re.compile(
+    r"Discontinue\s+antibiotic\s+if\s+no\s+source\s+identified\s*&\s*patient\s+has\s+been\s+afebrile\s+for\s+at\s+least\s+two\s+days\s+and\s+ANC\s+is\s+≥?500\s+cells/microL\s+with\s+a\s+consistently\s+increasing\s+trend",
     re.IGNORECASE,
 )
 
@@ -357,6 +409,129 @@ def recommendation_from_treatment(
     )
 
 
+def recommendation_from_structured_fields(
+    *,
+    source: SourceFile,
+    page_number: int | None,
+    page_text: str,
+    span_start: int,
+    span_end: int,
+    extracted_at: str,
+    section_heading: str | None,
+    syndrome: str | None,
+    infection_site: str | None,
+    drug: str,
+    dose: str | None = None,
+    route: str | None = None,
+    frequency: str | None = None,
+    duration: str | None = None,
+    setting: str | None = None,
+    acquisition: str | None = None,
+    risk_type: str | None = None,
+    severity_category: str | None = None,
+    stewardship_note: str | None = None,
+    id_consult_trigger: str | None = None,
+) -> DraftRecommendation:
+    return DraftRecommendation(
+        syndrome=syndrome,
+        infection_site=infection_site,
+        setting=setting,
+        acquisition=acquisition,
+        risk_type=risk_type,
+        severity_category=severity_category,
+        organism=None,
+        pathogen=None,
+        drug=drug,
+        dose=dose,
+        route=route,
+        frequency=frequency,
+        duration=duration,
+        renal_adjustment=None,
+        hepatic_adjustment=None,
+        pregnancy_lactation_caution=None,
+        allergy_warning=None,
+        contraindication=None,
+        stewardship_note=stewardship_note,
+        id_consult_trigger=id_consult_trigger,
+        review_status=REVIEW_STATUS,
+        source_span=source_span(
+            source,
+            page_number,
+            page_text,
+            span_start,
+            span_end,
+            extracted_at,
+            section_heading,
+        ),
+    )
+
+
+def extract_febrile_neutropenia_rows(
+    source: SourceFile,
+    page_number: int | None,
+    page_text: str,
+    extracted_at: str,
+) -> list[DraftRecommendation]:
+    if not re.search(r"Febrile\s+neutropenia", page_text, re.IGNORECASE):
+        return []
+
+    rows: list[DraftRecommendation] = []
+    segment_start = page_text.find("Gram-negative")
+    segment_end = page_text.find("Malignant", segment_start)
+    if segment_start >= 0 and segment_end > segment_start:
+        segment = page_text[segment_start:segment_end]
+        for pattern, drug, dose, route, frequency, risk_type in FN_TREATMENT_PATTERNS:
+            match = re.search(pattern, segment, re.IGNORECASE)
+            if not match:
+                continue
+            span_start = segment_start + match.start()
+            span_end = segment_start + match.end()
+            id_consult_trigger = (
+                normalized_text(page_text[span_start:span_end])
+                if "Ceftazidime avibactam" in drug
+                else None
+            )
+            rows.append(
+                recommendation_from_structured_fields(
+                    source=source,
+                    page_number=page_number,
+                    page_text=page_text,
+                    span_start=span_start,
+                    span_end=span_end,
+                    extracted_at=extracted_at,
+                    section_heading="Febrile Neutropenia",
+                    syndrome="Febrile Neutropenia",
+                    infection_site="Febrile Neutropenia",
+                    drug=drug,
+                    dose=dose,
+                    route=route,
+                    frequency=frequency,
+                    risk_type=risk_type,
+                    id_consult_trigger=id_consult_trigger,
+                )
+            )
+
+    duration_match = FN_DURATION_RE.search(page_text)
+    if duration_match:
+        rows.append(
+            recommendation_from_structured_fields(
+                source=source,
+                page_number=page_number,
+                page_text=page_text,
+                span_start=duration_match.start(),
+                span_end=duration_match.end(),
+                extracted_at=extracted_at,
+                section_heading="DURATION OF TREATMENT",
+                syndrome="Febrile Neutropenia",
+                infection_site="Febrile Neutropenia",
+                drug="Febrile Neutropenia duration guidance",
+                duration=normalized_text(duration_match.group(0)),
+            )
+        )
+
+    return rows
+
+
 def extract_local_empiric_rows(
     source: SourceFile,
     page_number: int | None,
@@ -523,6 +698,9 @@ def ingest_source(path: Path) -> tuple[SourceFile, list[DraftRecommendation]]:
     for page_number, text in extract_pages(path):
         recommendations.extend(
             extract_site_guideline_rows(source, page_number, text, extracted_at)
+        )
+        recommendations.extend(
+            extract_febrile_neutropenia_rows(source, page_number, text, extracted_at)
         )
         recommendations.extend(
             extract_local_empiric_rows(source, page_number, text, extracted_at)
