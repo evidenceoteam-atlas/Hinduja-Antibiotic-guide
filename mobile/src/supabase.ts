@@ -3,15 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-declare const process: {
-  env?: Record<string, string | undefined>;
-};
-
-const env = process.env ?? {};
-
-export const supabaseUrl = env.EXPO_PUBLIC_SUPABASE_URL ?? "";
-export const supabaseAnonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
+export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
+export const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
 
 const storage = {
   getItem: async (key: string) => {
