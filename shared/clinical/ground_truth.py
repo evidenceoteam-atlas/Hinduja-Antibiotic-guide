@@ -126,6 +126,65 @@ class GroundTruthRepository:
             )
         return enriched
 
+    async def organisms(self) -> list[dict[str, Any]]:
+        return await self._fetch_all(
+            """
+            select distinct pathogen_name
+            from public.approved_antibiogram_pathogen_rows_with_source
+            where pathogen_name is not null and length(btrim(pathogen_name)) > 0
+            order by pathogen_name
+            """
+        )
+
+    async def antibiotic_catalog(self) -> list[dict[str, Any]]:
+        return await self._fetch_all(
+            """
+            select distinct key as antibiotic
+            from public.approved_antibiogram_pathogen_rows_with_source,
+                 lateral jsonb_object_keys(sensitivities) as key
+            order by antibiotic
+            """
+        )
+
+    async def sensitivity(
+        self,
+        organism: str,
+        department: str | None = None,
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"organism": organism}
+        where_extra = ""
+        if department:
+            where_extra = (
+                " and (lower(location) = lower(:department)"
+                " or lower(sheet_key) like lower(:department_like))"
+            )
+            params["department"] = department
+            params["department_like"] = f"%{department}%"
+
+        return await self._fetch_all(
+            f"""
+            select sheet_key, risk_type, pathogen_name, isolate_count,
+                   prevalence_pct, sensitivities, source_quote, source_page,
+                   source_section
+            from public.approved_antibiogram_pathogen_rows_with_source
+            where lower(pathogen_name) = lower(:organism){where_extra}
+            order by sheet_key, risk_type
+            """,
+            params,
+        )
+
+    async def resistance_trends(self) -> list[dict[str, Any]]:
+        return await self._fetch_all(
+            """
+            select pathogen_name, sheet_key, risk_type,
+                   key as antibiotic,
+                   value as susceptibility_value
+            from public.approved_antibiogram_pathogen_rows_with_source,
+                 lateral jsonb_each_text(sensitivities) as kv(key, value)
+            order by pathogen_name, antibiotic, sheet_key, risk_type
+            """
+        )
+
     async def stewardship_pearls(self) -> list[dict[str, Any]]:
         return await self._fetch_all(
             """
