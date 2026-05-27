@@ -30,8 +30,30 @@ import {
   type AntibiogramRiskAnswers,
 } from "./antibiogramRisk";
 import {
+  loadAntibiogramDetails,
+  loadAntifungalSusceptibilityRows,
+  loadAntimicrobialPearlPoints,
+  loadDurationGuidelines,
   loadIcmrGuidelines,
+  loadPerioperativeGuidelines,
+  loadStewardshipPearls,
+  loadSynergyTestingRows,
+  type AntibiogramDetails,
+  type AntibiogramEmpiricTherapy,
+  type AntibiogramFootnote,
+  type AntibiogramPathogenRow,
+  type AntibiogramRiskCriterion,
+  type AntibiogramSheet,
+  type AntifungalSusceptibilityRow,
+  type AntimicrobialPearlPoint,
+  type DurationGuidelineRow,
   type IcmrGuidelineRow,
+  type PerioperativeAntibioticDosing,
+  type PerioperativeGuidelines,
+  type PerioperativeNote,
+  type PerioperativeRecommendation,
+  type StewardshipPearl,
+  type SynergyTestingRow,
 } from "./clinicalData";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
@@ -98,6 +120,7 @@ type Screen =
   | "guidelines"
   | "guidelineSection"
   | "duration"
+  | "antibiogram"
   | "alerts"
   | "profile"
   | "editProfile"
@@ -130,8 +153,18 @@ type SearchResult = {
   title: string;
   subtitle: string;
   icon: AppIconName;
-  site: InfectionSite;
-  target: "setting" | "riskSelection" | "protocolResult" | "protocolDetails";
+  site?: InfectionSite;
+  tone?: string;
+  target:
+    | "setting"
+    | "riskSelection"
+    | "protocolResult"
+    | "protocolDetails"
+    | "guidelineSection"
+    | "duration"
+    | "antibiogram";
+  guidelineSection?: GuidelineSectionKey;
+  sectionSearchText?: string;
   riskType?: RiskType;
   detailTab?: ProtocolDetailTab;
   keywords: string;
@@ -251,7 +284,17 @@ const riskCriterionGroups = patientCriterionLabels.map((criterionName) => ({
   ],
 }));
 
-type BottomTab = "Home" | "Guidelines" | "Duration" | "Alerts" | "Profile";
+type BottomTab =
+  | "Home"
+  | "Guidelines"
+  | "Duration"
+  | "Antibiogram"
+  | "Alerts"
+  | "Profile";
+type AntibiogramInfectionFilter = "BSI" | "UTI" | "RTI" | "IAI";
+type AntibiogramLocationFilter = "ICU" | "wards";
+type AntibiogramAcquisitionFilter = "community_acquired" | "hospital_acquired";
+type AntibiogramRiskFilter = "1" | "2" | "3";
 type ProtocolDetailTab = "Notes" | "Warnings" | "ID Consult";
 type DrawerMenuItem = {
   label: string;
@@ -263,12 +306,33 @@ type OtpTarget = {
   value: string;
   name?: string;
 };
-type GuidelineSectionKey = "icmr" | "empiric" | "renal" | "carbapenem";
+type GuidelineSectionKey =
+  | "icmr"
+  | "stewardshipPearls"
+  | "pearlPoints"
+  | "synergyTesting"
+  | "antifungalSusceptibility"
+  | "perioperative"
+  | "empiric"
+  | "renal"
+  | "carbapenem";
 type GuidelineSectionItem = {
   key: GuidelineSectionKey;
   title: string;
   subtitle: string;
   icon: AppIconName;
+};
+type PearlContentRow = {
+  id: string;
+  section_name: string;
+  pearl_text: string;
+  sort_order: number;
+  source_page: number | null;
+  source_quote: string;
+};
+type PearlSectionGroup<T extends PearlContentRow> = {
+  sectionName: string;
+  rows: T[];
 };
 
 type DoctorProfile = {
@@ -297,9 +361,23 @@ const bottomTabs: BottomTab[] = [
   "Home",
   "Guidelines",
   "Duration",
+  "Antibiogram",
   "Alerts",
   "Profile",
 ];
+
+const antibiogramInfectionFilters: AntibiogramInfectionFilter[] = [
+  "BSI",
+  "UTI",
+  "RTI",
+  "IAI",
+];
+const antibiogramLocationFilters: AntibiogramLocationFilter[] = ["ICU", "wards"];
+const antibiogramAcquisitionFilters: AntibiogramAcquisitionFilter[] = [
+  "community_acquired",
+  "hospital_acquired",
+];
+const antibiogramRiskFilters: AntibiogramRiskFilter[] = ["1", "2", "3"];
 
 const guidelineSections: GuidelineSectionItem[] = [
   {
@@ -307,6 +385,36 @@ const guidelineSections: GuidelineSectionItem[] = [
     title: "Site Based ICMR Antibiotic Guidelines",
     subtitle: "Approved guide rows with source page and quote",
     icon: "book",
+  },
+  {
+    key: "stewardshipPearls",
+    title: "Antimicrobial Stewardship Pearls",
+    subtitle: "Approved stewardship pearls grouped by section",
+    icon: "shield",
+  },
+  {
+    key: "pearlPoints",
+    title: "Antimicrobial Pearl Points",
+    subtitle: "Approved antimicrobial pearl points grouped by section",
+    icon: "check",
+  },
+  {
+    key: "synergyTesting",
+    title: "Synergy Testing",
+    subtitle: "Approved ceftazidime-avibactam and aztreonam synergy rows",
+    icon: "layers",
+  },
+  {
+    key: "antifungalSusceptibility",
+    title: "Antifungal Susceptibility",
+    subtitle: "Approved Aspergillus and Candida susceptibility rows",
+    icon: "fungus",
+  },
+  {
+    key: "perioperative",
+    title: "Perioperative Antimicrobial Guidelines",
+    subtitle: "Approved procedure, dosing, and perioperative notes",
+    icon: "clipboard",
   },
   {
     key: "empiric",
@@ -332,6 +440,7 @@ const bottomTabIcons: Record<BottomTab, AppIconName> = {
   Home: "home",
   Guidelines: "book",
   Duration: "clock",
+  Antibiogram: "activity",
   Alerts: "alert",
   Profile: "user",
 };
@@ -340,6 +449,7 @@ const tabRoutes: Record<BottomTab, Screen> = {
   Home: "dashboard",
   Guidelines: "guidelines",
   Duration: "duration",
+  Antibiogram: "antibiogram",
   Alerts: "alerts",
   Profile: "profile",
 };
@@ -353,6 +463,28 @@ const infectionAliases: Record<string, string[]> = {
   SSTI: ["skin", "soft tissue", "cellulitis", "abscess", "diabetic foot"],
   FN: ["febrile", "neutropenia", "neutropenic fever", "oncology", "anc"],
 };
+
+const antibiogramFilterLabel = (value: string) => {
+  if (value === "wards") {
+    return "Wards";
+  }
+  if (value === "community_acquired") {
+    return "Community-acquired";
+  }
+  if (value === "hospital_acquired") {
+    return "Hospital-acquired";
+  }
+  if (value === "1" || value === "2" || value === "3") {
+    return `Type ${value}`;
+  }
+  return value;
+};
+
+const antibiogramSheetKey = (
+  infectionType: string,
+  location: string,
+  acquisitionValue: string,
+) => [infectionType, location, acquisitionValue].join(".");
 
 const paletteFor = (_dark: boolean): Palette => ({
   bg: "#F7FBFF",
@@ -1803,6 +1935,36 @@ const hasMeaningfulText = (value: string | null | undefined) => {
 const hasDisplayValue = (value: string | null | undefined) =>
   Boolean(value?.trim());
 
+const filterPearlRows = <T extends PearlContentRow>(rows: T[], query: string) => {
+  const normalizedQuery = normalizeMatchText(query);
+
+  if (!normalizedQuery) {
+    return rows;
+  }
+
+  return rows.filter((row) =>
+    normalizeMatchText(row.pearl_text).includes(normalizedQuery),
+  );
+};
+
+const groupPearlRowsBySection = <T extends PearlContentRow>(
+  rows: T[],
+): PearlSectionGroup<T>[] => {
+  const groups = new Map<string, T[]>();
+
+  rows.forEach((row) => {
+    const sectionName = row.section_name?.trim() || "General";
+    const currentRows = groups.get(sectionName) ?? [];
+    currentRows.push(row);
+    groups.set(sectionName, currentRows);
+  });
+
+  return Array.from(groups.entries()).map(([sectionName, sectionRows]) => ({
+    sectionName,
+    rows: sectionRows.sort((left, right) => left.sort_order - right.sort_order),
+  }));
+};
+
 const clinicalFieldScore = (value: string | null | undefined) =>
   hasDisplayValue(value) ? 1 : 0;
 
@@ -2182,6 +2344,65 @@ export default function App() {
   const [icmrGuidelineLoading, setIcmrGuidelineLoading] = useState(false);
   const [icmrGuidelineError, setIcmrGuidelineError] = useState("");
   const [icmrGuidelineSearch, setIcmrGuidelineSearch] = useState("");
+  const [durationGuidelineRows, setDurationGuidelineRows] = useState<
+    DurationGuidelineRow[]
+  >([]);
+  const [durationGuidelineLoading, setDurationGuidelineLoading] = useState(false);
+  const [durationGuidelineError, setDurationGuidelineError] = useState("");
+  const [durationGuidelineSearch, setDurationGuidelineSearch] = useState("");
+  const [antibiogramDetails, setAntibiogramDetails] = useState<AntibiogramDetails>({
+    sheets: [],
+    pathogenRows: [],
+    empiricTherapy: [],
+    riskCriteria: [],
+    footnotes: [],
+  });
+  const [antibiogramLoading, setAntibiogramLoading] = useState(false);
+  const [antibiogramError, setAntibiogramError] = useState("");
+  const [antibiogramInfection, setAntibiogramInfection] =
+    useState<AntibiogramInfectionFilter>("BSI");
+  const [antibiogramLocation, setAntibiogramLocation] =
+    useState<AntibiogramLocationFilter>("ICU");
+  const [antibiogramAcquisition, setAntibiogramAcquisition] =
+    useState<AntibiogramAcquisitionFilter>("community_acquired");
+  const [antibiogramRiskType, setAntibiogramRiskType] =
+    useState<AntibiogramRiskFilter>("1");
+  const [stewardshipPearls, setStewardshipPearls] = useState<
+    StewardshipPearl[]
+  >([]);
+  const [stewardshipPearlsLoading, setStewardshipPearlsLoading] =
+    useState(false);
+  const [stewardshipPearlsError, setStewardshipPearlsError] = useState("");
+  const [stewardshipPearlSearch, setStewardshipPearlSearch] = useState("");
+  const [antimicrobialPearlPoints, setAntimicrobialPearlPoints] = useState<
+    AntimicrobialPearlPoint[]
+  >([]);
+  const [
+    antimicrobialPearlPointsLoading,
+    setAntimicrobialPearlPointsLoading,
+  ] = useState(false);
+  const [antimicrobialPearlPointsError, setAntimicrobialPearlPointsError] =
+    useState("");
+  const [antimicrobialPearlPointSearch, setAntimicrobialPearlPointSearch] =
+    useState("");
+  const [synergyTestingRows, setSynergyTestingRows] = useState<
+    SynergyTestingRow[]
+  >([]);
+  const [synergyTestingLoading, setSynergyTestingLoading] = useState(false);
+  const [synergyTestingError, setSynergyTestingError] = useState("");
+  const [antifungalRows, setAntifungalRows] = useState<
+    AntifungalSusceptibilityRow[]
+  >([]);
+  const [antifungalLoading, setAntifungalLoading] = useState(false);
+  const [antifungalError, setAntifungalError] = useState("");
+  const [perioperativeGuidelines, setPerioperativeGuidelines] =
+    useState<PerioperativeGuidelines>({
+      recommendations: [],
+      antibioticDosing: [],
+      notes: [],
+    });
+  const [perioperativeLoading, setPerioperativeLoading] = useState(false);
+  const [perioperativeError, setPerioperativeError] = useState("");
   const [sourceRecommendations, setSourceRecommendations] = useState<
     SourceRecommendation[]
   >([]);
@@ -2243,6 +2464,10 @@ export default function App() {
         if (hasSession) {
           void loadApprovedSourceRecommendations();
           void loadApprovedIcmrGuidelines();
+          void loadApprovedDurationGuidelines();
+          void loadApprovedAntibiograms();
+          void loadApprovedPearls();
+          void loadApprovedSpecialGuidelineSections();
         }
       } catch {
         console.log("OAuth getSession has session: false");
@@ -2274,6 +2499,10 @@ export default function App() {
         setLoginError("");
         void loadApprovedSourceRecommendations();
         void loadApprovedIcmrGuidelines();
+        void loadApprovedDurationGuidelines();
+        void loadApprovedAntibiograms();
+        void loadApprovedPearls();
+        void loadApprovedSpecialGuidelineSections();
       }
     });
 
@@ -2660,7 +2889,7 @@ export default function App() {
   }, [dynamicInfectionSites]);
 
   const searchResults = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const query = normalizeMatchText(searchQuery);
 
     if (!query) {
       return [];
@@ -2668,13 +2897,19 @@ export default function App() {
 
     const results: SearchResult[] = [];
     const pushIfMatch = (result: SearchResult) => {
-      const haystack =
-        `${result.title} ${result.subtitle} ${result.keywords}`.toLowerCase();
+      const haystack = normalizeMatchText(
+        `${result.title} ${result.subtitle} ${result.keywords}`,
+      );
+      const queryTokens = query.split(" ").filter(Boolean);
 
-      if (haystack.includes(query)) {
+      if (
+        haystack.includes(query) ||
+        queryTokens.every((token) => haystack.includes(token))
+      ) {
         results.push(result);
       }
     };
+    const approvedGuidelineTone = palette.blue;
 
     dynamicInfectionSites.forEach((site) => {
       const aliases = infectionAliases[site.code] ?? [];
@@ -2741,8 +2976,272 @@ export default function App() {
       });
     });
 
+    icmrGuidelineRows.forEach((row) => {
+      pushIfMatch({
+        id: `icmr-${row.id}`,
+        title: row.clinical_condition,
+        subtitle: "Site Based ICMR Antibiotic Guidelines",
+        icon: "book",
+        tone: approvedGuidelineTone,
+        target: "guidelineSection",
+        guidelineSection: "icmr",
+        sectionSearchText: row.clinical_condition,
+        keywords: [
+          row.clinical_condition,
+          row.common_pathogens,
+          row.empirical_ama,
+          row.alternate_ama,
+          row.comments,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    durationGuidelineRows.forEach((row) => {
+      pushIfMatch({
+        id: `duration-${row.id}`,
+        title: row.infection,
+        subtitle: "Duration of Treatment",
+        icon: "clock",
+        tone: palette.orange,
+        target: "duration",
+        sectionSearchText: row.infection,
+        keywords: [
+          row.infection,
+          row.duration,
+          row.remarks,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    antibiogramDetails.sheets.forEach((sheet) => {
+      const sheetKey = antibiogramSheetKey(
+        sheet.infection_type,
+        sheet.location,
+        sheet.acquisition,
+      );
+      const pathogenKeywords = antibiogramDetails.pathogenRows
+        .filter((row) => row.sheet_key === sheetKey)
+        .flatMap((row) => [
+          row.pathogen_name,
+          row.raw_sensitivity_text,
+          Object.keys(row.sensitivities).join(" "),
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]);
+      const therapyKeywords = antibiogramDetails.empiricTherapy
+        .filter((row) => row.sheet_key === sheetKey)
+        .map((row) => row.empiric_therapy)
+        .join(" ");
+
+      pushIfMatch({
+        id: `antibiogram-${sheet.id}`,
+        title: sheet.sheet_title,
+        subtitle: "Local Antibiogram and Empirical Antibiotic Choice",
+        icon: "activity",
+        tone: palette.green,
+        target: "antibiogram",
+        sectionSearchText: sheet.infection_type,
+        keywords: [
+          sheet.infection_type,
+          sheet.location,
+          sheet.acquisition,
+          sheet.surveillance,
+          sheet.source_quote,
+          sheet.source_section,
+          sheet.source_span_section_heading,
+          sheet.section_notes.join(" "),
+          therapyKeywords,
+          pathogenKeywords.join(" "),
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    stewardshipPearls.forEach((row) => {
+      pushIfMatch({
+        id: `stewardship-pearl-${row.id}`,
+        title: row.pearl_text,
+        subtitle: `Antimicrobial Stewardship Pearls · ${row.section_name}`,
+        icon: "shield",
+        tone: palette.blue,
+        target: "guidelineSection",
+        guidelineSection: "stewardshipPearls",
+        sectionSearchText: row.pearl_text,
+        keywords: [
+          row.section_name,
+          row.pearl_text,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    antimicrobialPearlPoints.forEach((row) => {
+      pushIfMatch({
+        id: `pearl-point-${row.id}`,
+        title: row.pearl_text,
+        subtitle: `Antimicrobial Pearl Points · ${row.section_name}`,
+        icon: "check",
+        tone: palette.green,
+        target: "guidelineSection",
+        guidelineSection: "pearlPoints",
+        sectionSearchText: row.pearl_text,
+        keywords: [
+          row.section_name,
+          row.pearl_text,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    synergyTestingRows.forEach((row) => {
+      pushIfMatch({
+        id: `synergy-${row.id}`,
+        title: row.organism,
+        subtitle: "Synergy Testing",
+        icon: "layers",
+        tone: palette.blue2,
+        target: "guidelineSection",
+        guidelineSection: "synergyTesting",
+        keywords: [
+          row.organism,
+          row.total_tested,
+          row.negative_for_synergy,
+          row.positive_for_synergy,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    antifungalRows.forEach((row) => {
+      pushIfMatch({
+        id: `antifungal-${row.id}`,
+        title: `${row.species} · ${row.drug}`,
+        subtitle: `Antifungal Susceptibility · ${row.organism_group}`,
+        icon: "fungus",
+        tone: palette.orange,
+        target: "guidelineSection",
+        guidelineSection: "antifungalSusceptibility",
+        keywords: [
+          row.organism_group,
+          row.species,
+          row.drug,
+          row.susceptibility_value,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    perioperativeGuidelines.recommendations.forEach((row) => {
+      pushIfMatch({
+        id: `perioperative-procedure-${row.id}`,
+        title: row.procedure,
+        subtitle: "Perioperative Procedure Recommendation",
+        icon: "clipboard",
+        tone: palette.blue,
+        target: "guidelineSection",
+        guidelineSection: "perioperative",
+        keywords: [
+          row.procedure,
+          row.preferred_drug,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    perioperativeGuidelines.antibioticDosing.forEach((row) => {
+      pushIfMatch({
+        id: `perioperative-dose-${row.id}`,
+        title: row.drug,
+        subtitle: "Perioperative Antibiotic Dosing",
+        icon: "pill",
+        tone: palette.orange,
+        target: "guidelineSection",
+        guidelineSection: "perioperative",
+        keywords: [
+          row.drug,
+          row.standard_dose,
+          row.weight_based_dose,
+          row.bolus_or_infusion_duration,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
+    perioperativeGuidelines.notes.forEach((row) => {
+      pushIfMatch({
+        id: `perioperative-note-${row.id}`,
+        title: row.note_text,
+        subtitle: `Perioperative Note · ${row.note_type}`,
+        icon: "clipboard",
+        tone: palette.green,
+        target: "guidelineSection",
+        guidelineSection: "perioperative",
+        keywords: [
+          row.note_type,
+          row.note_text,
+          row.source_quote,
+          row.source_section,
+          row.source_span_section_heading,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      });
+    });
+
     return results.slice(0, 8);
-  }, [dynamicInfectionSites, searchQuery, sourceRecommendations]);
+  }, [
+    antifungalRows,
+    antimicrobialPearlPoints,
+    antibiogramDetails,
+    durationGuidelineRows,
+    dynamicInfectionSites,
+    icmrGuidelineRows,
+    palette.blue,
+    palette.blue2,
+    palette.green,
+    palette.orange,
+    perioperativeGuidelines,
+    searchQuery,
+    sourceRecommendations,
+    stewardshipPearls,
+    synergyTestingRows,
+  ]);
 
   const go = (next: Screen, mode: "push" | "replace" | "reset" = "push") => {
     setRouteStack((current) => {
@@ -2858,8 +3357,50 @@ export default function App() {
   };
 
   const openSearchResult = (result: SearchResult) => {
-    setSelectedSite(result.site);
     setSearchQuery("");
+
+    if (result.target === "guidelineSection" && result.guidelineSection) {
+      setSelectedGuidelineSection(result.guidelineSection);
+      if (result.guidelineSection === "icmr") {
+        setIcmrGuidelineSearch(result.sectionSearchText ?? "");
+      }
+      if (result.guidelineSection === "stewardshipPearls") {
+        setStewardshipPearlSearch(result.sectionSearchText ?? "");
+      }
+      if (result.guidelineSection === "pearlPoints") {
+        setAntimicrobialPearlPointSearch(result.sectionSearchText ?? "");
+      }
+      go("guidelineSection");
+      return;
+    }
+
+    if (result.target === "duration") {
+      setDurationGuidelineSearch(result.sectionSearchText ?? "");
+      go("duration");
+      return;
+    }
+
+    if (result.target === "antibiogram") {
+      if (result.sectionSearchText) {
+        const matchedInfection = antibiogramInfectionFilters.find(
+          (infection) =>
+            normalizeMatchText(infection) ===
+            normalizeMatchText(result.sectionSearchText),
+        );
+
+        if (matchedInfection) {
+          setAntibiogramInfection(matchedInfection);
+        }
+      }
+      go("antibiogram");
+      return;
+    }
+
+    if (!result.site) {
+      return;
+    }
+
+    setSelectedSite(result.site);
     prepareScenarioForSite(result.site);
 
     if (result.riskType) {
@@ -2931,6 +3472,143 @@ export default function App() {
     setIcmrGuidelineError(
       rows.length === 0
         ? "No approved ICMR guideline rows available. Refer institutional guideline / ID specialist."
+        : "",
+    );
+  };
+
+  const loadApprovedDurationGuidelines = async () => {
+    if (!isSupabaseConfigured) {
+      setDurationGuidelineRows([]);
+      setDurationGuidelineError("");
+      return;
+    }
+
+    setDurationGuidelineLoading(true);
+    setDurationGuidelineError("");
+
+    const rows = await loadDurationGuidelines();
+
+    setDurationGuidelineRows(rows);
+    setDurationGuidelineLoading(false);
+    setDurationGuidelineError(
+      rows.length === 0
+        ? "No approved duration guideline rows available. Refer institutional guideline / ID specialist."
+        : "",
+    );
+  };
+
+  const loadApprovedAntibiograms = async () => {
+    if (!isSupabaseConfigured) {
+      setAntibiogramDetails({
+        sheets: [],
+        pathogenRows: [],
+        empiricTherapy: [],
+        riskCriteria: [],
+        footnotes: [],
+      });
+      setAntibiogramError("");
+      return;
+    }
+
+    setAntibiogramLoading(true);
+    setAntibiogramError("");
+
+    const details = await loadAntibiogramDetails();
+
+    setAntibiogramDetails(details);
+    setAntibiogramLoading(false);
+    setAntibiogramError(
+      details.sheets.length === 0
+        ? "No approved antibiogram rows available. Refer institutional guideline / ID specialist."
+        : "",
+    );
+  };
+
+  const loadApprovedPearls = async () => {
+    if (!isSupabaseConfigured) {
+      setStewardshipPearls([]);
+      setAntimicrobialPearlPoints([]);
+      setStewardshipPearlsError("");
+      setAntimicrobialPearlPointsError("");
+      return;
+    }
+
+    setStewardshipPearlsLoading(true);
+    setAntimicrobialPearlPointsLoading(true);
+    setStewardshipPearlsError("");
+    setAntimicrobialPearlPointsError("");
+
+    const [stewardshipRows, pearlPointRows] = await Promise.all([
+      loadStewardshipPearls(),
+      loadAntimicrobialPearlPoints(),
+    ]);
+
+    setStewardshipPearls(stewardshipRows);
+    setAntimicrobialPearlPoints(pearlPointRows);
+    setStewardshipPearlsLoading(false);
+    setAntimicrobialPearlPointsLoading(false);
+    setStewardshipPearlsError(
+      stewardshipRows.length === 0
+        ? "No approved antimicrobial stewardship pearls available. Refer institutional guideline / ID specialist."
+        : "",
+    );
+    setAntimicrobialPearlPointsError(
+      pearlPointRows.length === 0
+        ? "No approved antimicrobial pearl points available. Refer institutional guideline / ID specialist."
+        : "",
+    );
+  };
+
+  const loadApprovedSpecialGuidelineSections = async () => {
+    if (!isSupabaseConfigured) {
+      setSynergyTestingRows([]);
+      setAntifungalRows([]);
+      setPerioperativeGuidelines({
+        recommendations: [],
+        antibioticDosing: [],
+        notes: [],
+      });
+      setSynergyTestingError("");
+      setAntifungalError("");
+      setPerioperativeError("");
+      return;
+    }
+
+    setSynergyTestingLoading(true);
+    setAntifungalLoading(true);
+    setPerioperativeLoading(true);
+    setSynergyTestingError("");
+    setAntifungalError("");
+    setPerioperativeError("");
+
+    const [synergyRows, approvedAntifungalRows, approvedPerioperativeGuidelines] =
+      await Promise.all([
+        loadSynergyTestingRows(),
+        loadAntifungalSusceptibilityRows(),
+        loadPerioperativeGuidelines(),
+      ]);
+
+    setSynergyTestingRows(synergyRows);
+    setAntifungalRows(approvedAntifungalRows);
+    setPerioperativeGuidelines(approvedPerioperativeGuidelines);
+    setSynergyTestingLoading(false);
+    setAntifungalLoading(false);
+    setPerioperativeLoading(false);
+    setSynergyTestingError(
+      synergyRows.length === 0
+        ? "No approved synergy testing rows available. Refer institutional guideline / ID specialist."
+        : "",
+    );
+    setAntifungalError(
+      approvedAntifungalRows.length === 0
+        ? "No approved antifungal susceptibility rows available. Refer institutional guideline / ID specialist."
+        : "",
+    );
+    setPerioperativeError(
+      approvedPerioperativeGuidelines.recommendations.length === 0 &&
+        approvedPerioperativeGuidelines.antibioticDosing.length === 0 &&
+        approvedPerioperativeGuidelines.notes.length === 0
+        ? "No approved perioperative antimicrobial guideline rows available. Refer institutional guideline / ID specialist."
         : "",
     );
   };
@@ -3108,6 +3786,119 @@ export default function App() {
         .some((value) => value.toLowerCase().includes(query)),
     );
   }, [icmrGuidelineRows, icmrGuidelineSearch]);
+  const filteredDurationGuidelineRows = useMemo(() => {
+    const query = durationGuidelineSearch.trim().toLowerCase();
+
+    if (!query) {
+      return durationGuidelineRows;
+    }
+
+    return durationGuidelineRows.filter((row) =>
+      row.infection.toLowerCase().includes(query),
+    );
+  }, [durationGuidelineRows, durationGuidelineSearch]);
+  const filteredStewardshipPearls = useMemo(
+    () => filterPearlRows(stewardshipPearls, stewardshipPearlSearch),
+    [stewardshipPearls, stewardshipPearlSearch],
+  );
+  const filteredAntimicrobialPearlPoints = useMemo(
+    () =>
+      filterPearlRows(
+        antimicrobialPearlPoints,
+        antimicrobialPearlPointSearch,
+      ),
+    [antimicrobialPearlPoints, antimicrobialPearlPointSearch],
+  );
+  const groupedStewardshipPearls = useMemo(
+    () => groupPearlRowsBySection(filteredStewardshipPearls),
+    [filteredStewardshipPearls],
+  );
+  const groupedAntimicrobialPearlPoints = useMemo(
+    () => groupPearlRowsBySection(filteredAntimicrobialPearlPoints),
+    [filteredAntimicrobialPearlPoints],
+  );
+  const groupedAntifungalRows = useMemo(() => {
+    const groups = new Map<string, AntifungalSusceptibilityRow[]>();
+
+    antifungalRows.forEach((row) => {
+      const currentRows = groups.get(row.organism_group) ?? [];
+      currentRows.push(row);
+      groups.set(row.organism_group, currentRows);
+    });
+
+    return Array.from(groups.entries()).map(([organismGroup, rows]) => ({
+      organismGroup,
+      rows,
+    }));
+  }, [antifungalRows]);
+  const selectedAntibiogramSheet = useMemo(
+    () =>
+      antibiogramDetails.sheets.find(
+        (sheet) =>
+          sheet.infection_type === antibiogramInfection &&
+          sheet.location === antibiogramLocation &&
+          sheet.acquisition === antibiogramAcquisition,
+      ) ?? null,
+    [
+      antibiogramAcquisition,
+      antibiogramDetails.sheets,
+      antibiogramInfection,
+      antibiogramLocation,
+    ],
+  );
+  const selectedAntibiogramSheetKey = selectedAntibiogramSheet
+    ? antibiogramSheetKey(
+        selectedAntibiogramSheet.infection_type,
+        selectedAntibiogramSheet.location,
+        selectedAntibiogramSheet.acquisition,
+      )
+    : "";
+  const selectedAntibiogramPathogens = useMemo(
+    () =>
+      antibiogramDetails.pathogenRows.filter(
+        (row) =>
+          row.sheet_key === selectedAntibiogramSheetKey &&
+          row.risk_type === antibiogramRiskType,
+      ),
+    [
+      antibiogramDetails.pathogenRows,
+      antibiogramRiskType,
+      selectedAntibiogramSheetKey,
+    ],
+  );
+  const selectedAntibiogramRiskCriteria = useMemo(
+    () =>
+      antibiogramDetails.riskCriteria.filter(
+        (row) => row.sheet_key === selectedAntibiogramSheetKey,
+      ),
+    [antibiogramDetails.riskCriteria, selectedAntibiogramSheetKey],
+  );
+  const selectedAntibiogramTherapy = useMemo(
+    () =>
+      antibiogramDetails.empiricTherapy.find(
+        (row) =>
+          row.sheet_key === selectedAntibiogramSheetKey &&
+          row.risk_type === antibiogramRiskType,
+      ) ?? null,
+    [
+      antibiogramDetails.empiricTherapy,
+      antibiogramRiskType,
+      selectedAntibiogramSheetKey,
+    ],
+  );
+  const selectedAntibiogramFootnotes = useMemo(
+    () =>
+      antibiogramDetails.footnotes.filter(
+        (row) =>
+          row.sheet_key === selectedAntibiogramSheetKey &&
+          (!row.risk_type || row.risk_type === antibiogramRiskType),
+      ),
+    [
+      antibiogramDetails.footnotes,
+      antibiogramRiskType,
+      selectedAntibiogramSheetKey,
+    ],
+  );
   const hasStewardshipGuidance =
     meaningfulWarningRecommendations.length > 0 ||
     meaningfulConsultRecommendations.length > 0;
@@ -3885,7 +4676,7 @@ export default function App() {
                   <AppIcon
                     name={result.icon}
                     size={24}
-                    color={result.site.tone}
+                    color={result.tone ?? result.site?.tone ?? palette.blue}
                     style={styles.searchResultIcon}
                   />
                   <View style={styles.searchResultTextBlock}>
@@ -4089,6 +4880,110 @@ export default function App() {
             )}
           </View>
         ) : null}
+        {selectedGuidelineSection === "stewardshipPearls" ? (
+          <View>
+            <PearlSearchBox
+              title="Search Antimicrobial Stewardship Pearls"
+              value={stewardshipPearlSearch}
+              onChangeText={setStewardshipPearlSearch}
+            />
+            {stewardshipPearlsLoading ? (
+              <ActivityIndicator color={palette.blue} />
+            ) : (
+              <PearlSectionList
+                groups={groupedStewardshipPearls}
+                emptyMessage={
+                  stewardshipPearlSearch.trim()
+                    ? "No approved antimicrobial stewardship pearls match this search."
+                    : stewardshipPearlsError ||
+                      "No approved antimicrobial stewardship pearls available."
+                }
+              />
+            )}
+          </View>
+        ) : null}
+        {selectedGuidelineSection === "pearlPoints" ? (
+          <View>
+            <PearlSearchBox
+              title="Search Antimicrobial Pearl Points"
+              value={antimicrobialPearlPointSearch}
+              onChangeText={setAntimicrobialPearlPointSearch}
+            />
+            {antimicrobialPearlPointsLoading ? (
+              <ActivityIndicator color={palette.blue} />
+            ) : (
+              <PearlSectionList
+                groups={groupedAntimicrobialPearlPoints}
+                emptyMessage={
+                  antimicrobialPearlPointSearch.trim()
+                    ? "No approved antimicrobial pearl points match this search."
+                    : antimicrobialPearlPointsError ||
+                      "No approved antimicrobial pearl points available."
+                }
+              />
+            )}
+          </View>
+        ) : null}
+        {selectedGuidelineSection === "synergyTesting" ? (
+          <View>
+            {synergyTestingLoading ? (
+              <ActivityIndicator color={palette.blue} />
+            ) : synergyTestingRows.length === 0 ? (
+              <GuidelineEmptyState
+                message={
+                  synergyTestingError ||
+                  "No approved synergy testing rows available."
+                }
+              />
+            ) : (
+              <View>
+                {synergyTestingRows.map((item) => (
+                  <SynergyTestingCard key={item.id} item={item} />
+                ))}
+              </View>
+            )}
+          </View>
+        ) : null}
+        {selectedGuidelineSection === "antifungalSusceptibility" ? (
+          <View>
+            {antifungalLoading ? (
+              <ActivityIndicator color={palette.blue} />
+            ) : groupedAntifungalRows.length === 0 ? (
+              <GuidelineEmptyState
+                message={
+                  antifungalError ||
+                  "No approved antifungal susceptibility rows available."
+                }
+              />
+            ) : (
+              groupedAntifungalRows.map((group) => (
+                <AntifungalSusceptibilityGroup
+                  key={group.organismGroup}
+                  organismGroup={group.organismGroup}
+                  rows={group.rows}
+                />
+              ))
+            )}
+          </View>
+        ) : null}
+        {selectedGuidelineSection === "perioperative" ? (
+          <View>
+            {perioperativeLoading ? (
+              <ActivityIndicator color={palette.blue} />
+            ) : perioperativeGuidelines.recommendations.length === 0 &&
+              perioperativeGuidelines.antibioticDosing.length === 0 &&
+              perioperativeGuidelines.notes.length === 0 ? (
+              <GuidelineEmptyState
+                message={
+                  perioperativeError ||
+                  "No approved perioperative antimicrobial guideline rows available."
+                }
+              />
+            ) : (
+              <PerioperativeGuidelinesPanel data={perioperativeGuidelines} />
+            )}
+          </View>
+        ) : null}
         {selectedGuidelineSection === "empiric" ? (
           approvedAmaTableRecommendations.length > 0 ? (
             approvedAmaTableRecommendations.map((item) => (
@@ -4199,6 +5094,468 @@ export default function App() {
         }
       />
       <RecommendationField label="Source Quote" value={item.source_quote} />
+    </View>
+  );
+
+  const DurationGuidelineCard = ({ item }: { item: DurationGuidelineRow }) => (
+    <View style={styles.amaTableCard}>
+      <View style={styles.amaTableHeader}>
+        <Text style={styles.amaTableTitle}>{item.infection}</Text>
+        <Text style={styles.amaRoleBadge}>Duration</Text>
+      </View>
+      <RecommendationField label="Infection" value={item.infection} />
+      <RecommendationField label="Duration" value={item.duration} />
+      <RecommendationField label="Remarks" value={item.remarks} />
+      <RecommendationField
+        label="Source Page"
+        value={
+          item.source_page === null || item.source_page === undefined
+            ? "not specified"
+            : String(item.source_page)
+        }
+      />
+      <RecommendationField label="Source Quote" value={item.source_quote} />
+    </View>
+  );
+
+  const PearlSearchBox = ({
+    title,
+    value,
+    onChangeText,
+  }: {
+    title: string;
+    value: string;
+    onChangeText: (value: string) => void;
+  }) => (
+    <View style={styles.guidelineSearchCard}>
+      <Text style={styles.infoCardTitle}>{title}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder="Search pearl text"
+        placeholderTextColor="#94A3B8"
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={[styles.guidelineSearchInput, webTextInputReset]}
+      />
+    </View>
+  );
+
+  const PearlCard = ({ item }: { item: PearlContentRow }) => (
+    <View style={styles.amaTableCard}>
+      <View style={styles.amaTableHeader}>
+        <Text style={styles.amaTableTitle}>{item.section_name}</Text>
+        <Text style={styles.amaRoleBadge}>Pearl</Text>
+      </View>
+      <RecommendationField label="Section" value={item.section_name} />
+      <RecommendationField label="Pearl Text" value={item.pearl_text} />
+      <RecommendationField
+        label="Source Page"
+        value={
+          item.source_page === null || item.source_page === undefined
+            ? "not specified"
+            : String(item.source_page)
+        }
+      />
+      <RecommendationField label="Source Quote" value={item.source_quote} />
+    </View>
+  );
+
+  const PearlSectionList = ({
+    groups,
+    emptyMessage,
+  }: {
+    groups: PearlSectionGroup<PearlContentRow>[];
+    emptyMessage: string;
+  }) =>
+    groups.length === 0 ? (
+      <GuidelineEmptyState message={emptyMessage} />
+    ) : (
+      <View>
+        {groups.map((group) => (
+          <View key={group.sectionName} style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>{group.sectionName}</Text>
+            {group.rows.map((item) => (
+              <PearlCard key={item.id} item={item} />
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+
+  const SourceBackedMeta = ({ item }: { item: { source_page: number | null; source_quote: string } }) => (
+    <View>
+      <RecommendationField
+        label="Source Page"
+        value={
+          item.source_page === null || item.source_page === undefined
+            ? "not specified"
+            : String(item.source_page)
+        }
+      />
+      <RecommendationField label="Source Quote" value={item.source_quote} />
+    </View>
+  );
+
+  const SynergyTestingCard = ({ item }: { item: SynergyTestingRow }) => (
+    <View style={styles.amaTableCard}>
+      <View style={styles.amaTableHeader}>
+        <Text style={styles.amaTableTitle}>{item.organism}</Text>
+        <Text style={styles.amaRoleBadge}>Synergy</Text>
+      </View>
+      <View style={styles.antibiogramMiniGrid}>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>Organism</Text>
+          <Text style={styles.infoCardBody}>{item.organism}</Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>Total No. Tested</Text>
+          <Text style={styles.infoCardBody}>
+            {item.total_tested ?? "not documented"}
+          </Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>
+            Negative for Synergy
+          </Text>
+          <Text style={styles.infoCardBody}>
+            {item.negative_for_synergy ?? "not documented"}
+          </Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>
+            Positive for Synergy
+          </Text>
+          <Text style={styles.infoCardBody}>
+            {item.positive_for_synergy ?? "not documented"}
+          </Text>
+        </View>
+      </View>
+      <SourceBackedMeta item={item} />
+    </View>
+  );
+
+  const AntifungalSusceptibilityGroup = ({
+    organismGroup,
+    rows,
+  }: {
+    organismGroup: string;
+    rows: AntifungalSusceptibilityRow[];
+  }) => (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoCardTitle}>{organismGroup}</Text>
+      {rows.map((item) => (
+        <View key={item.id} style={styles.antibiogramPathogenCard}>
+          <View style={styles.amaTableHeader}>
+            <Text style={styles.amaTableTitle}>{item.species}</Text>
+            <Text style={styles.amaRoleBadge}>{item.drug}</Text>
+          </View>
+          <RecommendationField label="Organism Group" value={item.organism_group} />
+          <RecommendationField label="Species" value={item.species} />
+          <RecommendationField label="Drug" value={item.drug} />
+          <RecommendationField
+            label="Susceptibility Value"
+            value={item.susceptibility_value ?? "not documented"}
+          />
+          <SourceBackedMeta item={item} />
+        </View>
+      ))}
+    </View>
+  );
+
+  const PerioperativeRecommendationCard = ({
+    item,
+  }: {
+    item: PerioperativeRecommendation;
+  }) => (
+    <View style={styles.antibiogramPathogenCard}>
+      <Text style={styles.amaTableTitle}>{item.procedure}</Text>
+      <RecommendationField label="Procedure" value={item.procedure} />
+      <RecommendationField label="Preferred Drug" value={item.preferred_drug} />
+      <SourceBackedMeta item={item} />
+    </View>
+  );
+
+  const PerioperativeDosingCard = ({
+    item,
+  }: {
+    item: PerioperativeAntibioticDosing;
+  }) => (
+    <View style={styles.antibiogramPathogenCard}>
+      <Text style={styles.amaTableTitle}>{item.drug}</Text>
+      <View style={styles.antibiogramMiniGrid}>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>Drug</Text>
+          <Text style={styles.infoCardBody}>{item.drug}</Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>Standard Dose</Text>
+          <Text style={styles.infoCardBody}>
+            {item.standard_dose ?? "not documented"}
+          </Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>Weight-Based Dose</Text>
+          <Text style={styles.infoCardBody}>
+            {item.weight_based_dose ?? "not documented"}
+          </Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>
+            Duration for Bolus Injection (Infusion)
+          </Text>
+          <Text style={styles.infoCardBody}>
+            {item.bolus_or_infusion_duration ?? "not documented"}
+          </Text>
+        </View>
+      </View>
+      <SourceBackedMeta item={item} />
+    </View>
+  );
+
+  const PerioperativeNoteCard = ({ item }: { item: PerioperativeNote }) => (
+    <View style={styles.antibiogramPathogenCard}>
+      <Text style={styles.amaTableTitle}>{item.note_type}</Text>
+      <RecommendationField label="Note" value={item.note_text} />
+      <SourceBackedMeta item={item} />
+    </View>
+  );
+
+  const PerioperativeGuidelinesPanel = ({
+    data,
+  }: {
+    data: PerioperativeGuidelines;
+  }) => (
+    <View>
+      <View style={styles.infoCard}>
+        <Text style={styles.infoCardTitle}>Procedure Recommendations</Text>
+        {data.recommendations.length === 0 ? (
+          <Text style={styles.infoCardBody}>
+            No approved perioperative procedure recommendation rows available.
+          </Text>
+        ) : (
+          data.recommendations.map((item) => (
+            <PerioperativeRecommendationCard key={item.id} item={item} />
+          ))
+        )}
+      </View>
+      <View style={styles.infoCard}>
+        <Text style={styles.infoCardTitle}>Antibiotic Dosing Table</Text>
+        {data.antibioticDosing.length === 0 ? (
+          <Text style={styles.infoCardBody}>
+            No approved perioperative antibiotic dosing rows available.
+          </Text>
+        ) : (
+          data.antibioticDosing.map((item) => (
+            <PerioperativeDosingCard key={item.id} item={item} />
+          ))
+        )}
+      </View>
+      <View style={styles.infoCard}>
+        <Text style={styles.infoCardTitle}>General Notes</Text>
+        {data.notes.length === 0 ? (
+          <Text style={styles.infoCardBody}>
+            No approved perioperative notes available.
+          </Text>
+        ) : (
+          data.notes.map((item) => (
+            <PerioperativeNoteCard key={item.id} item={item} />
+          ))
+        )}
+      </View>
+    </View>
+  );
+
+  const AntibiogramFilterGroup = <T extends string>({
+    label,
+    values,
+    selected,
+    onSelect,
+  }: {
+    label: string;
+    values: T[];
+    selected: T;
+    onSelect: (value: T) => void;
+  }) => (
+    <View style={styles.antibiogramFilterGroup}>
+      <Text style={styles.groupLabel}>{label}</Text>
+      <View style={styles.antibiogramFilterRow}>
+        {values.map((value) => {
+          const isSelected = selected === value;
+
+          return (
+            <TouchableOpacity
+              key={value}
+              activeOpacity={0.86}
+              onPress={() => onSelect(value)}
+              style={[
+                styles.antibiogramFilterChip,
+                isSelected && styles.antibiogramFilterChipSelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.antibiogramFilterChipText,
+                  isSelected && styles.antibiogramFilterChipTextSelected,
+                ]}
+              >
+                {antibiogramFilterLabel(value)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+
+  const TypeTotals = ({ sheet }: { sheet: AntibiogramSheet }) => (
+    <View style={styles.antibiogramMiniGrid}>
+      {antibiogramRiskFilters.map((risk) => (
+        <View key={risk} style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>
+            {antibiogramFilterLabel(risk)}
+          </Text>
+          <Text style={styles.infoCardBody}>
+            {String(sheet.type_totals?.[risk] ?? "not enough data")}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+
+  const AntibiogramEmpiricTherapyCard = ({
+    item,
+    riskType,
+  }: {
+    item: AntibiogramEmpiricTherapy | null;
+    riskType: AntibiogramRiskFilter;
+  }) => (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoCardTitle}>
+        Empiric Therapy for {antibiogramFilterLabel(riskType)}
+      </Text>
+      <Text style={styles.infoCardBody}>
+        {item?.empiric_therapy?.trim() ||
+          "No approved empiric therapy documented for this selection."}
+      </Text>
+      {item?.source_quote ? (
+        <RecommendationField label="Source Quote" value={item.source_quote} />
+      ) : null}
+    </View>
+  );
+
+  const SensitivityList = ({
+    sensitivities,
+  }: {
+    sensitivities: Record<string, number>;
+  }) => {
+    const entries = Object.entries(sensitivities);
+
+    if (entries.length === 0) {
+      return (
+        <Text style={styles.infoCardBody}>
+          No sensitivities documented in the approved row.
+        </Text>
+      );
+    }
+
+    return (
+      <View style={styles.sensitivityGrid}>
+        {entries.map(([drug, value]) => (
+          <View key={drug} style={styles.sensitivityChip}>
+            <Text style={styles.sensitivityDrug}>{drug}</Text>
+            <Text style={styles.sensitivityValue}>{value}%</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const AntibiogramPathogenCard = ({ item }: { item: AntibiogramPathogenRow }) => (
+    <View style={styles.antibiogramPathogenCard}>
+      <View style={styles.amaTableHeader}>
+        <Text style={styles.amaTableTitle}>
+          {item.sno ? `${item.sno}. ` : ""}
+          {item.pathogen_name}
+          {item.has_footnote_marker ? "*" : ""}
+        </Text>
+        <Text style={styles.amaRoleBadge}>{antibiogramFilterLabel(item.risk_type)}</Text>
+      </View>
+      <View style={styles.antibiogramMiniGrid}>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>n</Text>
+          <Text style={styles.infoCardBody}>
+            {item.isolate_count === null || item.isolate_count === undefined
+              ? "not specified"
+              : String(item.isolate_count)}
+          </Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>Prevalence</Text>
+          <Text style={styles.infoCardBody}>
+            {item.prevalence_pct === null || item.prevalence_pct === undefined
+              ? "not specified"
+              : `${item.prevalence_pct}%`}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.groupLabel}>Sensitivities</Text>
+      <SensitivityList sensitivities={item.sensitivities} />
+      {item.raw_sensitivity_text ? (
+        <RecommendationField
+          label="Raw Sensitivity Text"
+          value={item.raw_sensitivity_text}
+        />
+      ) : null}
+    </View>
+  );
+
+  const AntibiogramRiskCriteriaCard = ({
+    rows,
+  }: {
+    rows: AntibiogramRiskCriterion[];
+  }) => (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoCardTitle}>Risk Stratification Criteria</Text>
+      {rows.length === 0 ? (
+        <Text style={styles.infoCardBody}>
+          No approved risk criteria documented for this selection.
+        </Text>
+      ) : (
+        rows.map((row) => (
+          <View key={row.id} style={styles.antibiogramCriteriaRow}>
+            <Text style={styles.infoCardTitle}>{row.criterion_name}</Text>
+            <RecommendationField label="Type 1" value={row.type_1} />
+            <RecommendationField label="Type 2" value={row.type_2} />
+            <RecommendationField label="Type 3" value={row.type_3} />
+          </View>
+        ))
+      )}
+    </View>
+  );
+
+  const AntibiogramFootnotesCard = ({
+    rows,
+    riskType,
+  }: {
+    rows: AntibiogramFootnote[];
+    riskType: AntibiogramRiskFilter;
+  }) => (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoCardTitle}>
+        Footnotes for {antibiogramFilterLabel(riskType)}
+      </Text>
+      {rows.length === 0 ? (
+        <Text style={styles.infoCardBody}>
+          No approved footnotes documented for this selection.
+        </Text>
+      ) : (
+        rows.map((row) => (
+          <Text key={row.id} style={styles.infoCardBody}>
+            {row.note}
+          </Text>
+        ))
+      )}
     </View>
   );
 
@@ -4964,50 +6321,75 @@ export default function App() {
     TabPage(
       "Duration",
       <View>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Selected Clinical Scenario</Text>
-          <Text style={styles.infoCardBody}>{selectedSite.label}</Text>
-          {selectedScenarioSummary ? (
-            <Text style={styles.infoCardBody}>{selectedScenarioSummary}</Text>
-          ) : null}
+        <View style={styles.guidelineSearchCard}>
+          <Text style={styles.infoCardTitle}>Search Duration Guidelines</Text>
+          <TextInput
+            value={durationGuidelineSearch}
+            onChangeText={setDurationGuidelineSearch}
+            placeholder="Search infection"
+            placeholderTextColor="#94A3B8"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.guidelineSearchInput, webTextInputReset]}
+          />
         </View>
         <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Recommended Duration</Text>
-          {sourceRecommendationLoading ? (
+          <Text style={styles.infoCardTitle}>Approved Duration of Treatment</Text>
+          {durationGuidelineLoading ? (
             <ActivityIndicator color={palette.blue} />
-          ) : selectedSourceRecommendations.length === 0 &&
-            durationProtocolGroups.length === 0 ? (
+          ) : filteredDurationGuidelineRows.length === 0 ? (
             <Text style={styles.infoCardBody}>
-              {sourceRecommendationError || failClosedMessage}
-            </Text>
-          ) : durationProtocolGroups.length === 0 ? (
-            <Text style={styles.infoCardBody}>
-              Duration not available in the current protocol.
+              {durationGuidelineSearch.trim()
+                ? "No approved duration guideline rows match this search."
+                : durationGuidelineError ||
+                  "No approved duration guideline rows available."}
             </Text>
           ) : (
-            durationProtocolGroups.map((group) => (
-              <View key={group.duration} style={styles.durationCard}>
-                <Text style={styles.durationValue}>{group.duration}</Text>
-                {group.items.map((item) => (
-                  <View key={item.id} style={styles.durationTreatmentRow}>
-                    {hasMeaningfulTreatment(item) ? (
-                      <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
-                    ) : null}
-                    <RecommendationField label="Dose" value={item.dose} />
-                    <RecommendationField label="Route" value={item.route} />
-                    <RecommendationField
-                      label="Frequency"
-                      value={item.frequency}
-                    />
-                  </View>
-                ))}
-              </View>
+            filteredDurationGuidelineRows.map((item) => (
+              <DurationGuidelineCard key={item.id} item={item} />
             ))
           )}
         </View>
-        {durationProtocolGroups.some((group) => group.notes.length > 0) ? (
+        {durationGuidelineRows.length === 0 ? (
           <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Clinical Notes</Text>
+            <Text style={styles.infoCardTitle}>Legacy Protocol-Derived Fallback</Text>
+            {sourceRecommendationLoading ? (
+              <ActivityIndicator color={palette.blue} />
+            ) : selectedSourceRecommendations.length === 0 &&
+              durationProtocolGroups.length === 0 ? (
+              <Text style={styles.infoCardBody}>
+                {sourceRecommendationError || failClosedMessage}
+              </Text>
+            ) : durationProtocolGroups.length === 0 ? (
+              <Text style={styles.infoCardBody}>
+                Duration not available in the current protocol.
+              </Text>
+            ) : (
+              durationProtocolGroups.map((group) => (
+                <View key={group.duration} style={styles.durationCard}>
+                  <Text style={styles.durationValue}>{group.duration}</Text>
+                  {group.items.map((item) => (
+                    <View key={item.id} style={styles.durationTreatmentRow}>
+                      {hasMeaningfulTreatment(item) ? (
+                        <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
+                      ) : null}
+                      <RecommendationField label="Dose" value={item.dose} />
+                      <RecommendationField label="Route" value={item.route} />
+                      <RecommendationField
+                        label="Frequency"
+                        value={item.frequency}
+                      />
+                    </View>
+                  ))}
+                </View>
+              ))
+            )}
+          </View>
+        ) : null}
+        {durationGuidelineRows.length === 0 &&
+        durationProtocolGroups.some((group) => group.notes.length > 0) ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Legacy Clinical Notes</Text>
             {durationProtocolGroups.flatMap((group) => group.notes).slice(0, 4).map((note) => (
               <Text key={note} style={styles.infoCardBody}>
                 {note}
@@ -5015,13 +6397,114 @@ export default function App() {
             ))}
           </View>
         ) : null}
+        {durationGuidelineRows.length === 0 ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Review Trigger</Text>
+            <Text style={styles.infoCardBody}>
+              {durationProtocolGroups[0]?.reviewTrigger ??
+                "Reassess duration when cultures, source control, and clinical response are available."}
+            </Text>
+          </View>
+        ) : null}
+      </View>,
+    );
+
+  const Antibiogram = () =>
+    TabPage(
+      "Local Antibiogram",
+      <View>
         <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Review Trigger</Text>
-          <Text style={styles.infoCardBody}>
-            {durationProtocolGroups[0]?.reviewTrigger ??
-              "Reassess duration when cultures, source control, and clinical response are available."}
+          <Text style={styles.infoCardTitle}>
+            Local Antibiogram and Empirical Antibiotic Choice
           </Text>
+          <AntibiogramFilterGroup
+            label="Infection"
+            values={antibiogramInfectionFilters}
+            selected={antibiogramInfection}
+            onSelect={setAntibiogramInfection}
+          />
+          <AntibiogramFilterGroup
+            label="Location"
+            values={antibiogramLocationFilters}
+            selected={antibiogramLocation}
+            onSelect={setAntibiogramLocation}
+          />
+          <AntibiogramFilterGroup
+            label="Acquisition"
+            values={antibiogramAcquisitionFilters}
+            selected={antibiogramAcquisition}
+            onSelect={setAntibiogramAcquisition}
+          />
+          <AntibiogramFilterGroup
+            label="Risk Type"
+            values={antibiogramRiskFilters}
+            selected={antibiogramRiskType}
+            onSelect={setAntibiogramRiskType}
+          />
         </View>
+
+        {antibiogramLoading ? (
+          <View style={styles.infoCard}>
+            <ActivityIndicator color={palette.blue} />
+          </View>
+        ) : !selectedAntibiogramSheet ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardBody}>
+              {antibiogramError ||
+                "No approved antibiogram rows available for this selection."}
+            </Text>
+          </View>
+        ) : (
+          <View>
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>
+                {selectedAntibiogramSheet.sheet_title}
+              </Text>
+              <RecommendationField
+                label="Surveillance Period"
+                value={selectedAntibiogramSheet.surveillance}
+              />
+              <Text style={styles.groupLabel}>Type Totals</Text>
+              <TypeTotals sheet={selectedAntibiogramSheet} />
+              {selectedAntibiogramSheet.section_notes.length > 0 ? (
+                <View>
+                  <Text style={styles.groupLabel}>Section Notes</Text>
+                  {selectedAntibiogramSheet.section_notes.map((note) => (
+                    <Text key={note} style={styles.infoCardBody}>
+                      {note}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+
+            <AntibiogramEmpiricTherapyCard
+              item={selectedAntibiogramTherapy}
+              riskType={antibiogramRiskType}
+            />
+
+            <View style={styles.infoCard}>
+              <Text style={styles.infoCardTitle}>
+                Pathogen Rows for {antibiogramFilterLabel(antibiogramRiskType)}
+              </Text>
+              {selectedAntibiogramPathogens.length === 0 ? (
+                <Text style={styles.infoCardBody}>
+                  No approved pathogen rows documented for this selected type.
+                </Text>
+              ) : (
+                selectedAntibiogramPathogens.map((item) => (
+                  <AntibiogramPathogenCard key={item.id} item={item} />
+                ))
+              )}
+            </View>
+
+            <AntibiogramFootnotesCard
+              rows={selectedAntibiogramFootnotes}
+              riskType={antibiogramRiskType}
+            />
+            <AntibiogramRiskCriteriaCard rows={selectedAntibiogramRiskCriteria} />
+          </View>
+        )}
       </View>,
     );
 
@@ -6058,6 +7541,8 @@ export default function App() {
         return GuidelineSection();
       case "duration":
         return Duration();
+      case "antibiogram":
+        return Antibiogram();
       case "alerts":
         return Alerts();
       case "profile":
@@ -7563,6 +9048,92 @@ const makeStyles = (p: Palette) =>
       paddingTop: 9,
       marginTop: 4,
       gap: 6,
+    },
+    antibiogramFilterGroup: {
+      marginTop: 10,
+    },
+    antibiogramFilterRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    antibiogramFilterChip: {
+      minHeight: 36,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.soft,
+      justifyContent: "center",
+      paddingHorizontal: 11,
+      paddingVertical: 7,
+    },
+    antibiogramFilterChipSelected: {
+      borderColor: p.blue,
+      backgroundColor: "#EAF4FF",
+    },
+    antibiogramFilterChipText: {
+      color: p.muted,
+      fontSize: 11,
+      lineHeight: 15,
+      fontWeight: "900",
+    },
+    antibiogramFilterChipTextSelected: {
+      color: p.blue2,
+    },
+    antibiogramMiniGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    antibiogramMiniCell: {
+      minWidth: "30%",
+      flexGrow: 1,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: "#E6EEF7",
+      backgroundColor: "#FBFDFF",
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+    },
+    antibiogramPathogenCard: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 12,
+      marginTop: 12,
+      gap: 8,
+    },
+    sensitivityGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    sensitivityChip: {
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: "#DCE6F2",
+      backgroundColor: "#FFFFFF",
+      paddingHorizontal: 9,
+      paddingVertical: 7,
+      maxWidth: "100%",
+    },
+    sensitivityDrug: {
+      color: p.text,
+      fontSize: 11,
+      lineHeight: 15,
+      fontWeight: "800",
+    },
+    sensitivityValue: {
+      color: p.blue2,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "900",
+      marginTop: 2,
+    },
+    antibiogramCriteriaRow: {
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+      paddingTop: 10,
+      marginTop: 10,
     },
     therapyDose: {
       color: p.text,

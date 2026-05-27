@@ -1,0 +1,102 @@
+[
+  {
+    "source_image": "1779705175121-92f99181-4a45-4e84-91de-5929d43f05f9_4.jpg",
+    "source_page": "6-7",
+    "columns": [
+      "Clinical Condition",
+      "Common Pathogens",
+      "Empirical AMA",
+      "Alternate AMA",
+      "Comments"
+    ],
+    "rows": [
+      {
+        "Clinical Condition": "Diabetic foot infection",
+        "Common Pathogens": "Polymicrobial (staph, strep spp., enterobacteriaceae, pseudomonas) anaerobes",
+        "Empirical AMA": "Amoxicillin-clavulanate 1.2g IV q8h OR Ampicillin sulbactam 3g IV q6h",
+        "Alternate AMA": "Piperacillin tazobactam 4.5g IV6-8h OR Meropenem/imipenem/Doripenem",
+        "Comments": "Avoid FQNs\nOseltamivir only if clinical suspicion of H1N1"
+      },
+      {
+        "Clinical Condition": "Necrotizing fasciitis",
+        "Common Pathogens": "S. pyogens, S. aureus (MRSA) Polymicrobial (anaerobes + enterobacteriaceae)",
+        "Empirical AMA": "Piperacillin tazobactam 4.5g IV q6h + Vancomycin 15-20mg/kg IV q8-12h + Clindamycin 600-900mg IV q8h",
+        "Alternate AMA": "Meropenem 2g IV q8h + Vancomycin 15-20mg/kg IV q8-12h + Clindamycin 600-900mg IV q8h",
+        "Comments": "Urgent debridement advised\nClindamycin/linezolid/tigecycline recommended for antitoxin effect in GAS/ staph infections"
+      },
+      {
+        "Clinical Condition": "Urosepsis/Pyelonephritis",
+        "Common Pathogens": "E. coli, Enterococcus spp., Klebsiella spp., Proteus spp.",
+        "Empirical AMA": "Cefoperazone sulbactam(2:1) 3g IV q12h OR Ertapenem 1g q24h",
+        "Alternate AMA": "Meropenem 1g IV q8h OR Imipenem 500mg q6h",
+        "Comments": "Nitrofurantoin to be used only for uncomplicated cystitis"
+      },
+      {
+        "Clinical Condition": "Severe PN/ emphysematous PN/ perinephric abscess",
+        "Common Pathogens": "E. coli, klebsiella, pseudomonas, proteus, strep spp.",
+        "Empirical AMA": "Meropenem 1-2g IV q8h OR Imipenem 1gm q6-8h OR Doripenem 500mg q8h",
+        "Alternate AMA": "Colistin 9mU loading dose followed by 4.5mU q12h + carbapenem OR Fosfomycin 12-16g/day in 3 divided doses",
+        "Comments": "Surgical source control advised"
+      },
+      {
+        "Clinical Condition": "Intra-abdominal sepsis",
+        "Common Pathogens": "E. coli, Klebsiella spp., Proteus spp. Pseudomonas spp, Enterococcus spp, Candida spp",
+        "Empirical AMA": "Piperacillin tazobactam 4.5g IV 6-8h OR Meropenem 1-2g IV q8h OR Imipenem 1gm q6-8h OR Doripenem 500mg q8h",
+        "Alternate AMA": "Tigecycline 200mg loading dose followed by 100mg IV q12h +/- Polymyxin B IV 15 lac units LD followed by 5 lac units q8h",
+        "Comments": "Surgical source control where possible\nFluconazole/echinocandin if risk of IA candidiasis\nAnaerobic cover needed if ceftazidime avibactam used"
+      },
+      {
+        "Clinical Condition": "Catheter related blood-stream infection",
+        "Common Pathogens": "Staph aureus, CONS, Enterobacteriaceae, Pseudomonas aeruginosa, Candida spp",
+        "Empirical AMA": "Cefoperazone sulbactam(2:1) 3g IV q12h OR Piperacillin tazobactam 4.5g IV6-8h + Vancomycin 15mg/kg IV 12h OR Teicoplanin 12mg/kg q12h x 3 doses followed by 6mg/kg/d",
+        "Alternate AMA": "Meropenem 1-2g IV q8h OR Imipenem 1gm q6-8h OR Doripenem 500mg q8h +/- polymixin based on risk factors for CRE + Vancomycin/ teicoplanin",
+        "Comments": "Catheter removal especially for staph aureus, candida spp. ALT where appropriate for catheter salvage"
+      },
+      {
+        "Clinical Condition": "Community acquired meningitis",
+        "Common Pathogens": "S. pneumonia, N. meningitides, H.influenzae, GBS, listeria monocytogenes",
+        "Empirical AMA": "Ceftriaxone 2g IV q12h OR cefotaxime 2g IV q4-6h + Vancomycin 25-30mg/kg LD followed by 15mg/kg IV q8h +/- Ampicillin 2g IV q4h (if Age>60)\nIf any suggestion of encephalitis: to add acyclovir 10mg/kg tds for 2-3 weeks",
+        "Alternate AMA": "Meropenem 2gIV q8h + Vancomycin +/- Ampicillin (if Age>60)",
+        "Comments": "Dexamethasone 10mg IVq6h 15-20mins prior to/simultaneously with 1st dose of antibiotic-(to continue for 4 days if S. pneumonia established/ cultures negative)"
+      },
+      {
+        "Clinical Condition": "Post neurosurgical meningitis/ shunt infection",
+        "Common Pathogens": "Staph aureus, MRSA, CONS, GNB",
+        "Empirical AMA": "Meropenem 2g IV q8h + Vancomycin 25-30mg/kg LD followed by 15mg/kg IV q8h",
+        "Alternate AMA": "CRE risk factors: add Polymyxin b/ colistin\nMRSA Alternatives: Linezolid/ Daptomycin 10mg/kg/d",
+        "Comments": "Consider removal of shunts/ devices Intraventricular/ intrathecal antibiotics may be used (ID consult advised)"
+      },
+      {
+        "Clinical Condition": "Brain abscess",
+        "Common Pathogens": "Polymicrobial, strep, staph, enterococcus GNB, anaerobes (nocardia spp., fungal in susceptible hosts",
+        "Empirical AMA": "Ceftriaxone 2g IV q12h OR Cefotaxime 2g IVq6h + metronidazole 500mg q8h +/- Vancomycin 25-30mg/kg LD followed by 15mg/kg IV q8h",
+        "Alternate AMA": "Meropenem 2g IV q8h +/- Vancomycin 25-30mg/kg LD followed by 15mg/kg IV q8h",
+        "Comments": "Surgical drainage advised"
+      }
+    ],
+    "audit": {
+      "hallucination_detected": false,
+      "unclear_cells": [],
+      "possible_column_shift": [],
+      "rows_requiring_manual_review": [
+        {
+          "row": 1,
+          "reason": "Alternate AMA visibly shows IV6-8h without a clear q; preserved as visible."
+        },
+        {
+          "row": 5,
+          "reason": "Empirical AMA visibly shows IV 6-8h without a clear q; preserved as visible."
+        },
+        {
+          "row": 6,
+          "reason": "Empirical AMA visibly shows IV6-8h without a clear q; preserved as visible."
+        },
+        {
+          "row": 9,
+          "reason": "Common Pathogens cell appears to end without a closing parenthesis; preserved as visible."
+        }
+      ],
+      "confidence": "medium"
+    }
+  }
+]
