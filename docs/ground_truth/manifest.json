@@ -1,0 +1,34 @@
+{
+  "source_document": "P. D. Hinduja Hospital & Medical Research Centre — Antibiotic Protocol Pocket Guide",
+  "institution_address": "Veer Savarkar Marg, Mahim, Mumbai – 400016",
+  "contact": "+91-22-2445 1515 | info@hindujahospital.com | www.hindujahospital.com",
+  "surveillance_period": "January 2021 – December 2023",
+  "valid_till": "December 2025",
+  "dataset_status": "reviewed_ground_truth_not_imported",
+  "reviewed_dataset_file": "docs/ground_truth/hinduja_antibiotic_guide_2025.reviewed.json",
+  "source_file_sha256": "5b7d5ac9230b7a54b3e0897ab510c23738f17eb7ba4f4236555851586943e16c",
+  "expected_section_names": [
+    "metadata",
+    "icmr_guidelines",
+    "duration_of_treatment",
+    "antibiograms",
+    "synergy_and_antifungal",
+    "stewardship_pearls",
+    "pearl_points",
+    "perioperative"
+  ],
+  "expected_counts": {
+    "metadata_index_entries": 7,
+    "icmr_guidelines": 25,
+    "duration_of_treatment": 22,
+    "antibiogram_groups": 4,
+    "antibiogram_sheets": 16,
+    "synergy_testing_rows": 2,
+    "perioperative_procedure_recommendations": 11,
+    "perioperative_antibiotic_dosing": 4
+  },
+  "notes": [
+    "This Phase 1 artifact preserves the reviewed JSON as the canonical ground-truth dataset.",
+    "No Supabase import, migration, app UI change, or backend behavior change is performed in Phase 1."
+  ]
+}

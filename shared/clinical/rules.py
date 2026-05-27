@@ -52,7 +52,12 @@ class Threshold:
 
 
 class JsonRuleEvaluator:
-    """Evaluates JSON/YAML protocol rules without hardcoded clinical pathways."""
+    """Legacy weighted protocol evaluator.
+
+    Do not use this score/threshold classifier to select local antibiogram empiric
+    therapy. Local antibiogram flows must use the exact ground-truth Type 1/2/3
+    criteria in shared.clinical.antibiogram_risk.
+    """
 
     def __init__(self, rules: dict[str, Any]) -> None:
         self.rules = rules

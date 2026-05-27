@@ -1,6 +1,10 @@
-from fastapi import FastAPI, Query
+from fastapi import Depends, FastAPI, Query
 from prometheus_fastapi_instrumentator import Instrumentator
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.clinical.ground_truth import GroundTruthRepository, SAFE_EMPTY_MESSAGE
+from shared.database.session import get_session
 from shared.schemas.common import ApiResponse
 from shared.utils.health import register_health_routes
 from shared.utils.logging import configure_logging
@@ -12,6 +16,16 @@ Instrumentator().instrument(app).expose(app)
 
 ORGANISMS: list[dict] = []
 ANTIBIOTICS: list[dict] = []
+
+
+async def get_ground_truth_repository(
+    session: AsyncSession = Depends(get_session),
+) -> GroundTruthRepository:
+    return GroundTruthRepository(session)
+
+
+def safe_empty_response(meta: dict | None = None) -> ApiResponse:
+    return ApiResponse(message=SAFE_EMPTY_MESSAGE, data=[], meta=meta or {})
 
 
 @app.get("/api/v1/organisms", response_model=ApiResponse[list[dict]])
@@ -44,4 +58,35 @@ async def resistance_trends():
             "guideline / ID specialist."
         ),
         data=[],
+    )
+
+
+@app.get("/api/v1/antibiograms", response_model=ApiResponse[list[dict]])
+async def list_antibiograms(
+    repository: GroundTruthRepository = Depends(get_ground_truth_repository),
+):
+    try:
+        rows = await repository.antibiograms()
+    except SQLAlchemyError:
+        return safe_empty_response()
+    if not rows:
+        return safe_empty_response()
+    return ApiResponse(message="Approved antibiograms loaded", data=rows)
+
+
+@app.get("/api/v1/antibiograms/{infection_type}", response_model=ApiResponse[list[dict]])
+async def get_antibiograms_by_infection_type(
+    infection_type: str,
+    repository: GroundTruthRepository = Depends(get_ground_truth_repository),
+):
+    try:
+        rows = await repository.antibiograms(infection_type)
+    except SQLAlchemyError:
+        return safe_empty_response({"infection_type": infection_type})
+    if not rows:
+        return safe_empty_response({"infection_type": infection_type})
+    return ApiResponse(
+        message="Approved antibiograms loaded",
+        data=rows,
+        meta={"infection_type": infection_type},
     )

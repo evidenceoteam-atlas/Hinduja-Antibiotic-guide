@@ -115,6 +115,104 @@ psql "$SUPABASE_DB_URL" \
 
 Do not approve AI-generated, inferred, or substituted clinical values.
 
+## Ground Truth JSON Import
+
+The reviewed Hinduja Antibiotic Guide JSON lives at:
+
+```text
+docs/ground_truth/hinduja_antibiotic_guide_2025.reviewed.json
+```
+
+Validate structure and expected counts before importing:
+
+```bash
+python3 scripts/import_ground_truth_json_to_supabase.py validate
+```
+
+Preview all ground-truth payloads without connecting to Supabase:
+
+```bash
+python3 scripts/import_ground_truth_json_to_supabase.py import-all --dry-run
+```
+
+Pending-review import requires a database URL and leaves rows hidden from
+approved doctor-facing views. This is the default import mode:
+
+```bash
+SUPABASE_DB_URL='postgresql://...' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-all
+```
+
+You can import individual sections during review:
+
+```bash
+SUPABASE_DB_URL='postgresql://...' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-icmr
+
+SUPABASE_DB_URL='postgresql://...' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-duration
+
+SUPABASE_DB_URL='postgresql://...' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-antibiograms
+
+SUPABASE_DB_URL='postgresql://...' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-synergy-antifungal
+
+SUPABASE_DB_URL='postgresql://...' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-stewardship
+
+SUPABASE_DB_URL='postgresql://...' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-perioperative
+```
+
+Approved import is a separate, explicit action. It requires an approved reviewer
+id and sets `review_status = 'approved'`, `reviewer_id =
+CLINICAL_REVIEWER_ID`, and `reviewed_at` automatically:
+
+```bash
+SUPABASE_DB_URL='postgresql://...' \
+CLINICAL_REVIEWER_ID='00000000-0000-0000-0000-000000000000' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-all --approve
+```
+
+Do not run approved imports against production unless the target project and
+reviewer id have been explicitly confirmed for that deployment.
+
+Approved section-by-section imports use the same `--approve` flag:
+
+```bash
+SUPABASE_DB_URL='postgresql://...' \
+CLINICAL_REVIEWER_ID='00000000-0000-0000-0000-000000000000' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-icmr --approve
+
+SUPABASE_DB_URL='postgresql://...' \
+CLINICAL_REVIEWER_ID='00000000-0000-0000-0000-000000000000' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-duration --approve
+
+SUPABASE_DB_URL='postgresql://...' \
+CLINICAL_REVIEWER_ID='00000000-0000-0000-0000-000000000000' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-antibiograms --approve
+
+SUPABASE_DB_URL='postgresql://...' \
+CLINICAL_REVIEWER_ID='00000000-0000-0000-0000-000000000000' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-synergy-antifungal --approve
+
+SUPABASE_DB_URL='postgresql://...' \
+CLINICAL_REVIEWER_ID='00000000-0000-0000-0000-000000000000' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-stewardship --approve
+
+SUPABASE_DB_URL='postgresql://...' \
+CLINICAL_REVIEWER_ID='00000000-0000-0000-0000-000000000000' \
+python3 scripts/import_ground_truth_json_to_supabase.py import-perioperative --approve
+```
+
+After approved import, verify approved view counts and mismatch details:
+
+```bash
+psql "$SUPABASE_DB_URL" \
+  -f supabase/sql/verify_ground_truth_import.sql
+```
+
 ## Mobile App Behavior
 
 The mobile app queries only:

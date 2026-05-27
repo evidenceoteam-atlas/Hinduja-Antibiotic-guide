@@ -1,0 +1,3667 @@
+{
+  "metadata": {
+    "source_document": "P. D. Hinduja Hospital & Medical Research Centre — Antibiotic Protocol Pocket Guide",
+    "institution_address": "Veer Savarkar Marg, Mahim, Mumbai – 400016",
+    "contact": "+91-22-2445 1515 | info@hindujahospital.com | www.hindujahospital.com",
+    "surveillance_period": "January 2021 – December 2023",
+    "valid_till": "December 2025",
+    "index": [
+      {
+        "sno": 1,
+        "description": "Site Based ICMR Antibiotic Guidelines",
+        "page": "4"
+      },
+      {
+        "sno": 2,
+        "description": "Duration of Treatment",
+        "page": "11"
+      },
+      {
+        "sno": 3,
+        "description": "Local Antibiogram and Empirical Antibiotic Choice",
+        "page": "13"
+      },
+      {
+        "sno": 4,
+        "description": "Synergy Testing of Ceftazidime-Avibactam and Aztreonam and Antifungal Susceptibility for Aspergillus spp. and Candida spp.",
+        "page": "46"
+      },
+      {
+        "sno": 5,
+        "description": "Antimicrobial Stewardship Pearls",
+        "page": "48"
+      },
+      {
+        "sno": 6,
+        "description": "Antimicrobial Pearl Points",
+        "page": "50"
+      },
+      {
+        "sno": 7,
+        "description": "Perioperative Antimicrobial Guidelines",
+        "page": "52"
+      }
+    ]
+  },
+  "icmr_guidelines": [
+    {
+      "clinical_condition": "CAP",
+      "common_pathogens": "Streptococcus pneumoniae, Haemophilus influenzae, Mycoplasma, Chlamydia, respiratory viruses",
+      "empirical_ama": "Amoxicillin-clavulanate 1.2g IV q8h OR Ceftriaxone 1g IV q12h + Azithromycin 500mg OD OR Doxycycline 100mg BD",
+      "alternate_ama": "For patients with structural lung disease / recent antibiotic use / immunosuppression: Piperacillin-tazobactam IV 4.5g q8h + Azithromycin OR Doxycycline",
+      "comments": "Avoid FQNs. Oseltamivir only if clinical suspicion of H1N1"
+    },
+    {
+      "clinical_condition": "HCAP / Early onset VAP",
+      "common_pathogens": "Staph aureus, Pseudomonas aeruginosa, Gram-negative Enterobacteriaceae",
+      "empirical_ama": "Piperacillin-tazobactam IV 4.5g q6-8h OR Cefoperazone-sulbactam (2:1) 3g IV q12h",
+      "alternate_ama": "Meropenem 1g IV q8h OR Imipenem 500mg IV q6h OR Doripenem 500mg–1g IV q8h",
+      "comments": "Consider polymyxin B / colistin / ceftazidime-avibactam + aztreonam (ID consult advised) if risk factors for CRE. Vancomycin / linezolid if MRSA risk factors"
+    },
+    {
+      "clinical_condition": "HCAP / Late onset VAP",
+      "common_pathogens": "MDR Enterobacteriaceae, Pseudomonas spp., Acinetobacter spp., Staph aureus (MRSA), invasive mold infections",
+      "empirical_ama": "Meropenem 1g q8h OR Imipenem 500mg q6h OR Doripenem 500mg q8h + Vancomycin 25-30 mg/kg loading then 15 mg/kg q8-12h (target trough 15-20 mcg/ml) OR Linezolid 600 mg BD",
+      "alternate_ama": "Polymyxin B IV 15 lac units LD then 5 lac units q8h + Carbapenem + Vancomycin (as above) OR Linezolid 600 mg BD",
+      "comments": "For CRE: ceftazidime-avibactam + aztreonam (ID consult advised). Voriconazole / Liposomal Amphotericin B for invasive mold infection (ID consult advised)"
+    },
+    {
+      "clinical_condition": "Lung abscess",
+      "common_pathogens": "Polymicrobial (Anaerobes, Staph aureus, GNB)",
+      "empirical_ama": "Ampicillin-sulbactam 3g IV q6h +/- Clindamycin 600mg IV q8h. Combination regimens — Nocardia: Amikacin / Linezolid / TMP-SMX",
+      "alternate_ama": "Piperacillin-tazobactam IV 4.5g q6-8h OR Meropenem 1g q8h OR Imipenem 500mg q6h OR Doripenem 500mg q8h",
+      "comments": "Anaerobic cover not routinely required with BLBLI / carbapenem use. Prolonged treatment on OPD basis with amoxicillin-clavulanate"
+    },
+    {
+      "clinical_condition": "Susceptible host (Nocardia spp., Actinomyces spp., Burkholderia pseudomallei)",
+      "common_pathogens": "Nocardia spp., Actinomyces spp., Burkholderia pseudomallei",
+      "empirical_ama": "Empirical treatment discouraged. Actinomyces: Penicillin G 18-24 mil U/day (2-6 weeks) f/b amoxicillin 500-750mg TDS/QDS. Melioidosis: Ceftazidime / meropenem +/- TMP-SMX. Nocardia: ceftriaxone / imipenem / moxifloxacin / minocycline",
+      "alternate_ama": "Nocardia: ceftriaxone / imipenem / moxifloxacin / minocycline. Actinomyces: doxycycline, clindamycin. TMP-SMX / doxycycline / amoxicillin-clavulanate",
+      "comments": "ID consult advised for patients at risk of opportunistic pathogens. Empirical treatment discouraged"
+    },
+    {
+      "clinical_condition": "Native Valve / Late Prosthetic Valve Infective Endocarditis (>1yr)",
+      "common_pathogens": "VGS, S. aureus, β-hemolytic streptococci, HACEK, enterococcus",
+      "empirical_ama": "Ampicillin 2g IV q4h (12g/d) + Cloxacillin/Flucloxacillin 2g IV q4h (12g/d) / Cefazolin 2g IV q8h + Gentamicin 3mg/kg/d single dose",
+      "alternate_ama": "Vancomycin 30-60 mg/kg/day in 2-3 doses (target trough 15-20 mcg/ml) + Gentamicin 3mg/kg/d single dose",
+      "comments": "Daptomycin 10 mg/kg/d may be considered if unable to use vancomycin (ID consult advised)"
+    },
+    {
+      "clinical_condition": "Prosthetic Valve Infective Endocarditis (<1yr)",
+      "common_pathogens": "Staph aureus, CONS, enterococci, and aerobic Gram-negative bacilli",
+      "empirical_ama": "Ceftriaxone 2g IV q12h + Vancomycin 30-60 mg/kg/day in 2-3 doses (target trough 15-20 mcg/ml) + Rifampicin 900-1200 mg/d",
+      "alternate_ama": "Meropenem 2g IV q8h + Vancomycin 30-60 mg/kg/day in 2-3 doses (target trough 15-20 mcg/ml) + Rifampicin 900-1200 mg/d. OR Vancomycin + Gentamicin 3mg/kg/d single dose + Rifampicin 900-1200 mg/d",
+      "comments": "Rifampin should be used in PVE after 3-5 days of effective antibiotic therapy, once the bacteremia is cleared"
+    },
+    {
+      "clinical_condition": "Cellulitis / Pyomyositis",
+      "common_pathogens": "S. pyogenes, S. aureus",
+      "empirical_ama": "Amoxicillin-clavulanate 1.2g IV q12h",
+      "alternate_ama": "Cloxacillin 2g IV q8h / Flucloxacillin 1-2g IV q6-8h OR Cefazolin 2g IV q8h",
+      "comments": "If risk factors for MRSA: Clindamycin / doxycycline / minocycline / linezolid"
+    },
+    {
+      "clinical_condition": "Diabetic foot infection",
+      "common_pathogens": "Polymicrobial (Staph, Strep spp., Enterobacteriaceae, Pseudomonas), anaerobes",
+      "empirical_ama": "Amoxicillin-clavulanate 1.2g IV q8h OR Ampicillin-sulbactam 3g IV q6h",
+      "alternate_ama": "Piperacillin-tazobactam 4.5g IV q6-8h OR Meropenem / Imipenem / Doripenem",
+      "comments": "Avoid FQNs. Oseltamivir only if clinical suspicion of H1N1"
+    },
+    {
+      "clinical_condition": "Necrotizing fasciitis",
+      "common_pathogens": "S. pyogenes, S. aureus (MRSA), Polymicrobial (anaerobes + Enterobacteriaceae)",
+      "empirical_ama": "Piperacillin-tazobactam 4.5g IV q6h + Vancomycin 15-20 mg/kg IV q8-12h + Clindamycin 600-900mg IV q8h",
+      "alternate_ama": "Meropenem 2g IV q8h + Vancomycin 15-20 mg/kg IV q8-12h + Clindamycin 600-900mg IV q8h",
+      "comments": "Urgent debridement advised. Clindamycin / linezolid / tigecycline recommended for antitoxin effect in GAS / Staph infections"
+    },
+    {
+      "clinical_condition": "Urosepsis / Pyelonephritis",
+      "common_pathogens": "E. coli, Enterococcus spp., Klebsiella spp., Proteus spp.",
+      "empirical_ama": "Cefoperazone-sulbactam (2:1) 3g IV q12h OR Ertapenem 1g q24h",
+      "alternate_ama": "Meropenem 1g IV q8h OR Imipenem 500mg q6h",
+      "comments": "Nitrofurantoin to be used only for uncomplicated cystitis"
+    },
+    {
+      "clinical_condition": "Severe PN / Emphysematous PN / Perinephric abscess",
+      "common_pathogens": "E. coli, Klebsiella, Pseudomonas, Proteus, Strep spp., Anaerobes",
+      "empirical_ama": "Meropenem 1-2g IV q8h OR Imipenem 1g q6-8h OR Doripenem 500mg q8h",
+      "alternate_ama": "Colistin 9 mU loading then 4.5 mU q12h + carbapenem OR Fosfomycin 12-16 g/day in 3 divided doses",
+      "comments": "Surgical source control advised"
+    },
+    {
+      "clinical_condition": "Intra-abdominal sepsis",
+      "common_pathogens": "E. coli, Klebsiella spp., Proteus spp., Pseudomonas spp., Enterococcus spp., Candida spp.",
+      "empirical_ama": "Piperacillin-tazobactam 4.5g IV q6-8h OR Meropenem 1-2g IV q8h OR Imipenem 1g q6-8h OR Doripenem 500mg q8h",
+      "alternate_ama": "Tigecycline 200mg LD then 100mg IV q12h +/- Polymyxin B IV 15 lac units LD then 5 lac units q8h",
+      "comments": "Surgical source control where possible. Fluconazole / echinocandin if risk of IA candidiasis. Anaerobic cover needed if ceftazidime-avibactam used"
+    },
+    {
+      "clinical_condition": "Catheter related bloodstream infection",
+      "common_pathogens": "Staph aureus, CONS, Enterobacteriaceae, Pseudomonas aeruginosa, Candida spp.",
+      "empirical_ama": "Cefoperazone-sulbactam (2:1) 3g IV q12h OR Piperacillin-tazobactam 4.5g IV q6-8h + Vancomycin 15 mg/kg IV q12h OR Teicoplanin 12 mg/kg q12h x 3 doses then 6 mg/kg/d",
+      "alternate_ama": "Meropenem 1-2g IV q8h OR Imipenem 1g q6-8h OR Doripenem 500mg q8h +/- polymyxin based on risk factors for CRE + Vancomycin / Teicoplanin",
+      "comments": "Catheter removal especially for Staph aureus, Candida spp. ALT where appropriate for catheter salvage"
+    },
+    {
+      "clinical_condition": "Community acquired meningitis",
+      "common_pathogens": "S. pneumoniae, N. meningitidis, H. influenzae, GBS, Listeria monocytogenes",
+      "empirical_ama": "Ceftriaxone 2g IV q12h OR Cefotaxime 2g IV q4-6h + Vancomycin 25-30 mg/kg LD then 15 mg/kg IV q8h +/- Ampicillin 2g IV q4h (if Age>60). If any suggestion of encephalitis, add acyclovir 10 mg/kg TDS for 2-3 weeks",
+      "alternate_ama": "Meropenem 2g IV q8h + Vancomycin +/- Ampicillin (if Age>60)",
+      "comments": "Dexamethasone 10mg IV q6h 15-20 mins prior to / simultaneously with 1st dose of antibiotic (continue for 4 days if S. pneumoniae established / cultures negative)"
+    },
+    {
+      "clinical_condition": "Post neurosurgical meningitis / Shunt infection",
+      "common_pathogens": "Staph aureus, MRSA, CONS, GNB",
+      "empirical_ama": "Meropenem 2g IV q8h + Vancomycin 25-30 mg/kg LD then 15 mg/kg IV q8h",
+      "alternate_ama": "CRE risk factors: add Polymyxin B / colistin. MRSA alternatives: Linezolid / Daptomycin 10 mg/kg/d",
+      "comments": "Consider removal of shunts / devices. Intraventricular / intrathecal antibiotics may be used (ID consult advised)"
+    },
+    {
+      "clinical_condition": "Brain abscess",
+      "common_pathogens": "Polymicrobial, Strep, Staph, Enterococcus, GNB, anaerobes (Nocardia spp., fungal in susceptible hosts)",
+      "empirical_ama": "Ceftriaxone 2g IV q12h OR Cefotaxime 2g IV q6h + Metronidazole 500mg q8h +/- Vancomycin 25-30 mg/kg LD then 15 mg/kg IV q8h",
+      "alternate_ama": "Meropenem 2g IV q8h +/- Vancomycin 25-30 mg/kg LD then 15 mg/kg IV q8h",
+      "comments": "Surgical drainage advised"
+    },
+    {
+      "clinical_condition": "Invasive candidiasis",
+      "common_pathogens": "Azole-susceptible species: C. albicans, C. tropicalis, C. parapsilosis. Azole-resistant species: C. glabrata, C. krusei, C. auris (ID consult advised)",
+      "empirical_ama": "Fluconazole IV 800 mg (12 mg/kg) loading dose, then 400 mg (6 mg/kg) daily — initial therapy in patients not critically ill or unlikely to have fluconazole-resistant Candida species",
+      "alternate_ama": "Echinocandin (caspofungin: LD 70mg then 50mg daily; micafungin: 100-150mg daily; anidulafungin: LD 200mg then 100mg daily) for critically ill patients or if azole-resistant Candida spp. suspected",
+      "comments": "Transition from echinocandin to fluconazole in 5-7 days if clinically stable with susceptible isolate on culture & negative repeat blood cultures. 2D Echo / fundoscopy to rule out metastatic seeding"
+    },
+    {
+      "clinical_condition": "Febrile neutropenia",
+      "common_pathogens": "GNB: Enterobacteriaceae, Pseudomonas aeruginosa, Acinetobacter spp., Stenotrophomonas maltophilia. GPC: CONS, Staph aureus incl. MRSA, Enterococcus spp. incl. VRE, Strep spp. Fungi: Candida spp., moulds, opportunistic pathogens",
+      "empirical_ama": "Piperacillin-tazobactam 4.5g IV q6-8h OR Meropenem 2g q8h OR Imipenem 1g q6-8h OR Doripenem 500mg-1g q8h +/- Vancomycin 15 mg/kg IV q12h OR Teicoplanin 12 mg/kg/d q12h x 3 then 12 mg/kg/d +/- appropriate antifungal (if judged necessary): Echinocandin / LAmB / Posaconazole / Voriconazole (ID consult advised)",
+      "alternate_ama": "CRE Risk factors: Polymyxin B IV 15 lac units SD then 5 lac units q8h / Colistin 9 mU SD then 4.5 mU q12h. Ceftazidime-avibactam + Aztreonam (ID consult advised)",
+      "comments": "Polymyxin B to be started empirically if stool CRE screen positive"
+    },
+    {
+      "clinical_condition": "Malignant otitis externa",
+      "common_pathogens": "P. aeruginosa",
+      "empirical_ama": "Ceftazidime 2g IV q8h",
+      "alternate_ama": "Piperacillin-tazobactam 4.5g IV q8h OR Ciprofloxacin 750 PO BD",
+      "comments": "Imaging to rule out mastoiditis, skull base osteomyelitis"
+    },
+    {
+      "clinical_condition": "Deep neck space infection (peritonsillar, parapharyngeal, retropharyngeal etc.)",
+      "common_pathogens": "VGS, oral anaerobes, Strep spp., Haemophilus influenzae, Moraxella spp., Staph aureus (Pseudomonas spp., GNB in immunosuppressed / otogenic, head and neck spread of infection)",
+      "empirical_ama": "Ceftriaxone 2g IV q24h OR Ampicillin-sulbactam 3g IV q6h + Clindamycin 600mg q8h OR Metronidazole 500mg q8h",
+      "alternate_ama": "If risk factors for GNB: Piperacillin-tazobactam 4.5g IV q8h OR Meropenem 2g IV q8h OR Imipenem 1g IV q6-8h. MRSA risk factors: Add Vancomycin / Linezolid / Clindamycin",
+      "comments": "Surgical drainage advised"
+    },
+    {
+      "clinical_condition": "Acute Osteomyelitis / Septic arthritis / Prosthetic Joint Infection / Implant associated infections",
+      "common_pathogens": "Staph aureus / Strep spp. Implant associated: MRSA, GNB, Pseudomonas, NTM",
+      "empirical_ama": "Cloxacillin 2g IV q4h OR Flucloxacillin 2g IV q6-8h OR Cefazolin 2g IV q8h. MRSA Risk: Vancomycin 25-50 mg/kg LD then 15 mg/kg q8-12h OR Teicoplanin 12 mg/kg/d q12h x 3 then 12 mg/kg/d. GNB Risk: Piperacillin-tazobactam 4.5g IV q6-8h OR Meropenem 1-2g IV q8h OR Imipenem 500mg IV q6-8h",
+      "alternate_ama": "Ceftriaxone 2g IV q24h OR Clindamycin 600mg q8h. MRSA Risk: Daptomycin 10 mg/kg/d. CRE Risk: Polymyxin B OR Tigecycline OR Fosfomycin (ID consult advised)",
+      "comments": "Surgical debridement advised. Empirical treatment to be deferred until sample obtained for culture. Removal of hardware to be considered"
+    },
+    {
+      "clinical_condition": "Enteric fever",
+      "common_pathogens": "S. typhi — 95% resistance to nalidixic acid, 10% resistance to Amp/Chlor/CTX. S. paratyphi A",
+      "empirical_ama": "Ceftriaxone 2g q12h x 14 days OR Azithromycin 1g x 5-7 days OR Cefixime 400mg TDS x 14 days",
+      "alternate_ama": "Chloramphenicol, TMP-SMX, high dose amoxicillin",
+      "comments": "Monitor QTc interval with high dose azithromycin"
+    },
+    {
+      "clinical_condition": "Dysentery",
+      "common_pathogens": "Shigella, Campylobacter spp., Salmonella species, Entamoeba histolytica",
+      "empirical_ama": "Ciprofloxacin 500mg BD. Metronidazole 500mg q8h x 7-10d plus Luminal agent (Diloxanide furoate 500mg TDS x 10d)",
+      "alternate_ama": "Ceftriaxone 1g q12h. Nitazoxanide 500mg BD x 3d plus Luminal agent (Diloxanide furoate 500mg TDS x 10d)",
+      "comments": null
+    },
+    {
+      "clinical_condition": "Liver abscess",
+      "common_pathogens": "GNB, Anaerobes, Enterococci / E. histolytica",
+      "empirical_ama": "Piperacillin-tazobactam 4.5g q6-8h OR Cefoperazone-sulbactam (2:1) 3g q12h plus Metronidazole 500 mg q8h",
+      "alternate_ama": "Carbapenem + Metronidazole",
+      "comments": "Surgical drainage when indicated. For amoebic abscess add Diloxanide furoate 500mg TDS x 20d"
+    }
+  ],
+  "duration_of_treatment": [
+    {
+      "infection": "CAP",
+      "duration": "5-7 days",
+      "remarks": "Hemodynamically stable, no requirement for supplemental O2, afebrile for 48-72 hours"
+    },
+    {
+      "infection": "HCAP / VAP",
+      "duration": "7 days",
+      "remarks": "Longer courses for concomitant bacteremia, immunosuppressed host, pyogenic complications (surgical source control advised), invasive mold infections, slow response to therapy"
+    },
+    {
+      "infection": "Lung Abscess",
+      "duration": "Several months until CXR shows stable resolution / clearance",
+      "remarks": "Initial IV antibiotics suggested followed by oral agent on OPD basis. Prolonged antibiotic regimens for opportunistic pathogens / immunosuppressed hosts"
+    },
+    {
+      "infection": "Native Valve Endocarditis",
+      "duration": "4-6 weeks",
+      "remarks": "Duration calculated from 1st day of negative blood cultures. At least 6 weeks for highly resistant enterococci"
+    },
+    {
+      "infection": "Prosthetic Valve Endocarditis",
+      "duration": "At least 6 weeks from 1st negative blood culture report",
+      "remarks": "Longer duration (months/years) for fungal PVE"
+    },
+    {
+      "infection": "Cellulitis",
+      "duration": "5-14 days",
+      "remarks": "Depends on extent of infection / response to treatment. At least 28 days if concomitant bacteremia"
+    },
+    {
+      "infection": "Pyomyositis",
+      "duration": "14-28 days",
+      "remarks": "Depends on extent of infection / response to treatment. At least 28 days if concomitant bacteremia"
+    },
+    {
+      "infection": "Diabetic Foot",
+      "duration": "2 weeks",
+      "remarks": "Longer courses for extensive soft tissue involvement / osteomyelitis"
+    },
+    {
+      "infection": "Necrotizing fasciitis",
+      "duration": "2-3 weeks",
+      "remarks": null
+    },
+    {
+      "infection": "Urosepsis / Pyelonephritis",
+      "duration": "10-14 days",
+      "remarks": null
+    },
+    {
+      "infection": "Emphysematous PN / Perinephric abscess",
+      "duration": "3-4 weeks depending on response to treatment & source control",
+      "remarks": "Surgical source control advised"
+    },
+    {
+      "infection": "Intra-abdominal sepsis",
+      "duration": "5-14 days",
+      "remarks": "Depending on extent of source control & response to treatment"
+    },
+    {
+      "infection": "CRBSI",
+      "duration": "10-14 days",
+      "remarks": null
+    },
+    {
+      "infection": "Community acquired meningitis",
+      "duration": "Strep pneumoniae: 10-14d. N. meningitidis / H. influenzae: 7 days. Listeria monocytogenes: 21 days. HSV: 14-21 days",
+      "remarks": null
+    },
+    {
+      "infection": "Nosocomial / post-surgical meningitis",
+      "duration": "14-21 days",
+      "remarks": "For patients with repeatedly positive CSF cultures on appropriate antibiotics, treatment should be continued for 10 to 14 days following the last positive culture"
+    },
+    {
+      "infection": "Brain abscess",
+      "duration": "4-6 weeks if surgical drainage done. 6-8 weeks without drainage",
+      "remarks": "Clinical and radiological resolution to be documented before stopping treatment"
+    },
+    {
+      "infection": "Invasive Candidiasis",
+      "duration": "14 days after the 1st negative blood culture",
+      "remarks": "Endocarditis / chorioretinitis / septic arthritis / osteomyelitis require longer courses"
+    },
+    {
+      "infection": "Febrile Neutropenia",
+      "duration": "Discontinue antibiotic if no source identified & patient has been afebrile for at least two days and ANC is ≥500 cells/microL with a consistently increasing trend",
+      "remarks": "If source identified, treat as per site of infection"
+    },
+    {
+      "infection": "Deep Neck space infection",
+      "duration": "2-3 weeks",
+      "remarks": "Longer courses for infections involving bone / vascular structures"
+    },
+    {
+      "infection": "Acute Osteomyelitis, Native joint septic arthritis",
+      "duration": "4 weeks",
+      "remarks": null
+    },
+    {
+      "infection": "Prosthetic Joint / Implant associated infection",
+      "duration": "Staph aureus: 8-10 weeks. Others: 6 weeks",
+      "remarks": "Joint/Implant retention / fungal OM: 6 months"
+    },
+    {
+      "infection": "Liver Abscess",
+      "duration": "Pyogenic: 4-6 weeks. Amoebic: 7 days followed by luminal agent for 20 days",
+      "remarks": "2-4 weeks with good surgical drainage"
+    }
+  ],
+  "antibiograms": {
+    "BSI": {
+      "ICU": {
+        "community_acquired": {
+          "sheet_title": "Blood Stream Infection (BSI) — ICU Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023) — Valid till December 2025",
+          "type_totals": {
+            "1": 31,
+            "2": 158,
+            "3": 147
+          },
+          "pathogens_by_type": {
+            "1": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 4,
+                "has_footnote_marker": false,
+                "prevalence_pct": 13,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 33
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 33%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Enterococcus sp",
+                "n": 2,
+                "has_footnote_marker": false,
+                "prevalence_pct": 6,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "Penicillin": 50
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, Penicillin 50%"
+              }
+            ],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 43,
+                "has_footnote_marker": false,
+                "prevalence_pct": 27,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 98,
+                  "Meropenem": 98,
+                  "Cefoperazone-Sulbactam": 90,
+                  "Piperacillin-Tazobactam": 81,
+                  "Ceftriaxone": 33
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 98%, Meropenem 98%, Cefoperazone-Sulbactam 90%, Piperacillin-Tazobactam 81%, Ceftriaxone 33%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Imipenem": 85,
+                  "Meropenem": 77,
+                  "Cefoperazone-Sulbactam": 69,
+                  "Piperacillin-Tazobactam": 69,
+                  "Ceftriaxone": 54
+                },
+                "raw_sensitivity_text": "Imipenem 85%, Meropenem 77%, Cefoperazone-Sulbactam 69%, Piperacillin-Tazobactam 69%, Ceftriaxone 54%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Enterococcus",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 4,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "Daptomycin": 33
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, Daptomycin 33%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 4,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Daptomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 100
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Daptomycin 100%, Teicoplanin 100%, Oxacillin 100%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 5,
+                "has_footnote_marker": false,
+                "prevalence_pct": 3,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Ceftazidime": 100,
+                  "Piperacillin-Tazobactam": 60
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Ceftazidime 100%, Piperacillin-Tazobactam 60%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 35,
+                "has_footnote_marker": false,
+                "prevalence_pct": 24,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Cefoperazone-Sulbactam": 91,
+                  "Imipenem": 97,
+                  "Meropenem": 97,
+                  "Piperacillin-Tazobactam": 81,
+                  "Ceftriaxone": 44
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Cefoperazone-Sulbactam 91%, Imipenem 97%, Meropenem 97%, Piperacillin-Tazobactam 81%, Ceftriaxone 44%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 25,
+                "has_footnote_marker": false,
+                "prevalence_pct": 17,
+                "sensitivities": {
+                  "Imipenem": 73,
+                  "Cefoperazone-Sulbactam": 68,
+                  "Meropenem": 68,
+                  "Piperacillin-Tazobactam": 64,
+                  "Ceftriaxone": 45
+                },
+                "raw_sensitivity_text": "Imipenem 73%, Cefoperazone-Sulbactam 68%, Meropenem 68%, Piperacillin-Tazobactam 64%, Ceftriaxone 45%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 9,
+                "has_footnote_marker": false,
+                "prevalence_pct": 6,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 50,
+                  "Imipenem": 50,
+                  "Meropenem": 50,
+                  "Piperacillin-Tazobactam": 50,
+                  "Ceftazidime": 50
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 50%, Imipenem 50%, Meropenem 50%, Piperacillin-Tazobactam 50%, Ceftazidime 50%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": []
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam OR Imipenem OR Meropenem",
+            "2": "Imipenem OR Meropenem",
+            "3": "Ceftazidime/Avibactam + Aztreonam OR Polymyxin-based combination therapy"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee."
+          ]
+        },
+        "hospital_acquired": {
+          "sheet_title": "Blood Stream Infection (BSI) — ICU Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 95,
+            "3": 232
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 20,
+                "has_footnote_marker": false,
+                "prevalence_pct": 21,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 84,
+                  "Meropenem": 84,
+                  "Cefoperazone-Sulbactam": 79,
+                  "Piperacillin-Tazobactam": 74,
+                  "Ceftriaxone": 32
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 84%, Meropenem 84%, Cefoperazone-Sulbactam 79%, Piperacillin-Tazobactam 74%, Ceftriaxone 32%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 14,
+                "sensitivities": {
+                  "Imipenem": 67,
+                  "Meropenem": 56,
+                  "Piperacillin-Tazobactam": 56,
+                  "Cefoperazone-Sulbactam": 56,
+                  "Ceftriaxone": 44
+                },
+                "raw_sensitivity_text": "Imipenem 67%, Meropenem 56%, Piperacillin-Tazobactam 56%, Cefoperazone-Sulbactam 56%, Ceftriaxone 44%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 7,
+                "has_footnote_marker": false,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Daptomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 83
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Daptomycin 100%, Teicoplanin 100%, Oxacillin 83%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 38,
+                "has_footnote_marker": false,
+                "prevalence_pct": 16,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 70,
+                  "Meropenem": 70,
+                  "Cefoperazone-Sulbactam": 55,
+                  "Piperacillin-Tazobactam": 42,
+                  "Ceftriaxone": 15
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 70%, Meropenem 70%, Cefoperazone-Sulbactam 55%, Piperacillin-Tazobactam 42%, Ceftriaxone 15%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 37,
+                "has_footnote_marker": false,
+                "prevalence_pct": 16,
+                "sensitivities": {
+                  "Imipenem": 54,
+                  "Cefoperazone-Sulbactam": 43,
+                  "Meropenem": 43,
+                  "Piperacillin-Tazobactam": 40,
+                  "Ceftriaxone": 14
+                },
+                "raw_sensitivity_text": "Imipenem 54%, Cefoperazone-Sulbactam 43%, Meropenem 43%, Piperacillin-Tazobactam 40%, Ceftriaxone 14%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 21,
+                "has_footnote_marker": false,
+                "prevalence_pct": 9,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 56,
+                  "Imipenem": 50,
+                  "Meropenem": 56,
+                  "Piperacillin-Tazobactam": 50,
+                  "Ceftazidime": 56
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 56%, Imipenem 50%, Meropenem 56%, Piperacillin-Tazobactam 50%, Ceftazidime 56%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Acinetobacter baumannii",
+                "n": 17,
+                "has_footnote_marker": false,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Minocycline": 47,
+                  "Cefoperazone-Sulbactam": 35,
+                  "Imipenem": 29,
+                  "Meropenem": 29,
+                  "Piperacillin-Tazobactam": 29,
+                  "Ceftazidime": 29
+                },
+                "raw_sensitivity_text": "Minocycline 47%, Cefoperazone-Sulbactam 35%, Imipenem 29%, Meropenem 29%, Piperacillin-Tazobactam 29%, Ceftazidime 29%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Enterococcus sp",
+                "n": 17,
+                "has_footnote_marker": false,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Linezolid": 94,
+                  "Vancomycin": 69,
+                  "Teicoplanin": 69,
+                  "Daptomycin": 33,
+                  "Penicillin": 13
+                },
+                "raw_sensitivity_text": "Linezolid 94%, Vancomycin 69%, Teicoplanin 69%, Daptomycin 33%, Penicillin 13%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": []
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Ceftazidime/Avibactam + Aztreonam OR Polymyxin-based combination therapy",
+            "3": "Ceftazidime/Avibactam + Aztreonam OR Polymyxin-based combination therapy"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee."
+          ]
+        }
+      },
+      "wards": {
+        "community_acquired": {
+          "sheet_title": "Blood Stream Infection (BSI) — Wards Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": 79,
+            "2": 239,
+            "3": 349
+          },
+          "pathogens_by_type": {
+            "1": [
+              {
+                "sno": 1,
+                "pathogen_name": "Salmonella group",
+                "n": 19,
+                "has_footnote_marker": false,
+                "prevalence_pct": 24,
+                "sensitivities": {
+                  "Ampicillin": 95,
+                  "Ceftriaxone": 100,
+                  "Azithromycin": 94,
+                  "Chloramphenicol": 94
+                },
+                "raw_sensitivity_text": "Ampicillin 95%, Ceftriaxone 100%, Azithromycin 94%, Chloramphenicol 94%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Escherichia coli",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 16,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 92,
+                  "Ceftriaxone": 17
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 92%, Ceftriaxone 17%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 4,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 100
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 100%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Streptococcus pneumoniae",
+                "n": 3,
+                "has_footnote_marker": false,
+                "prevalence_pct": 4,
+                "sensitivities": {
+                  "Penicillin (non-meningitis/meningitis)": 100,
+                  "Ceftriaxone": 100,
+                  "Vancomycin": 100,
+                  "Linezolid": 100
+                },
+                "raw_sensitivity_text": "Penicillin (non-meningitis/meningitis) 100%, Ceftriaxone 100%, Vancomycin 100%, Linezolid 100%"
+              }
+            ],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 68,
+                "has_footnote_marker": false,
+                "prevalence_pct": 28,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 97,
+                  "Meropenem": 97,
+                  "Cefoperazone-Sulbactam": 90,
+                  "Piperacillin-Tazobactam": 82,
+                  "Ceftriaxone": 28
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 97%, Meropenem 97%, Cefoperazone-Sulbactam 90%, Piperacillin-Tazobactam 82%, Ceftriaxone 28%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 17,
+                "has_footnote_marker": true,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Imipenem": 82,
+                  "Meropenem": 82,
+                  "Cefoperazone-Sulbactam": 76,
+                  "Piperacillin-Tazobactam": 65,
+                  "Ceftriaxone": 47
+                },
+                "raw_sensitivity_text": "Imipenem 82%, Meropenem 82%, Cefoperazone-Sulbactam 76%, Piperacillin-Tazobactam 65%, Ceftriaxone 47%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Salmonella group",
+                "n": 15,
+                "has_footnote_marker": false,
+                "prevalence_pct": 6,
+                "sensitivities": {
+                  "Ceftriaxone": 100,
+                  "Azithromycin": 100,
+                  "Ampicillin": 93,
+                  "Chloramphenicol": 93
+                },
+                "raw_sensitivity_text": "Ceftriaxone 100%, Azithromycin 100%, Ampicillin 93%, Chloramphenicol 93%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 10,
+                "has_footnote_marker": false,
+                "prevalence_pct": 4,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Daptomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 80
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Daptomycin 100%, Teicoplanin 100%, Oxacillin 80%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 94,
+                "has_footnote_marker": false,
+                "prevalence_pct": 27,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 86,
+                  "Meropenem": 81,
+                  "Piperacillin-Tazobactam": 74,
+                  "Cefoperazone-Sulbactam": 79,
+                  "Ceftriaxone": 27
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 86%, Meropenem 81%, Piperacillin-Tazobactam 74%, Cefoperazone-Sulbactam 79%, Ceftriaxone 27%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 36,
+                "has_footnote_marker": false,
+                "prevalence_pct": 10,
+                "sensitivities": {
+                  "Imipenem": 83,
+                  "Meropenem": 77,
+                  "Piperacillin-Tazobactam": 77,
+                  "Cefoperazone-Sulbactam": 77,
+                  "Ceftriaxone": 46
+                },
+                "raw_sensitivity_text": "Imipenem 83%, Meropenem 77%, Piperacillin-Tazobactam 77%, Cefoperazone-Sulbactam 77%, Ceftriaxone 46%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 20,
+                "has_footnote_marker": false,
+                "prevalence_pct": 6,
+                "sensitivities": {
+                  "Imipenem": 89,
+                  "Meropenem": 89,
+                  "Ceftazidime": 72,
+                  "Cefoperazone-Sulbactam": 67,
+                  "Piperacillin-Tazobactam": 67
+                },
+                "raw_sensitivity_text": "Imipenem 89%, Meropenem 89%, Ceftazidime 72%, Cefoperazone-Sulbactam 67%, Piperacillin-Tazobactam 67%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 19,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Daptomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 72
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Daptomycin 100%, Teicoplanin 100%, Oxacillin 72%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [
+              "*Colistin resistance was observed in 5% isolates of Klebsiella"
+            ],
+            "3": []
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Ceftriaxone. If suspected UTI: Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "2": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "3": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam OR Imipenem OR Meropenem"
+          },
+          "section_notes": []
+        },
+        "hospital_acquired": {
+          "sheet_title": "Blood Stream Infection (BSI) — Wards Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 52,
+            "3": 223
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 25,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 91,
+                  "Meropenem": 91,
+                  "Cefoperazone-Sulbactam": 64,
+                  "Piperacillin-Tazobactam": 64,
+                  "Ceftriaxone": 18
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 91%, Meropenem 91%, Cefoperazone-Sulbactam 64%, Piperacillin-Tazobactam 64%, Ceftriaxone 18%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 5,
+                "has_footnote_marker": false,
+                "prevalence_pct": 10,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 60,
+                  "Imipenem": 60,
+                  "Meropenem": 60,
+                  "Piperacillin-Tazobactam": 40,
+                  "Ceftriaxone": 0
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 60%, Imipenem 60%, Meropenem 60%, Piperacillin-Tazobactam 40%, Ceftriaxone 0%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 4,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Daptomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 50
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Daptomycin 100%, Teicoplanin 100%, Oxacillin 50%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Pseudomonas aeruginosa",
+                "n": 4,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 75,
+                  "Imipenem": 75,
+                  "Meropenem": 75,
+                  "Piperacillin-Tazobactam": 75,
+                  "Ceftazidime": 75
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 75%, Imipenem 75%, Meropenem 75%, Piperacillin-Tazobactam 75%, Ceftazidime 75%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 66,
+                "has_footnote_marker": false,
+                "prevalence_pct": 30,
+                "sensitivities": {
+                  "Fosfomycin": 96,
+                  "Imipenem": 69,
+                  "Meropenem": 69,
+                  "Cefoperazone-Sulbactam": 48,
+                  "Piperacillin-Tazobactam": 40,
+                  "Ceftriaxone": 15
+                },
+                "raw_sensitivity_text": "Fosfomycin 96%, Imipenem 69%, Meropenem 69%, Cefoperazone-Sulbactam 48%, Piperacillin-Tazobactam 40%, Ceftriaxone 15%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 37,
+                "has_footnote_marker": true,
+                "prevalence_pct": 17,
+                "sensitivities": {
+                  "Imipenem": 69,
+                  "Cefoperazone-Sulbactam": 53,
+                  "Meropenem": 56,
+                  "Piperacillin-Tazobactam": 50,
+                  "Ceftriaxone": 44
+                },
+                "raw_sensitivity_text": "Imipenem 69%, Cefoperazone-Sulbactam 53%, Meropenem 56%, Piperacillin-Tazobactam 50%, Ceftriaxone 44%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Enterococcus sp",
+                "n": 12,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Teicoplanin": 92,
+                  "Vancomycin": 75,
+                  "Penicillin": 25
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Teicoplanin 92%, Vancomycin 75%, Penicillin 25%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 12,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Daptomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 64
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Daptomycin 100%, Teicoplanin 100%, Oxacillin 64%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 7,
+                "has_footnote_marker": false,
+                "prevalence_pct": 3,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 71,
+                  "Imipenem": 71,
+                  "Meropenem": 71,
+                  "Piperacillin-Tazobactam": 71,
+                  "Ceftazidime": 71
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 71%, Imipenem 71%, Meropenem 71%, Piperacillin-Tazobactam 71%, Ceftazidime 71%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": [
+              "*Colistin resistance was observed in 20% isolates of Klebsiella"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Meropenem OR Imipenem",
+            "3": "Polymyxin-based combination therapy OR Ceftazidime/Avibactam + Aztreonam"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee."
+          ]
+        }
+      }
+    },
+    "UTI": {
+      "ICU": {
+        "community_acquired": {
+          "sheet_title": "Urinary Tract Infection (UTI) — ICU Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 126,
+            "3": 163
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 51,
+                "has_footnote_marker": false,
+                "prevalence_pct": 40,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 92,
+                  "Meropenem": 92,
+                  "Cefoperazone-Sulbactam": 86,
+                  "Piperacillin-Tazobactam": 74,
+                  "Ceftriaxone": 28
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 92%, Meropenem 92%, Cefoperazone-Sulbactam 86%, Piperacillin-Tazobactam 74%, Ceftriaxone 28%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 24,
+                "has_footnote_marker": false,
+                "prevalence_pct": 19,
+                "sensitivities": {
+                  "Fosfomycin": 67,
+                  "Cefoperazone-Sulbactam": 71,
+                  "Imipenem": 79,
+                  "Meropenem": 79,
+                  "Piperacillin-Tazobactam": 54,
+                  "Ceftriaxone": 46
+                },
+                "raw_sensitivity_text": "Fosfomycin 67%, Cefoperazone-Sulbactam 71%, Imipenem 79%, Meropenem 79%, Piperacillin-Tazobactam 54%, Ceftriaxone 46%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 10,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 80,
+                  "Imipenem": 80,
+                  "Meropenem": 80,
+                  "Piperacillin-Tazobactam": 80,
+                  "Ceftazidime": 70
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 80%, Imipenem 80%, Meropenem 80%, Piperacillin-Tazobactam 80%, Ceftazidime 70%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 56,
+                "has_footnote_marker": false,
+                "prevalence_pct": 34,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 83,
+                  "Meropenem": 83,
+                  "Cefoperazone-Sulbactam": 73,
+                  "Piperacillin-Tazobactam": 67,
+                  "Ceftriaxone": 31
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 83%, Meropenem 83%, Cefoperazone-Sulbactam 73%, Piperacillin-Tazobactam 67%, Ceftriaxone 31%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 41,
+                "has_footnote_marker": true,
+                "prevalence_pct": 25,
+                "sensitivities": {
+                  "Fosfomycin": 55,
+                  "Imipenem": 54,
+                  "Meropenem": 56,
+                  "Cefoperazone-Sulbactam": 46,
+                  "Piperacillin-Tazobactam": 44,
+                  "Ceftriaxone": 13
+                },
+                "raw_sensitivity_text": "Fosfomycin 55%, Imipenem 54%, Meropenem 56%, Cefoperazone-Sulbactam 46%, Piperacillin-Tazobactam 44%, Ceftriaxone 13%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 42,
+                  "Imipenem": 38,
+                  "Meropenem": 38,
+                  "Piperacillin-Tazobactam": 38,
+                  "Ceftazidime": 38
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 42%, Imipenem 38%, Meropenem 38%, Piperacillin-Tazobactam 38%, Ceftazidime 38%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": [
+              "*Colistin resistance was observed in 3% isolates of Klebsiella"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "2": "Cefoperazone-Sulbactam OR Meropenem OR Imipenem",
+            "3": "Colistin +/- (IV) Fosfomycin OR Ceftazidime/Avibactam + Aztreonam"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee.",
+            "Fosfomycin susceptibility has been reported based on E. coli urinary CLSI breakpoints."
+          ]
+        },
+        "hospital_acquired": {
+          "sheet_title": "Urinary Tract Infection (UTI) — ICU Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 98,
+            "3": 175
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 36,
+                "has_footnote_marker": false,
+                "prevalence_pct": 37,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 91,
+                  "Cefoperazone-Sulbactam": 83,
+                  "Meropenem": 88,
+                  "Piperacillin-Tazobactam": 77,
+                  "Ceftriaxone": 34
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 91%, Cefoperazone-Sulbactam 83%, Meropenem 88%, Piperacillin-Tazobactam 77%, Ceftriaxone 34%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 11,
+                "has_footnote_marker": true,
+                "prevalence_pct": 11,
+                "sensitivities": {
+                  "Fosfomycin": 0,
+                  "Imipenem": 82,
+                  "Meropenem": 73,
+                  "Cefoperazone-Sulbactam": 64,
+                  "Piperacillin-Tazobactam": 54,
+                  "Ceftriaxone": 54
+                },
+                "raw_sensitivity_text": "Fosfomycin 0%, Imipenem 82%, Meropenem 73%, Cefoperazone-Sulbactam 64%, Piperacillin-Tazobactam 54%, Ceftriaxone 54%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 6,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 83,
+                  "Imipenem": 83,
+                  "Meropenem": 83,
+                  "Piperacillin-Tazobactam": 83,
+                  "Ceftazidime": 83
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 83%, Imipenem 83%, Meropenem 83%, Piperacillin-Tazobactam 83%, Ceftazidime 83%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 40,
+                "has_footnote_marker": false,
+                "prevalence_pct": 23,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 81,
+                  "Meropenem": 81,
+                  "Cefoperazone-Sulbactam": 63,
+                  "Piperacillin-Tazobactam": 55,
+                  "Ceftriaxone": 24
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 81%, Meropenem 81%, Cefoperazone-Sulbactam 63%, Piperacillin-Tazobactam 55%, Ceftriaxone 24%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 34,
+                "has_footnote_marker": true,
+                "prevalence_pct": 19,
+                "sensitivities": {
+                  "Fosfomycin": 58,
+                  "Cefoperazone-Sulbactam": 45,
+                  "Imipenem": 52,
+                  "Meropenem": 48,
+                  "Piperacillin-Tazobactam": 45,
+                  "Ceftriaxone": 19
+                },
+                "raw_sensitivity_text": "Fosfomycin 58%, Cefoperazone-Sulbactam 45%, Imipenem 52%, Meropenem 48%, Piperacillin-Tazobactam 45%, Ceftriaxone 19%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 16,
+                "has_footnote_marker": false,
+                "prevalence_pct": 9,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 19,
+                  "Imipenem": 25,
+                  "Meropenem": 19,
+                  "Piperacillin-Tazobactam": 19,
+                  "Ceftazidime": 19
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 19%, Imipenem 25%, Meropenem 19%, Piperacillin-Tazobactam 19%, Ceftazidime 19%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Enterococcus sp",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 3,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 67,
+                  "Teicoplanin": 67,
+                  "Penicillin": 33
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 67%, Teicoplanin 67%, Penicillin 33%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [
+              "*Colistin resistance was observed in 2% isolates of Klebsiella"
+            ],
+            "3": [
+              "*Colistin resistance was observed in 9% isolates of Klebsiella"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Cefoperazone-Sulbactam OR Meropenem OR Imipenem",
+            "3": "Colistin +/- (IV) Fosfomycin OR Ceftazidime/Avibactam + Aztreonam"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee.",
+            "Fosfomycin susceptibility has been reported based on E. coli urinary CLSI breakpoints."
+          ]
+        }
+      },
+      "wards": {
+        "community_acquired": {
+          "sheet_title": "Urinary Tract Infection (UTI) — Wards Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": 99,
+            "2": 367,
+            "3": 405
+          },
+          "pathogens_by_type": {
+            "1": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 48,
+                "has_footnote_marker": false,
+                "prevalence_pct": 48,
+                "sensitivities": {
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Fosfomycin": 100,
+                  "Cefoperazone-Sulbactam": 90,
+                  "Nitrofurantoin": 89,
+                  "Piperacillin-Tazobactam": 81,
+                  "Ceftriaxone": 27
+                },
+                "raw_sensitivity_text": "Imipenem 100%, Meropenem 100%, Fosfomycin 100%, Cefoperazone-Sulbactam 90%, Nitrofurantoin 89%, Piperacillin-Tazobactam 81%, Ceftriaxone 27%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 11,
+                "has_footnote_marker": false,
+                "prevalence_pct": 11,
+                "sensitivities": {
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Fosfomycin": 100,
+                  "Cefoperazone-Sulbactam": 82,
+                  "Piperacillin-Tazobactam": 82,
+                  "Ceftriaxone": 64,
+                  "Nitrofurantoin": 55
+                },
+                "raw_sensitivity_text": "Imipenem 100%, Meropenem 100%, Fosfomycin 100%, Cefoperazone-Sulbactam 82%, Piperacillin-Tazobactam 82%, Ceftriaxone 64%, Nitrofurantoin 55%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 9,
+                "has_footnote_marker": false,
+                "prevalence_pct": 9,
+                "sensitivities": {
+                  "Imipenem": 78,
+                  "Meropenem": 78,
+                  "Cefoperazone-Sulbactam": 67,
+                  "Piperacillin-Tazobactam": 67,
+                  "Ceftazidime": 67
+                },
+                "raw_sensitivity_text": "Imipenem 78%, Meropenem 78%, Cefoperazone-Sulbactam 67%, Piperacillin-Tazobactam 67%, Ceftazidime 67%"
+              }
+            ],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 177,
+                "has_footnote_marker": true,
+                "prevalence_pct": 48,
+                "sensitivities": {
+                  "Fosfomycin": 96,
+                  "Imipenem": 93,
+                  "Meropenem": 93,
+                  "Cefoperazone-Sulbactam": 80,
+                  "Piperacillin-Tazobactam": 69,
+                  "Ceftriaxone": 26
+                },
+                "raw_sensitivity_text": "Fosfomycin 96%, Imipenem 93%, Meropenem 93%, Cefoperazone-Sulbactam 80%, Piperacillin-Tazobactam 69%, Ceftriaxone 26%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 51,
+                "has_footnote_marker": false,
+                "prevalence_pct": 14,
+                "sensitivities": {
+                  "Fosfomycin": 57,
+                  "Imipenem": 88,
+                  "Cefoperazone-Sulbactam": 78,
+                  "Meropenem": 78,
+                  "Piperacillin-Tazobactam": 71,
+                  "Ceftriaxone": 49
+                },
+                "raw_sensitivity_text": "Fosfomycin 57%, Imipenem 88%, Cefoperazone-Sulbactam 78%, Meropenem 78%, Piperacillin-Tazobactam 71%, Ceftriaxone 49%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 38,
+                "has_footnote_marker": false,
+                "prevalence_pct": 10,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 54,
+                  "Imipenem": 55,
+                  "Meropenem": 57,
+                  "Piperacillin-Tazobactam": 55,
+                  "Ceftazidime": 55
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 54%, Imipenem 55%, Meropenem 57%, Piperacillin-Tazobactam 55%, Ceftazidime 55%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Enterococcus sp",
+                "n": 14,
+                "has_footnote_marker": false,
+                "prevalence_pct": 4,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Teicoplanin": 100,
+                  "Vancomycin": 93,
+                  "Penicillin": 57
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Teicoplanin 100%, Vancomycin 93%, Penicillin 57%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Citrobacter sp",
+                "n": 12,
+                "has_footnote_marker": false,
+                "prevalence_pct": 3,
+                "sensitivities": {
+                  "Imipenem": 67,
+                  "Meropenem": 67,
+                  "Cefoperazone-Sulbactam": 50,
+                  "Piperacillin-Tazobactam": 50,
+                  "Ceftriaxone": 50
+                },
+                "raw_sensitivity_text": "Imipenem 67%, Meropenem 67%, Cefoperazone-Sulbactam 50%, Piperacillin-Tazobactam 50%, Ceftriaxone 50%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 166,
+                "has_footnote_marker": true,
+                "prevalence_pct": 41,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 83,
+                  "Meropenem": 82,
+                  "Cefoperazone-Sulbactam": 72,
+                  "Piperacillin-Tazobactam": 67,
+                  "Ceftriaxone": 23
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 83%, Meropenem 82%, Cefoperazone-Sulbactam 72%, Piperacillin-Tazobactam 67%, Ceftriaxone 23%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 91,
+                "has_footnote_marker": false,
+                "prevalence_pct": 22,
+                "sensitivities": {
+                  "Fosfomycin": 74,
+                  "Imipenem": 68,
+                  "Cefoperazone-Sulbactam": 54,
+                  "Meropenem": 58,
+                  "Piperacillin-Tazobactam": 54,
+                  "Ceftriaxone": 34
+                },
+                "raw_sensitivity_text": "Fosfomycin 74%, Imipenem 68%, Cefoperazone-Sulbactam 54%, Meropenem 58%, Piperacillin-Tazobactam 54%, Ceftriaxone 34%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 48,
+                "has_footnote_marker": false,
+                "prevalence_pct": 12,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 54,
+                  "Imipenem": 53,
+                  "Meropenem": 53,
+                  "Piperacillin-Tazobactam": 51,
+                  "Ceftazidime": 53
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 54%, Imipenem 53%, Meropenem 53%, Piperacillin-Tazobactam 51%, Ceftazidime 53%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Enterococcus sp",
+                "n": 18,
+                "has_footnote_marker": false,
+                "prevalence_pct": 4,
+                "sensitivities": {
+                  "Linezolid": 94,
+                  "Vancomycin": 61,
+                  "Teicoplanin": 65,
+                  "Daptomycin": 35
+                },
+                "raw_sensitivity_text": "Linezolid 94%, Vancomycin 61%, Teicoplanin 65%, Daptomycin 35%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Proteus sp",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 3,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 83
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 83%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": []
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "2": "Cefoperazone-Sulbactam",
+            "3": "Colistin +/- (IV) Fosfomycin OR Ceftazidime/Avibactam + Aztreonam"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee.",
+            "Fosfomycin susceptibility has been reported based on E. coli urinary CLSI breakpoints."
+          ]
+        },
+        "hospital_acquired": {
+          "sheet_title": "Urinary Tract Infection (UTI) — Wards Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 209,
+            "3": 510
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 90,
+                "has_footnote_marker": false,
+                "prevalence_pct": 43,
+                "sensitivities": {
+                  "Fosfomycin": 97,
+                  "Imipenem": 93,
+                  "Meropenem": 93,
+                  "Cefoperazone-Sulbactam": 82,
+                  "Piperacillin-Tazobactam": 67,
+                  "Ceftriaxone": 25
+                },
+                "raw_sensitivity_text": "Fosfomycin 97%, Imipenem 93%, Meropenem 93%, Cefoperazone-Sulbactam 82%, Piperacillin-Tazobactam 67%, Ceftriaxone 25%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 42,
+                "has_footnote_marker": false,
+                "prevalence_pct": 20,
+                "sensitivities": {
+                  "Fosfomycin": 64,
+                  "Cefoperazone-Sulbactam": 60,
+                  "Imipenem": 71,
+                  "Meropenem": 67,
+                  "Piperacillin-Tazobactam": 55,
+                  "Ceftriaxone": 38
+                },
+                "raw_sensitivity_text": "Fosfomycin 64%, Cefoperazone-Sulbactam 60%, Imipenem 71%, Meropenem 67%, Piperacillin-Tazobactam 55%, Ceftriaxone 38%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 18,
+                "has_footnote_marker": false,
+                "prevalence_pct": 9,
+                "sensitivities": {
+                  "Ceftazidime": 61,
+                  "Imipenem": 61,
+                  "Meropenem": 61,
+                  "Cefoperazone-Sulbactam": 56,
+                  "Piperacillin-Tazobactam": 56
+                },
+                "raw_sensitivity_text": "Ceftazidime 61%, Imipenem 61%, Meropenem 61%, Cefoperazone-Sulbactam 56%, Piperacillin-Tazobactam 56%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 209,
+                "has_footnote_marker": false,
+                "prevalence_pct": 41,
+                "sensitivities": {
+                  "Fosfomycin": 98,
+                  "Imipenem": 78,
+                  "Meropenem": 78,
+                  "Cefoperazone-Sulbactam": 65,
+                  "Piperacillin-Tazobactam": 61,
+                  "Ceftriaxone": 15
+                },
+                "raw_sensitivity_text": "Fosfomycin 98%, Imipenem 78%, Meropenem 78%, Cefoperazone-Sulbactam 65%, Piperacillin-Tazobactam 61%, Ceftriaxone 15%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 87,
+                "has_footnote_marker": false,
+                "prevalence_pct": 17,
+                "sensitivities": {
+                  "Fosfomycin": 60,
+                  "Imipenem": 60,
+                  "Meropenem": 52,
+                  "Cefoperazone-Sulbactam": 46,
+                  "Piperacillin-Tazobactam": 46,
+                  "Ceftriaxone": 24
+                },
+                "raw_sensitivity_text": "Fosfomycin 60%, Imipenem 60%, Meropenem 52%, Cefoperazone-Sulbactam 46%, Piperacillin-Tazobactam 46%, Ceftriaxone 24%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 72,
+                "has_footnote_marker": false,
+                "prevalence_pct": 14,
+                "sensitivities": {
+                  "Ceftazidime": 50,
+                  "Cefoperazone-Sulbactam": 47,
+                  "Imipenem": 49,
+                  "Meropenem": 49,
+                  "Piperacillin-Tazobactam": 46
+                },
+                "raw_sensitivity_text": "Ceftazidime 50%, Cefoperazone-Sulbactam 47%, Imipenem 49%, Meropenem 49%, Piperacillin-Tazobactam 46%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Enterococcus sp",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 3,
+                "sensitivities": {
+                  "Linezolid": 92,
+                  "Vancomycin": 62,
+                  "Teicoplanin": 62,
+                  "Penicillin": 31
+                },
+                "raw_sensitivity_text": "Linezolid 92%, Vancomycin 62%, Teicoplanin 62%, Penicillin 31%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Proteus sp",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 3,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 92,
+                  "Meropenem": 92,
+                  "Piperacillin-Tazobactam": 92,
+                  "Imipenem": 50,
+                  "Ceftriaxone": 70
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 92%, Meropenem 92%, Piperacillin-Tazobactam 92%, Imipenem 50%, Ceftriaxone 70%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": [
+              "Colistin resistance was observed in 1% isolates of Klebsiella"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Imipenem OR Meropenem",
+            "3": "Colistin +/- (IV) Fosfomycin OR Ceftazidime/Avibactam + Aztreonam"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee.",
+            "Fosfomycin susceptibility has been reported based on E. coli urinary CLSI breakpoints."
+          ]
+        }
+      }
+    },
+    "RTI": {
+      "ICU": {
+        "community_acquired": {
+          "sheet_title": "Respiratory Tract Infection — ICU Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": 30,
+            "2": 70,
+            "3": 94
+          },
+          "pathogens_by_type": {
+            "1": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 8,
+                "has_footnote_marker": false,
+                "prevalence_pct": 27,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Ertapenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 50
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Ertapenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 50%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas aeruginosa",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 20,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftazidime": 100,
+                  "Doripenem": 100
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftazidime 100%, Doripenem 100%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Haemophilus influenzae",
+                "n": 3,
+                "has_footnote_marker": false,
+                "prevalence_pct": 10,
+                "sensitivities": {
+                  "Cefuroxime": 100,
+                  "Ceftriaxone": 100,
+                  "Ciprofloxacin": 100,
+                  "Azithromycin": 100,
+                  "Tetracycline": 100
+                },
+                "raw_sensitivity_text": "Cefuroxime 100%, Ceftriaxone 100%, Ciprofloxacin 100%, Azithromycin 100%, Tetracycline 100%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Streptococcus pneumoniae",
+                "n": 3,
+                "has_footnote_marker": false,
+                "prevalence_pct": 10,
+                "sensitivities": {
+                  "Penicillin (non-meningitis)": 100,
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Ceftriaxone": 100,
+                  "Tigecycline": 100
+                },
+                "raw_sensitivity_text": "Penicillin 100% (non-meningitis), Linezolid 100%, Vancomycin 100%, Ceftriaxone 100%, Tigecycline 100%"
+              }
+            ],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 26,
+                "has_footnote_marker": true,
+                "prevalence_pct": 37,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 96,
+                  "Imipenem": 96,
+                  "Meropenem": 96,
+                  "Ertapenem": 96,
+                  "Piperacillin-Tazobactam": 92,
+                  "Ceftriaxone": 88
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 96%, Imipenem 96%, Meropenem 96%, Ertapenem 96%, Piperacillin-Tazobactam 92%, Ceftriaxone 88%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas aeruginosa",
+                "n": 15,
+                "has_footnote_marker": false,
+                "prevalence_pct": 21,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Meropenem": 100,
+                  "Ceftazidime": 100,
+                  "Doripenem": 100,
+                  "Piperacillin-Tazobactam": 93,
+                  "Imipenem": 93
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Meropenem 100%, Ceftazidime 100%, Doripenem 100%, Piperacillin-Tazobactam 93%, Imipenem 93%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Escherichia coli",
+                "n": 5,
+                "has_footnote_marker": false,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Ertapenem": 100,
+                  "Piperacillin-Tazobactam": 60,
+                  "Cefoperazone-Sulbactam": 80,
+                  "Ceftriaxone": 20
+                },
+                "raw_sensitivity_text": "Imipenem 100%, Meropenem 100%, Ertapenem 100%, Piperacillin-Tazobactam 60%, Cefoperazone-Sulbactam 80%, Ceftriaxone 20%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Pseudomonas aeruginosa",
+                "n": 25,
+                "has_footnote_marker": false,
+                "prevalence_pct": 27,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 72,
+                  "Imipenem": 72,
+                  "Meropenem": 72,
+                  "Piperacillin-Tazobactam": 75,
+                  "Ceftazidime": 71
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 72%, Imipenem 72%, Meropenem 72%, Piperacillin-Tazobactam 75%, Ceftazidime 71%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 21,
+                "has_footnote_marker": true,
+                "prevalence_pct": 22,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 40,
+                  "Imipenem": 45,
+                  "Meropenem": 40,
+                  "Piperacillin-Tazobactam": 40
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 40%, Imipenem 45%, Meropenem 40%, Piperacillin-Tazobactam 40%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Escherichia coli",
+                "n": 14,
+                "has_footnote_marker": false,
+                "prevalence_pct": 15,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 71,
+                  "Meropenem": 71,
+                  "Cefoperazone-Sulbactam": 50,
+                  "Piperacillin-Tazobactam": 43,
+                  "Ceftriaxone": 14
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 71%, Meropenem 71%, Cefoperazone-Sulbactam 50%, Piperacillin-Tazobactam 43%, Ceftriaxone 14%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Acinetobacter sp",
+                "n": 8,
+                "has_footnote_marker": false,
+                "prevalence_pct": 9,
+                "sensitivities": {
+                  "Minocycline": 63,
+                  "Cefoperazone-Sulbactam": 50,
+                  "Imipenem": 25,
+                  "Meropenem": 25,
+                  "Piperacillin-Tazobactam": 25,
+                  "Ceftazidime": 25
+                },
+                "raw_sensitivity_text": "Minocycline 63%, Cefoperazone-Sulbactam 50%, Imipenem 25%, Meropenem 25%, Piperacillin-Tazobactam 25%, Ceftazidime 25%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 5,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 60,
+                  "Penicillin": 0
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, Oxacillin 60%, Penicillin 0%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [
+              "*Colistin resistance was observed in 4% isolates of Klebsiella"
+            ],
+            "3": [
+              "*Colistin resistance was observed in 5% isolates of Klebsiella"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Cefoperazone-Sulbactam OR Piperacillin/Tazobactam + Doxycycline/Macrolide",
+            "2": "Cefoperazone-Sulbactam OR Piperacillin/Tazobactam + Doxycycline/Macrolide",
+            "3": "Ceftazidime/Avibactam + Aztreonam + Doxycycline/Macrolide"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee."
+          ]
+        },
+        "hospital_acquired": {
+          "sheet_title": "Respiratory Tract Infection — ICU Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 88,
+            "3": 355
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 21,
+                "has_footnote_marker": false,
+                "prevalence_pct": 24,
+                "sensitivities": {
+                  "Imipenem": 95,
+                  "Meropenem": 90,
+                  "Piperacillin-Tazobactam": 80,
+                  "Cefoperazone-Sulbactam": 80,
+                  "Ceftriaxone": 65
+                },
+                "raw_sensitivity_text": "Imipenem 95%, Meropenem 90%, Piperacillin-Tazobactam 80%, Cefoperazone-Sulbactam 80%, Ceftriaxone 65%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas aeruginosa",
+                "n": 17,
+                "has_footnote_marker": false,
+                "prevalence_pct": 19,
+                "sensitivities": {
+                  "Imipenem": 88,
+                  "Meropenem": 81,
+                  "Piperacillin-Tazobactam": 69,
+                  "Ceftazidime": 69,
+                  "Cefoperazone-Sulbactam": 69
+                },
+                "raw_sensitivity_text": "Imipenem 88%, Meropenem 81%, Piperacillin-Tazobactam 69%, Ceftazidime 69%, Cefoperazone-Sulbactam 69%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Escherichia coli",
+                "n": 10,
+                "has_footnote_marker": false,
+                "prevalence_pct": 11,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Cefoperazone-Sulbactam": 90,
+                  "Imipenem": 90,
+                  "Meropenem": 90,
+                  "Piperacillin-Tazobactam": 80,
+                  "Ceftriaxone": 50
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Cefoperazone-Sulbactam 90%, Imipenem 90%, Meropenem 90%, Piperacillin-Tazobactam 80%, Ceftriaxone 50%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 7,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "Oxacillin": 100,
+                  "Penicillin": 17
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, Oxacillin 100%, Penicillin 17%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Enterobacter cloacae",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 100
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 100%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 98,
+                "has_footnote_marker": true,
+                "prevalence_pct": 28,
+                "sensitivities": {
+                  "Imipenem": 74,
+                  "Meropenem": 64,
+                  "Cefoperazone-Sulbactam": 60,
+                  "Piperacillin-Tazobactam": 55,
+                  "Ceftriaxone": 35
+                },
+                "raw_sensitivity_text": "Imipenem 74%, Meropenem 64%, Cefoperazone-Sulbactam 60%, Piperacillin-Tazobactam 55%, Ceftriaxone 35%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 73,
+                "has_footnote_marker": false,
+                "prevalence_pct": 20,
+                "sensitivities": {
+                  "Ceftazidime": 72,
+                  "Cefoperazone-Sulbactam": 64,
+                  "Imipenem": 69,
+                  "Meropenem": 68,
+                  "Piperacillin-Tazobactam": 64
+                },
+                "raw_sensitivity_text": "Ceftazidime 72%, Cefoperazone-Sulbactam 64%, Imipenem 69%, Meropenem 68%, Piperacillin-Tazobactam 64%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Acinetobacter baumannii",
+                "n": 50,
+                "has_footnote_marker": false,
+                "prevalence_pct": 14,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 14,
+                  "Imipenem": 4,
+                  "Meropenem": 4,
+                  "Piperacillin-Tazobactam": 4,
+                  "Minocycline": 20
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 14%, Imipenem 4%, Meropenem 4%, Piperacillin-Tazobactam 4%, Minocycline 20%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Stenotrophomonas maltophilia",
+                "n": 27,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Trimethoprim-Sulfamethoxazole": 96,
+                  "Minocycline": 100,
+                  "Levofloxacin": 92
+                },
+                "raw_sensitivity_text": "Trimethoprim-Sulfamethoxazole 96%, Minocycline 100%, Levofloxacin 92%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Escherichia coli",
+                "n": 23,
+                "has_footnote_marker": false,
+                "prevalence_pct": 6,
+                "sensitivities": {
+                  "Fosfomycin": 89,
+                  "Imipenem": 73,
+                  "Meropenem": 73,
+                  "Cefoperazone-Sulbactam": 59,
+                  "Piperacillin-Tazobactam": 59,
+                  "Ceftriaxone": 23
+                },
+                "raw_sensitivity_text": "Fosfomycin 89%, Imipenem 73%, Meropenem 73%, Cefoperazone-Sulbactam 59%, Piperacillin-Tazobactam 59%, Ceftriaxone 23%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": [
+              "*Colistin resistance was observed in 1% isolates of Klebsiella"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "3": "Ceftazidime-Avibactam + Aztreonam OR Polymyxin-based combination therapy"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee."
+          ]
+        }
+      },
+      "wards": {
+        "community_acquired": {
+          "sheet_title": "Respiratory Tract Infection — Wards Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": 41,
+            "2": 88,
+            "3": 166
+          },
+          "pathogens_by_type": {
+            "1": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 11,
+                "has_footnote_marker": false,
+                "prevalence_pct": 27,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Ertapenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 80
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Ertapenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 80%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 10,
+                "has_footnote_marker": false,
+                "prevalence_pct": 24,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftazidime": 100,
+                  "Doripenem": 100,
+                  "Imipenem": 90
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftazidime 100%, Doripenem 100%, Imipenem 90%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Haemophilus influenzae",
+                "n": 7,
+                "has_footnote_marker": false,
+                "prevalence_pct": 17,
+                "sensitivities": {
+                  "Cefuroxime": 100,
+                  "Ceftriaxone": 100,
+                  "Ciprofloxacin": 100,
+                  "Azithromycin": 100,
+                  "Tetracycline": 100,
+                  "Amoxicillin/Clavulanic acid": 100
+                },
+                "raw_sensitivity_text": "Cefuroxime 100%, Ceftriaxone 100%, Ciprofloxacin 100%, Azithromycin 100%, Tetracycline 100%, Amoxicillin/Clavulanic acid 100%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Streptococcus pneumoniae",
+                "n": 5,
+                "has_footnote_marker": false,
+                "prevalence_pct": 12,
+                "sensitivities": {
+                  "Penicillin (non-meningitis)": 100,
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Ceftriaxone": 100,
+                  "Tigecycline": 100
+                },
+                "raw_sensitivity_text": "Penicillin 100% (non-meningitis), Linezolid 100%, Vancomycin 100%, Ceftriaxone 100%, Tigecycline 100%"
+              }
+            ],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 34,
+                "has_footnote_marker": false,
+                "prevalence_pct": 39,
+                "sensitivities": {
+                  "Imipenem": 91,
+                  "Cefoperazone-Sulbactam": 88,
+                  "Meropenem": 88,
+                  "Ertapenem": 88,
+                  "Piperacillin-Tazobactam": 85,
+                  "Ceftriaxone": 71
+                },
+                "raw_sensitivity_text": "Imipenem 91%, Cefoperazone-Sulbactam 88%, Meropenem 88%, Ertapenem 88%, Piperacillin-Tazobactam 85%, Ceftriaxone 71%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 19,
+                "has_footnote_marker": false,
+                "prevalence_pct": 22,
+                "sensitivities": {
+                  "Imipenem": 94,
+                  "Meropenem": 94,
+                  "Doripenem": 90,
+                  "Cefoperazone-Sulbactam": 83,
+                  "Piperacillin-Tazobactam": 83,
+                  "Ceftazidime": 83
+                },
+                "raw_sensitivity_text": "Imipenem 94%, Meropenem 94%, Doripenem 90%, Cefoperazone-Sulbactam 83%, Piperacillin-Tazobactam 83%, Ceftazidime 83%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Haemophilus influenzae",
+                "n": 7,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Cefuroxime": 100,
+                  "Ceftriaxone": 100,
+                  "Ciprofloxacin": 100,
+                  "Azithromycin": 100,
+                  "Tetracycline": 100
+                },
+                "raw_sensitivity_text": "Cefuroxime 100%, Ceftriaxone 100%, Ciprofloxacin 100%, Azithromycin 100%, Tetracycline 100%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 7,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "Gentamicin": 86,
+                  "Oxacillin": 86
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, Gentamicin 86%, Oxacillin 86%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Acinetobacter sp",
+                "n": 4,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Minocycline": 100,
+                  "Piperacillin-Tazobactam": 75
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Minocycline 100%, Piperacillin-Tazobactam 75%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 43,
+                "has_footnote_marker": false,
+                "prevalence_pct": 26,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 81,
+                  "Imipenem": 83,
+                  "Meropenem": 83,
+                  "Ertapenem": 81,
+                  "Piperacillin-Tazobactam": 77,
+                  "Ceftriaxone": 74
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 81%, Imipenem 83%, Meropenem 83%, Ertapenem 81%, Piperacillin-Tazobactam 77%, Ceftriaxone 74%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 38,
+                "has_footnote_marker": false,
+                "prevalence_pct": 23,
+                "sensitivities": {
+                  "Doripenem": 100,
+                  "Cefoperazone-Sulbactam": 83,
+                  "Imipenem": 86,
+                  "Meropenem": 86,
+                  "Piperacillin-Tazobactam": 83,
+                  "Ceftazidime": 86
+                },
+                "raw_sensitivity_text": "Doripenem 100%, Cefoperazone-Sulbactam 83%, Imipenem 86%, Meropenem 86%, Piperacillin-Tazobactam 83%, Ceftazidime 86%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Haemophilus sp",
+                "n": 16,
+                "has_footnote_marker": false,
+                "prevalence_pct": 10,
+                "sensitivities": {
+                  "Cefuroxime": 100,
+                  "Ceftriaxone": 100,
+                  "Ciprofloxacin": 100,
+                  "Tetracycline": 100,
+                  "Azithromycin": 94
+                },
+                "raw_sensitivity_text": "Cefuroxime 100%, Ceftriaxone 100%, Ciprofloxacin 100%, Tetracycline 100%, Azithromycin 94%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 11,
+                "has_footnote_marker": false,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "Gentamicin": 90,
+                  "Oxacillin": 55
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, Gentamicin 90%, Oxacillin 55%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Acinetobacter sp",
+                "n": 8,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 75,
+                  "Imipenem": 75,
+                  "Meropenem": 75,
+                  "Piperacillin-Tazobactam": 75,
+                  "Minocycline": 63
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 75%, Imipenem 75%, Meropenem 75%, Piperacillin-Tazobactam 75%, Minocycline 63%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": []
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Ceftriaxone + Doxycycline/Macrolide",
+            "2": "Cefoperazone-Sulbactam OR Piperacillin/Tazobactam + Doxycycline/Macrolide",
+            "3": "Cefoperazone-Sulbactam OR Piperacillin/Tazobactam + Doxycycline/Macrolide"
+          },
+          "section_notes": []
+        },
+        "hospital_acquired": {
+          "sheet_title": "Respiratory Tract Infection — Wards Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 85,
+            "3": 236
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 35,
+                "has_footnote_marker": false,
+                "prevalence_pct": 41,
+                "sensitivities": {
+                  "Imipenem": 91,
+                  "Meropenem": 91,
+                  "Cefoperazone-Sulbactam": 82,
+                  "Piperacillin-Tazobactam": 76,
+                  "Ceftriaxone": 58
+                },
+                "raw_sensitivity_text": "Imipenem 91%, Meropenem 91%, Cefoperazone-Sulbactam 82%, Piperacillin-Tazobactam 76%, Ceftriaxone 58%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas aeruginosa",
+                "n": 18,
+                "has_footnote_marker": false,
+                "prevalence_pct": 21,
+                "sensitivities": {
+                  "Doripenem": 100,
+                  "Cefoperazone-Sulbactam": 94,
+                  "Imipenem": 94,
+                  "Meropenem": 94,
+                  "Piperacillin-Tazobactam": 94,
+                  "Ceftazidime": 94
+                },
+                "raw_sensitivity_text": "Doripenem 100%, Cefoperazone-Sulbactam 94%, Imipenem 94%, Meropenem 94%, Piperacillin-Tazobactam 94%, Ceftazidime 94%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Escherichia coli",
+                "n": 9,
+                "has_footnote_marker": false,
+                "prevalence_pct": 11,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 56,
+                  "Meropenem": 56,
+                  "Cefoperazone-Sulbactam": 44,
+                  "Piperacillin-Tazobactam": 44
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 56%, Meropenem 56%, Cefoperazone-Sulbactam 44%, Piperacillin-Tazobactam 44%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Enterobacter cloacae",
+                "n": 7,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 86
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 86%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 65,
+                "has_footnote_marker": true,
+                "prevalence_pct": 28,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 72,
+                  "Imipenem": 78,
+                  "Meropenem": 72,
+                  "Piperacillin-Tazobactam": 64,
+                  "Ceftriaxone": 49
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 72%, Imipenem 78%, Meropenem 72%, Piperacillin-Tazobactam 64%, Ceftriaxone 49%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 56,
+                "has_footnote_marker": false,
+                "prevalence_pct": 24,
+                "sensitivities": {
+                  "Ceftazidime": 82,
+                  "Cefoperazone-Sulbactam": 76,
+                  "Imipenem": 76,
+                  "Meropenem": 76,
+                  "Piperacillin-Tazobactam": 71,
+                  "Doripenem": 79
+                },
+                "raw_sensitivity_text": "Ceftazidime 82%, Cefoperazone-Sulbactam 76%, Imipenem 76%, Meropenem 76%, Piperacillin-Tazobactam 71%, Doripenem 79%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Escherichia coli",
+                "n": 17,
+                "has_footnote_marker": false,
+                "prevalence_pct": 7,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Imipenem": 56,
+                  "Meropenem": 56,
+                  "Cefoperazone-Sulbactam": 44,
+                  "Piperacillin-Tazobactam": 19,
+                  "Ceftriaxone": 6
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Imipenem 56%, Meropenem 56%, Cefoperazone-Sulbactam 44%, Piperacillin-Tazobactam 19%, Ceftriaxone 6%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Staphylococcus aureus",
+                "n": 12,
+                "has_footnote_marker": false,
+                "prevalence_pct": 5,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "Penicillin": 17
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, Penicillin 17%"
+              },
+              {
+                "sno": 5,
+                "pathogen_name": "Acinetobacter sp",
+                "n": 10,
+                "has_footnote_marker": false,
+                "prevalence_pct": 4,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 40,
+                  "Imipenem": 20,
+                  "Meropenem": 20,
+                  "Piperacillin-Tazobactam": 20,
+                  "Ceftazidime": 20
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 40%, Imipenem 20%, Meropenem 20%, Piperacillin-Tazobactam 20%, Ceftazidime 20%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [],
+            "3": [
+              "*Colistin resistance was observed in 2% isolates of Klebsiella"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "3": "Cefoperazone-Sulbactam OR Imipenem OR Meropenem"
+          },
+          "section_notes": []
+        }
+      }
+    },
+    "IAI": {
+      "ICU": {
+        "community_acquired": {
+          "sheet_title": "Intra-Abdominal Infection — ICU Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 15,
+            "3": 28
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 9,
+                "has_footnote_marker": false,
+                "prevalence_pct": 60,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Tigecycline": 100,
+                  "Cefoperazone-Sulbactam": 89,
+                  "Imipenem": 89,
+                  "Meropenem": 89,
+                  "Piperacillin-Tazobactam": 89,
+                  "Ceftriaxone": 33
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Tigecycline 100%, Cefoperazone-Sulbactam 89%, Imipenem 89%, Meropenem 89%, Piperacillin-Tazobactam 89%, Ceftriaxone 33%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 2,
+                "has_footnote_marker": false,
+                "prevalence_pct": 13,
+                "sensitivities": {
+                  "Tigecycline": 50,
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 0
+                },
+                "raw_sensitivity_text": "Tigecycline 50%, Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 0%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 11,
+                "has_footnote_marker": false,
+                "prevalence_pct": 39,
+                "sensitivities": {
+                  "Fosfomycin": 50,
+                  "Tigecycline": 89,
+                  "Imipenem": 82,
+                  "Cefoperazone-Sulbactam": 72,
+                  "Meropenem": 73,
+                  "Piperacillin-Tazobactam": 73,
+                  "Ceftriaxone": 27
+                },
+                "raw_sensitivity_text": "Fosfomycin 50%, Tigecycline 89%, Imipenem 82%, Cefoperazone-Sulbactam 72%, Meropenem 73%, Piperacillin-Tazobactam 73%, Ceftriaxone 27%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella sp",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 21,
+                "sensitivities": {
+                  "Tigecycline": 0,
+                  "Imipenem": 60,
+                  "Cefoperazone-Sulbactam": 40,
+                  "Meropenem": 40,
+                  "Piperacillin-Tazobactam": 40,
+                  "Ceftriaxone": 20
+                },
+                "raw_sensitivity_text": "Tigecycline 0%, Imipenem 60%, Cefoperazone-Sulbactam 40%, Meropenem 40%, Piperacillin-Tazobactam 40%, Ceftriaxone 20%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [
+              "Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ],
+            "3": [
+              "Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "2": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "3": "Ceftazidime-Avibactam / Aztreonam + Metronidazole OR Polymyxin-based combination"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee.",
+            "Tigecycline susceptibility is considered on basis of E. coli EUCAST breakpoints."
+          ]
+        },
+        "hospital_acquired": {
+          "sheet_title": "Intra-Abdominal Infection — ICU Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 45,
+            "3": 69
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 29,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Tigecycline": 100,
+                  "Cefoperazone-Sulbactam": 90,
+                  "Imipenem": 90,
+                  "Meropenem": 90,
+                  "Piperacillin-Tazobactam": 60,
+                  "Ceftriaxone": 33
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Tigecycline 100%, Cefoperazone-Sulbactam 90%, Imipenem 90%, Meropenem 90%, Piperacillin-Tazobactam 60%, Ceftriaxone 33%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Enterococcus faecium",
+                "n": 11,
+                "has_footnote_marker": false,
+                "prevalence_pct": 14,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 50,
+                  "Teicoplanin": 50,
+                  "High level Gentamicin": 50,
+                  "Daptomycin": 40
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 50%, Teicoplanin 50%, High level Gentamicin 50%, Daptomycin 40%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Klebsiella pneumoniae",
+                "n": 5,
+                "has_footnote_marker": false,
+                "prevalence_pct": 14,
+                "sensitivities": {
+                  "Tigecycline": 50,
+                  "Cefoperazone-Sulbactam": 100,
+                  "Imipenem": 100,
+                  "Meropenem": 100,
+                  "Piperacillin-Tazobactam": 100,
+                  "Ceftriaxone": 100
+                },
+                "raw_sensitivity_text": "Tigecycline 50%, Cefoperazone-Sulbactam 100%, Imipenem 100%, Meropenem 100%, Piperacillin-Tazobactam 100%, Ceftriaxone 100%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 22,
+                "has_footnote_marker": false,
+                "prevalence_pct": 32,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Tigecycline": 95,
+                  "Imipenem": 68,
+                  "Meropenem": 68,
+                  "Cefoperazone-Sulbactam": 41,
+                  "Piperacillin-Tazobactam": 36,
+                  "Ceftriaxone": 14
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Tigecycline 95%, Imipenem 68%, Meropenem 68%, Cefoperazone-Sulbactam 41%, Piperacillin-Tazobactam 36%, Ceftriaxone 14%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Enterococcus sp",
+                "n": 15,
+                "has_footnote_marker": false,
+                "prevalence_pct": 22,
+                "sensitivities": {
+                  "Linezolid": 93,
+                  "Vancomycin": 47,
+                  "Teicoplanin": 47,
+                  "High level Gentamicin": 47,
+                  "Daptomycin": 7
+                },
+                "raw_sensitivity_text": "Linezolid 93%, Vancomycin 47%, Teicoplanin 47%, High level Gentamicin 47%, Daptomycin 7%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Klebsiella sp",
+                "n": 12,
+                "has_footnote_marker": false,
+                "prevalence_pct": 17,
+                "sensitivities": {
+                  "Tigecycline": 40,
+                  "Imipenem": 60,
+                  "Cefoperazone-Sulbactam": 40,
+                  "Meropenem": 40,
+                  "Piperacillin-Tazobactam": 40,
+                  "Ceftriaxone": 20
+                },
+                "raw_sensitivity_text": "Tigecycline 40%, Imipenem 60%, Cefoperazone-Sulbactam 40%, Meropenem 40%, Piperacillin-Tazobactam 40%, Ceftriaxone 20%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [
+              "Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ],
+            "3": [
+              "Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Cefoperazone-Sulbactam",
+            "3": "Ceftazidime-Avibactam / Aztreonam + Metronidazole"
+          },
+          "section_notes": [
+            "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee.",
+            "Tigecycline susceptibility is considered on basis of E. coli EUCAST breakpoints."
+          ]
+        }
+      },
+      "wards": {
+        "community_acquired": {
+          "sheet_title": "Intra-Abdominal Infection — Wards Community-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 60,
+            "3": 80
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 22,
+                "has_footnote_marker": false,
+                "prevalence_pct": 37,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Tigecycline": 95,
+                  "Imipenem": 95,
+                  "Meropenem": 95,
+                  "Cefoperazone-Sulbactam": 68,
+                  "Piperacillin-Tazobactam": 59,
+                  "Ceftriaxone": 36
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Tigecycline 95%, Imipenem 95%, Meropenem 95%, Cefoperazone-Sulbactam 68%, Piperacillin-Tazobactam 59%, Ceftriaxone 36%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Enterococcus sp",
+                "n": 12,
+                "has_footnote_marker": false,
+                "prevalence_pct": 20,
+                "sensitivities": {
+                  "Linezolid": 100,
+                  "Vancomycin": 100,
+                  "Teicoplanin": 100,
+                  "High level Gentamicin": 86,
+                  "Daptomycin": 63
+                },
+                "raw_sensitivity_text": "Linezolid 100%, Vancomycin 100%, Teicoplanin 100%, High level Gentamicin 86%, Daptomycin 63%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Klebsiella sp",
+                "n": 8,
+                "has_footnote_marker": false,
+                "prevalence_pct": 13,
+                "sensitivities": {
+                  "Tigecycline": 50,
+                  "Cefoperazone-Sulbactam": 88,
+                  "Imipenem": 88,
+                  "Meropenem": 88,
+                  "Piperacillin-Tazobactam": 75,
+                  "Ceftriaxone": 50
+                },
+                "raw_sensitivity_text": "Tigecycline 50%, Cefoperazone-Sulbactam 88%, Imipenem 88%, Meropenem 88%, Piperacillin-Tazobactam 75%, Ceftriaxone 50%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 23,
+                "has_footnote_marker": false,
+                "prevalence_pct": 29,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Tigecycline": 100,
+                  "Imipenem": 87,
+                  "Meropenem": 87,
+                  "Cefoperazone-Sulbactam": 78,
+                  "Piperacillin-Tazobactam": 74,
+                  "Ceftriaxone": 35
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Tigecycline 100%, Imipenem 87%, Meropenem 87%, Cefoperazone-Sulbactam 78%, Piperacillin-Tazobactam 74%, Ceftriaxone 35%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Klebsiella sp",
+                "n": 16,
+                "has_footnote_marker": true,
+                "prevalence_pct": 20,
+                "sensitivities": {
+                  "Tigecycline": 54,
+                  "Imipenem": 75,
+                  "Meropenem": 75,
+                  "Cefoperazone-Sulbactam": 63,
+                  "Piperacillin-Tazobactam": 63,
+                  "Ceftriaxone": 63
+                },
+                "raw_sensitivity_text": "Tigecycline 54%, Imipenem 75%, Meropenem 75%, Cefoperazone-Sulbactam 63%, Piperacillin-Tazobactam 63%, Ceftriaxone 63%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Enterococcus sp",
+                "n": 13,
+                "has_footnote_marker": false,
+                "prevalence_pct": 16,
+                "sensitivities": {
+                  "Linezolid": 83,
+                  "Vancomycin": 83,
+                  "Teicoplanin": 82,
+                  "High level Gentamicin": 63,
+                  "Daptomycin": 42
+                },
+                "raw_sensitivity_text": "Linezolid 83%, Vancomycin 83%, Teicoplanin 82%, High level Gentamicin 63%, Daptomycin 42%"
+              },
+              {
+                "sno": 4,
+                "pathogen_name": "Pseudomonas sp",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 8,
+                "sensitivities": {
+                  "Cefoperazone-Sulbactam": 83,
+                  "Imipenem": 83,
+                  "Meropenem": 83,
+                  "Piperacillin-Tazobactam": 83,
+                  "Ceftazidime": 83
+                },
+                "raw_sensitivity_text": "Cefoperazone-Sulbactam 83%, Imipenem 83%, Meropenem 83%, Piperacillin-Tazobactam 83%, Ceftazidime 83%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [
+              "Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ],
+            "3": [
+              "*Colistin resistance was observed in 4% isolates of Klebsiella. Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "Cefoperazone-Sulbactam OR Piperacillin-Tazobactam",
+            "2": "Imipenem OR Meropenem",
+            "3": "Imipenem OR Meropenem"
+          },
+          "section_notes": []
+        },
+        "hospital_acquired": {
+          "sheet_title": "Intra-Abdominal Infection — Wards Hospital-Acquired",
+          "surveillance": "Hospital Surveillance Data (January 2021 – December 2023)",
+          "type_totals": {
+            "1": null,
+            "2": 25,
+            "3": 124
+          },
+          "pathogens_by_type": {
+            "1": [],
+            "2": [
+              {
+                "sno": 1,
+                "pathogen_name": "Klebsiella sp",
+                "n": 9,
+                "has_footnote_marker": false,
+                "prevalence_pct": 36,
+                "sensitivities": {
+                  "Tigecycline": 29,
+                  "Cefoperazone-Sulbactam": 75,
+                  "Imipenem": 75,
+                  "Meropenem": 75,
+                  "Piperacillin-Tazobactam": 62,
+                  "Ceftriaxone": 37
+                },
+                "raw_sensitivity_text": "Tigecycline 29%, Cefoperazone-Sulbactam 75%, Imipenem 75%, Meropenem 75%, Piperacillin-Tazobactam 62%, Ceftriaxone 37%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Escherichia coli",
+                "n": 6,
+                "has_footnote_marker": false,
+                "prevalence_pct": 24,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Tigecycline": 100,
+                  "Imipenem": 83,
+                  "Meropenem": 83,
+                  "Cefoperazone-Sulbactam": 67,
+                  "Piperacillin-Tazobactam": 67,
+                  "Ceftazidime": 33
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Tigecycline 100%, Imipenem 83%, Meropenem 83%, Cefoperazone-Sulbactam 67%, Piperacillin-Tazobactam 67%, Ceftazidime 33%"
+              }
+            ],
+            "3": [
+              {
+                "sno": 1,
+                "pathogen_name": "Escherichia coli",
+                "n": 46,
+                "has_footnote_marker": false,
+                "prevalence_pct": 37,
+                "sensitivities": {
+                  "Fosfomycin": 100,
+                  "Tigecycline": 98,
+                  "Imipenem": 84,
+                  "Meropenem": 84,
+                  "Cefoperazone-Sulbactam": 58,
+                  "Piperacillin-Tazobactam": 53,
+                  "Ceftriaxone": 24
+                },
+                "raw_sensitivity_text": "Fosfomycin 100%, Tigecycline 98%, Imipenem 84%, Meropenem 84%, Cefoperazone-Sulbactam 58%, Piperacillin-Tazobactam 53%, Ceftriaxone 24%"
+              },
+              {
+                "sno": 2,
+                "pathogen_name": "Enterococcus sp",
+                "n": 27,
+                "has_footnote_marker": false,
+                "prevalence_pct": 28,
+                "sensitivities": {
+                  "Linezolid": 92,
+                  "Teicoplanin": 87,
+                  "Vancomycin": 76,
+                  "High level Gentamicin": 48,
+                  "Daptomycin": 48
+                },
+                "raw_sensitivity_text": "Linezolid 92%, Teicoplanin 87%, Vancomycin 76%, High level Gentamicin 48%, Daptomycin 48%"
+              },
+              {
+                "sno": 3,
+                "pathogen_name": "Klebsiella sp",
+                "n": 23,
+                "has_footnote_marker": false,
+                "prevalence_pct": 19,
+                "sensitivities": {
+                  "Tigecycline": 53,
+                  "Imipenem": 90,
+                  "Cefoperazone-Sulbactam": 81,
+                  "Meropenem": 81,
+                  "Piperacillin-Tazobactam": 76,
+                  "Ceftriaxone": 52
+                },
+                "raw_sensitivity_text": "Tigecycline 53%, Imipenem 90%, Cefoperazone-Sulbactam 81%, Meropenem 81%, Piperacillin-Tazobactam 76%, Ceftriaxone 52%"
+              }
+            ]
+          },
+          "footnotes_by_type": {
+            "1": [],
+            "2": [
+              "Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ],
+            "3": [
+              "Tigecycline susceptibility considered on basis of E. coli EUCAST breakpoints"
+            ]
+          },
+          "risk_stratification": {
+            "Definition": {
+              "1": "Meeting ALL criteria below",
+              "2": "Meeting ANY ONE of criteria below",
+              "3": "Meeting ANY ONE of criteria below"
+            },
+            "Hospital contact": {
+              "1": "No contact with hospital in last 90 days",
+              "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
+              "3": "Hospitalisation in last 90 days WITH invasive procedure/devices"
+            },
+            "Antibiotic exposure": {
+              "1": "No antibiotics in last 90 days",
+              "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
+              "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days"
+            },
+            "Co-morbidities": {
+              "1": "No co-morbid conditions",
+              "2": "Patient with 2 or less co-morbidities",
+              "3": "Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"
+            }
+          },
+          "empiric_therapy": {
+            "1": "(Not enough data)",
+            "2": "Cefoperazone-Sulbactam OR Imipenem OR Meropenem",
+            "3": "Imipenem OR Meropenem"
+          },
+          "section_notes": []
+        }
+      }
+    }
+  },
+  "synergy_and_antifungal": {
+    "synergy_testing": [
+      {
+        "Organism": "E. coli",
+        "Total No. Tested": "28",
+        "Negative for Synergy": "14",
+        "Positive for Synergy": "14"
+      },
+      {
+        "Organism": "K. pneumoniae",
+        "Total No. Tested": "13",
+        "Negative for Synergy": "0",
+        "Positive for Synergy": "13"
+      }
+    ],
+    "antifungal_susceptibility": {
+      "aspergillus": {
+        "A. flavus (n=56)": {
+          "Amphotericin B": "# (see note)",
+          "Caspofungin": "98",
+          "Itraconazole": "100",
+          "Posaconazole": "100",
+          "Voriconazole": "98",
+          "Isavuconazole": "97"
+        },
+        "A. fumigatus (n=49)": {
+          "Amphotericin B": "100",
+          "Caspofungin": "100",
+          "Itraconazole": "100",
+          "Posaconazole": "No interpretation",
+          "Voriconazole": "93",
+          "Isavuconazole": "84"
+        },
+        "A. niger (n=21)": {
+          "Amphotericin B": "100",
+          "Caspofungin": "100",
+          "Itraconazole": "100",
+          "Posaconazole": "100",
+          "Voriconazole": "100",
+          "Isavuconazole": "Not tested"
+        },
+        "A. terreus (n=12)": {
+          "Amphotericin B": "17",
+          "Caspofungin": "83",
+          "Itraconazole": "100",
+          "Posaconazole": "100",
+          "Voriconazole": "92",
+          "Isavuconazole": "75"
+        }
+      },
+      "candida": {
+        "C. albicans (n=311)": {
+          "Amphotericin B": "99",
+          "Anidulafungin": "100",
+          "Caspofungin": "99",
+          "Fluconazole": "77 (SDD 5)",
+          "Itraconazole": "No interpretation",
+          "Micafungin": "99",
+          "Posaconazole": "87",
+          "Voriconazole": "82"
+        },
+        "C. glabrata (n=127)": {
+          "Amphotericin B": "94",
+          "Anidulafungin": "100",
+          "Caspofungin": "86",
+          "Fluconazole": "90",
+          "Itraconazole": "93",
+          "Micafungin": "98",
+          "Posaconazole": "70",
+          "Voriconazole": "No interpretation"
+        },
+        "C. krusei (n=24)": {
+          "Amphotericin B": "73",
+          "Anidulafungin": "100",
+          "Caspofungin": "70",
+          "Fluconazole": "No interpretation",
+          "Itraconazole": "100",
+          "Micafungin": "100",
+          "Posaconazole": "100",
+          "Voriconazole": "92"
+        },
+        "C. parapsilosis / metapsilosis / orthopsilosis (n=101)": {
+          "Amphotericin B": "96",
+          "Anidulafungin": "98",
+          "Caspofungin": "98",
+          "Fluconazole": "80 (SDD 5)",
+          "Itraconazole": "No interpretation",
+          "Micafungin": "98",
+          "Posaconazole": "100",
+          "Voriconazole": "78"
+        },
+        "C. tropicalis (n=256)": {
+          "Amphotericin B": "99",
+          "Anidulafungin": "100",
+          "Caspofungin": "98",
+          "Fluconazole": "78 (SDD 13)",
+          "Itraconazole": "91",
+          "Micafungin": "98",
+          "Posaconazole": "98",
+          "Voriconazole": "77"
+        },
+        "C. guilliermondii (n=5)": {
+          "Amphotericin B": "No interpretation",
+          "Anidulafungin": "100",
+          "Caspofungin": "100",
+          "Fluconazole": "No interpretation",
+          "Itraconazole": "No interpretation",
+          "Micafungin": "100",
+          "Posaconazole": "No interpretation",
+          "Voriconazole": "No interpretation"
+        }
+      }
+    },
+    "notes": [
+      "# EUCAST-AFST consider Aspergillus flavus as not a good target for Amphotericin B. Voriconazole is recommended as empiric therapy for invasive Aspergillosis.",
+      "Interpretation as per ECV. Echinocandins are recommended as empiric therapy for candidaemia.",
+      "Note: There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee."
+    ]
+  },
+  "stewardship_pearls": {
+    "General": [],
+    "•": [
+      "Refer to Ready Reckoner Charts for Antimicrobial Administration, Time gaps between the Loading and Maintenance Dose",
+      "Approved IV Push and IM administration, Food and Antimicrobial Interactions and Dialysis adjustments",
+      "Consult ID Pharmacist for drug/food interactions, dose optimization and dose adjustments as per renal, hepatic impairment and obesity",
+      "Consider TDM for Vancomycin, Azole Antifungals and Isoniazid and Rifampicin",
+      "Maintain appropriate records of Antimicrobial duration",
+      "Send blood cultures and then start antibiotics",
+      "Use loading dose in sepsis/septic shock regardless of renal dysfunction",
+      "Prolong beta-lactam infusion in sepsis/septic shock or critically ill patients",
+      "Do not treat positive central venous catheter tip cultures without BSI if source control is achieved",
+      "Avoid high-lipophilic antibiotics in BSI (e.g. Tigecycline)",
+      "Do not treat common blood culture contaminants (CoNS, Micrococcus, etc.) unless grown in multiple cultures",
+      "Avoid Amikacin for systemic infections with P. aeruginosa",
+      "Use Minocycline 200 mg BD for CRAB as per new CLSI breakpoints",
+      "Avoid Vancomycin / Teicoplanin for MSSA infections",
+      "Do not screen or treat for asymptomatic bacteriuria with antibiotics unless pregnant patient or undergoing urological procedure",
+      "Send urine samples from fresh catheters, not old ones",
+      "Do not treat pyuria/bacteriuria from long-term catheters or intermittent self-catheterization",
+      "Investigate MRSA in urine further — check for systemic MRSA infection",
+      "Doxycycline / Macrolides remain effective for CAP pathogens",
+      "Stop antibiotics if viral etiology confirmed and no secondary bacterial infections",
+      "Reserve Minocycline for MDR nosocomial infections",
+      "Add anaerobic cover only for aspiration, lung abscess, or empyema",
+      "Ensure adequate source control",
+      "Shorter antibiotic courses suffice post source-control unless abscess is present",
+      "Do not treat sterile necrotizing pancreatitis — only infected cases",
+      "Aggressive hydration recommended in pancreatitis",
+      "Day 1 of therapy = 1st day of negative blood culture",
+      "Administer combination antibiotics close together for synergistic killing",
+      "Use bactericidal regimen with good penetration",
+      "Initial treatment should be with intravenous antibiotics",
+      "Choose an antibiotic with good bone penetration and biofilm activity (if there is prosthesis)",
+      "Avoid Vancomycin / Teicoplanin for MSSA infections",
+      "Stop prophylactic antibiotics within 24 hr in Clean and Clean-contaminated surgeries",
+      "Repeat intraoperative dose if surgery incision time exceeds >3 hr or blood loss > 1.5 litres",
+      "Administer prophylactic prior to within 1 hr of incision: complete the dose 15 min before tourniquet inflation and CPB circuit application where necessary",
+      "Document incision and closure time and duration of surgery"
+    ],
+    "Blood Stream": [],
+    "Urinary Tract": [],
+    "Respiratory": [],
+    "Intra-Abdominal": [],
+    "Cardiovascular": [],
+    "Bone & Joint Infections": [],
+    "Surgical Prophylaxis": []
+  },
+  "pearl_points": {
+    "Meningitis": [],
+    "•": [
+      "Lipophilic antibiotics penetrate rapidly in CSF. Hydrophilic antibiotics depend on inflammation",
+      "Teicoplanin has delayed entry in CSF due to high protein binding",
+      "CNS penetration is conveyed in the form of CSF-to-Serum ratio",
+      "Bactericidal effect requires peak concentration exceeding 10-30x MBC",
+      "Avoid diluting Amphotericin B in NS 0.9% (flush line with D5% only)",
+      "Administer Voriconazole, SUBA Itraconazole, and Solution Itraconazole on empty stomach",
+      "Administer Tablet Itraconazole and Tablet Posaconazole with acidic beverages",
+      "TDM recommended for Voriconazole, Posaconazole, Isavuconazole for appropriate dosing",
+      "When treating oral candidiasis: administer 50-200 mg orally dispersible tablet. Place the tablet in the buccal region and allow it to dissolve without swallowing OR disperse the tablet in water, allow the sips to rinse the mouth and then swallow",
+      "Use protection with gloves while handling Voriconazole tablets",
+      "Confirm viral infections via PCR before starting antivirals",
+      "Maintain appropriate records of pre-emptive antiviral therapy",
+      "Start within 48 hr of symptoms to maximize effectiveness",
+      "Ensure adherence to the regimen",
+      "Provide sufficient hydration for Acyclovir and Valacyclovir",
+      "Use protection with gloves while handling Valgancyclovir",
+      "Confirm diagnosis via microscopy / rapid diagnostics",
+      "Ensure full course adherence",
+      "Use Artemisinin-based combination for uncomplicated malaria based on local resistance",
+      "Follow WHO and NVBDCP guidelines for prevention and treatment of Malaria",
+      "Discourage empirical ATT — start only after confirmation or strong suspicion of TB presence",
+      "Contact Microbiology — TB Lab for drug resistance / genomic sequencing",
+      "Standard 1st-line ATT dosing = Isoniazid: 5 mg/kg; Rifampin: 10 mg/kg/day; Pyrazinamide: 15-25 mg/kg; Ethambutol: 15-20 mg/kg",
+      "Administer Rifampicin on empty stomach",
+      "Monitor for LFTs as routine",
+      "Follow WHO and NVBDCP guidelines for prevention and treatment",
+      "Ensure targeted treatment on confirmatory diagnosis",
+      "Promote hygiene and sanitation"
+    ],
+    "Antifungals": [],
+    "Antivirals": [],
+    "Antimalarials": [],
+    "Antitubercular": [],
+    "Antiparasites": []
+  },
+  "perioperative": {
+    "procedure_recommendations": [
+      {
+        "Procedure": "Clean surgeries (e.g. elective hernia repair, breast surgeries)",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Neurosurgery",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Ophthalmic Surgery",
+        "Preferred Drug": "Topical quinolone, Immediate preoperative betadine. Systemic: Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Head and Neck and ENT surgery",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Gastroduodenal",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Appendicular / Colorectal surgery",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Biliary",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Abdominal / Vaginal hysterectomy / Caesarean section",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Urologic surgery",
+        "Preferred Drug": "Cefuroxime (or as guided by urine culture)"
+      },
+      {
+        "Procedure": "Orthopaedic Surgery",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      },
+      {
+        "Procedure": "Cardiovascular / Vascular Surgery",
+        "Preferred Drug": "Cefazolin / Cefuroxime"
+      }
+    ],
+    "procedure_section_notes": [
+      "Add Metronidazole for clean-contaminated wounds.",
+      "Alternative in case of β-lactam allergy: Clindamycin / Vancomycin.",
+      "Usual no. of doses ≤3; for CABG: ≤6.",
+      "Perioperative antibiotic protocol to be followed only for clean and clean-contaminated surgeries."
+    ],
+    "antibiotic_dosing": [
+      {
+        "Drug": "Cefazolin",
+        "Standard Dose": "<80 kg: 1 g; 80-120 kg: 2 g; >120 kg: 3 g",
+        "Weight-Based Dose": "20-30 mg/kg/dose",
+        "Duration for Bolus Injection (Infusion)": "3-5 min (20-60 min)"
+      },
+      {
+        "Drug": "Cefuroxime",
+        "Standard Dose": "1.5 g",
+        "Weight-Based Dose": "50 mg/kg",
+        "Duration for Bolus Injection (Infusion)": "3-5 min (20-60 min)"
+      },
+      {
+        "Drug": "Metronidazole",
+        "Standard Dose": "0.5 g - 1 g",
+        "Weight-Based Dose": "15 mg/kg initial dose",
+        "Duration for Bolus Injection (Infusion)": "(30-60 min)"
+      },
+      {
+        "Drug": "Vancomycin",
+        "Standard Dose": "1 g",
+        "Weight-Based Dose": "15 mg/kg",
+        "Duration for Bolus Injection (Infusion)": "60 mins"
+      }
+    ],
+    "general_notes": [
+      "1. Timing of Surgical Prophylaxis: 'Golden Hour' (60 mins prior to incision time).",
+      "2. Incision and Closure time of the surgeries in surgeon's operative records is mandatory.",
+      "3. For surgeries extending 3 hrs of incision or 4 hrs of antibiotic administration, or if blood loss is >1.5 L, an additional dose of Inj. Cefazolin/Cefuroxime is administered. Repeat every 4 hrs subsequently when duration exceeds (half-life of Cefazolin: 1.2-2.2 hrs; half-life of Cefuroxime: 1-2 hrs).",
+      "4. Pre-operative dose is not required to be adjusted as per CrCl in renal insufficiency.",
+      "5. Repeat dose is not required in renal insufficiency.",
+      "6. For MRSA colonizers add single dose of Vancomycin in addition to the prophylaxis.",
+      "7. Duration of post-operative antibiotic usage is recommended for 24-48 hrs."
+    ]
+  }
+}
