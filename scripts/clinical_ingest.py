@@ -13,11 +13,10 @@ import hashlib
 import json
 import mimetypes
 import re
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
-
 
 REVIEW_STATUS = "pending_review"
 NOT_SPECIFIED = "not specified in source"

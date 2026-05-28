@@ -4,13 +4,13 @@ import pytest
 
 from scripts.clinical_ingest import (
     DraftRecommendation,
+    SourceFile,
     SourceSpan,
     candidate_blocks,
     extract_febrile_neutropenia_rows,
     extract_local_empiric_rows,
     extract_site_guideline_rows,
     parse_drug_details,
-    SourceFile,
     validate_recommendation,
 )
 

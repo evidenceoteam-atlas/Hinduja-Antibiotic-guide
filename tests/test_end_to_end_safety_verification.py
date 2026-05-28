@@ -18,7 +18,6 @@ from shared.clinical.antibiogram_risk import (
     classify_antibiogram_risk,
 )
 
-
 GROUND_TRUTH_PATH = Path("docs/ground_truth/hinduja_antibiotic_guide_2025.reviewed.json")
 GROUND_TRUTH_MIGRATION = Path("supabase/migrations/20260526_ground_truth_sections.sql")
 GROUND_TRUTH_REPOSITORY = Path("shared/clinical/ground_truth.py")

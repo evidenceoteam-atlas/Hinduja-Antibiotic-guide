@@ -17,7 +17,6 @@ from typing import Any
 
 import asyncpg
 
-
 SOURCE_IMAGE_FILENAME = "1779705175121-92f99181-4a45-4e84-91de-5929d43f05f9_3.jpg"
 DEFAULT_SOURCE_IMAGE_PATH = Path(
     "/Users/sravya/Downloads/Antibiotic%20protocol%20pocket%20guide%20%281%29"

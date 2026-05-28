@@ -1,11 +1,11 @@
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI
+from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
 
-from shared.clinical.ground_truth import GroundTruthRepository, SAFE_EMPTY_MESSAGE
+from shared.clinical.ground_truth import SAFE_EMPTY_MESSAGE, GroundTruthRepository
 from shared.database.session import get_session
 from shared.schemas.common import ApiResponse
 from shared.utils.health import register_health_routes

@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 MIGRATION = Path("supabase/migrations/20260516_source_clinical_ingestion.sql")
 GROUND_TRUTH_VERIFY_SQL = Path("supabase/sql/verify_ground_truth_import.sql")
 

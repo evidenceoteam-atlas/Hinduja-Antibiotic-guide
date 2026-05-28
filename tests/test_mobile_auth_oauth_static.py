@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 APP_ROOT = Path("mobile/src/AppRoot.tsx")
 
 

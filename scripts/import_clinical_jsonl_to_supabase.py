@@ -21,7 +21,6 @@ from typing import Any
 import asyncpg
 import httpx
 
-
 CLINICAL_FIELDS = [
     "syndrome",
     "infection_site",
