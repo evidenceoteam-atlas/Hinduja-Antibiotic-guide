@@ -194,6 +194,53 @@ class GroundTruthRepository:
             """
         )
 
+    async def pearl_points(self) -> list[dict[str, Any]]:
+        return await self._fetch_all(
+            """
+            select *
+            from public.approved_antimicrobial_pearl_point_rows_with_source
+            order by section_name, sort_order, pearl_text
+            """
+        )
+
+    async def synergy_testing(self) -> list[dict[str, Any]]:
+        return await self._fetch_all(
+            """
+            select *
+            from public.approved_synergy_testing_rows_with_source
+            order by organism
+            """
+        )
+
+    async def antifungal_susceptibility(self) -> list[dict[str, Any]]:
+        return await self._fetch_all(
+            """
+            select *
+            from public.approved_antifungal_susceptibility_rows_with_source
+            order by organism_group, species, drug
+            """
+        )
+
+    async def synergy_antifungal_notes(self) -> list[dict[str, Any]]:
+        return await self._fetch_all(
+            """
+            select *
+            from public.approved_synergy_antifungal_notes_with_source
+            order by sort_order, note_text
+            """
+        )
+
+    async def guide_metadata(self) -> dict[str, Any] | None:
+        rows = await self._fetch_all(
+            """
+            select *
+            from public.approved_clinical_guide_documents_with_source
+            order by created_at
+            limit 1
+            """
+        )
+        return rows[0] if rows else None
+
     async def perioperative(self) -> dict[str, list[dict[str, Any]]]:
         procedures = await self._fetch_all(
             """

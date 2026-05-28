@@ -1,6 +1,6 @@
 # Hinduja Antibiotic Guide — Codebase Audit Ledger
 
-Last revised: 2026-05-28.
+Last revised: 2026-05-28 (post conformance-fixes PR #2).
 
 This document is the single, authoritative audit ledger. It supersedes the
 earlier `PRODUCTION_AUDIT.md` and `PROJECT_AUDIT_2026-05.md` (now deleted),
@@ -24,8 +24,12 @@ plus all interim Codex-generated audit snapshots.
 | `services/protocol-engine` had two routes that returned 404 unconditionally (`GET /api/v1/protocols/{code}` because `recommendation_matrix={}` in `rules/hinduja_protocols.json`; `GET /api/v1/protocols/{code}/details` was hardcoded 404). They duplicated the guideline-service routes that already read approved-view data. | `cf9ddf2` deletes both routes. No mobile callers existed — mobile reads ground-truth views directly from Supabase. |
 | `services/antibiogram-service` declared `ORGANISMS=[]` / `ANTIBIOTICS=[]` at module load and never populated them; `/sensitivity` and `/resistance-trends` returned safe-empty placeholders. | `cf9ddf2` rewires `/organisms`, `/antibiotics`, `/sensitivity`, `/resistance-trends` to read `approved_antibiogram_pathogen_rows_with_source` via new `GroundTruthRepository.organisms()`, `antibiotic_catalog()`, `sensitivity()`, `resistance_trends()` methods. All four endpoints fail closed (SAFE_EMPTY_MESSAGE) when no approved data exists. |
 | Three overlapping audit docs (`CODEBASE_AUDIT_REPORT.md`, `PRODUCTION_AUDIT.md`, `PROJECT_AUDIT_2026-05.md`, `SUPABASE_SETUP.md`) — same gaps reported under different dates with no resolution status. | `d1ae210` deletes the three untracked overlapping snapshots; this file (Phase 5) replaces `CODEBASE_AUDIT_REPORT.md` with a resolved/open/deferred ledger. `SUPABASE_SETUP.md` deleted in favor of `SUPABASE_AUTH_PRODUCTION_CHECKLIST.md` and `SUPABASE_EMAIL_OTP.md`. |
+| `synergy_and_antifungal.notes` (3 EUCAST/AMSP disclaimer strings) were silently dropped by the importer — no table, no row, no API, no render. | PR #2 adds `supabase/migrations/20260528_synergy_antifungal_notes.sql` (source-backed table + approved view) and extends `build_synergy_antifungal_rows()` in the importer. `EXPECTED_COUNTS["synergy_antifungal_notes_rows"] = 3` now validates. |
+| Backend FastAPI gateway was missing endpoints for `synergy_testing`, `antifungal_susceptibility`, `pearl_points`, `synergy_antifungal_notes`, and `guide_metadata`. Mobile fetched direct from Supabase views so end-users saw data, but the gateway was inconsistent. | PR #2 adds `GroundTruthRepository.synergy_testing()`, `antifungal_susceptibility()`, `pearl_points()`, `synergy_antifungal_notes()`, `guide_metadata()` and matching `/api/v1/...` endpoints in `services/guideline-service/app/main.py` plus 5 nginx routes. |
+| `metadata.source_document`, `surveillance_period`, `valid_till`, `document_index` were imported into `clinical_guide_documents` but never surfaced in the mobile UI. | PR #2 adds `loadGuideMetadata()` + `GuideDocumentMetadata` type in `mobile/src/clinicalData.ts` and an "About this guide" card in the Profile screen showing the source document, surveillance period, valid till, and the 7-section content index. |
+| `antibiograms.*.section_notes` (AMSP-committee disclaimers about Ceftazidime-avibactam empiric recommendations) was stored in JSONB but believed un-rendered. | Already implemented in `main` at `mobile/src/AppRoot.tsx:6469-6478` (Antibiogram detail screen renders each entry under "Section Notes"). Verified during the audit; no code change required. |
 
-After Phase 5 the test suite is green: `60 passed, 0 failed` (`python3 -m pytest -q`).
+After PR #2 the test suite is green: `61 passed, 0 failed` (`python3 -m pytest -q`), validator includes the new `synergy_antifungal_notes_rows: 3` count, and all 8 top-level JSON sections (A–H) are fully conformant across schema / importer / backend / mobile.
 
 ## Open
 
@@ -50,15 +54,16 @@ After Phase 5 the test suite is green: `60 passed, 0 failed` (`python3 -m pytest
 
 ## Verification
 
-Last verified 2026-05-28 on the working-dir tree (`/Users/sravya/hinduja-antibiotic-guide`).
+Last verified 2026-05-28 on the conformance-fixes-2026-05-28 branch.
 
 ```text
-python3 -m pytest -q                                       60 passed, 0 failed
+python3 -m pytest -q                                       61 passed, 0 failed
+python3 -m ruff check .                                    All checks passed!
 cd mobile && npx tsc --noEmit                              no errors
-cd mobile && npx expo start --web --port 19006             bundles, env loads
-python3 scripts/import_ground_truth_json_to_supabase.py validate   pending DB
+cd mobile && npx expo export --platform web                ~781 kB bundle, dist/ produced
+python3 scripts/import_ground_truth_json_to_supabase.py validate   PASS (25 + 22 + 16 sheets + 2 synergy + 3 synergy_antifungal_notes + 11 + 4)
 ```
 
-The importer `validate` step is pending a live Supabase connection; the
-canonical commands and expected counts are documented in
-`docs/SOURCE_INGESTION.md` and the importer's `--help`.
+The full Supabase production import (`import-all --approve`) is pending live DB
+credentials. Canonical commands + expected approved-view counts are documented
+in the deploy plan and in the importer's `--help`.
