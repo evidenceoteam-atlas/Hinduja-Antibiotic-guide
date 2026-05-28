@@ -56,10 +56,44 @@ export type AntibiogramEmpiricTherapy = SourceBackedRow & {
   empiric_therapy: string;
 };
 
+export type AntibiogramRiskCriterion = SourceBackedRow & {
+  sheet_key: string;
+  criterion_name: string;
+  type_1: string | null;
+  type_2: string | null;
+  type_3: string | null;
+};
+
+export type AntibiogramFootnote = SourceBackedRow & {
+  sheet_key: string;
+  risk_type: string | null;
+  note: string;
+};
+
 export type StewardshipPearl = SourceBackedRow & {
   section_name: string;
   pearl_text: string;
   sort_order: number;
+};
+
+export type AntimicrobialPearlPoint = SourceBackedRow & {
+  section_name: string;
+  pearl_text: string;
+  sort_order: number;
+};
+
+export type SynergyTestingRow = SourceBackedRow & {
+  organism: string;
+  total_tested: string | null;
+  negative_for_synergy: string | null;
+  positive_for_synergy: string | null;
+};
+
+export type AntifungalSusceptibilityRow = SourceBackedRow & {
+  organism_group: string;
+  species: string;
+  drug: string;
+  susceptibility_value: string | null;
 };
 
 export type PerioperativeRecommendation = SourceBackedRow & {
@@ -84,6 +118,8 @@ export type AntibiogramDetails = {
   sheets: AntibiogramSheet[];
   pathogenRows: AntibiogramPathogenRow[];
   empiricTherapy: AntibiogramEmpiricTherapy[];
+  riskCriteria: AntibiogramRiskCriterion[];
+  footnotes: AntibiogramFootnote[];
 };
 
 export type PerioperativeGuidelines = {
@@ -161,12 +197,20 @@ export async function loadAntibiogramDetails(
     );
 
     if (sheetKeys.length === 0) {
-      return { sheets: [], pathogenRows: [], empiricTherapy: [] };
+      return {
+        sheets: [],
+        pathogenRows: [],
+        empiricTherapy: [],
+        riskCriteria: [],
+        footnotes: [],
+      };
     }
 
     const [
       { data: pathogenRows, error: pathogenError },
       { data: therapyRows, error: therapyError },
+      { data: riskCriteriaRows, error: riskCriteriaError },
+      { data: footnoteRows, error: footnoteError },
     ] = await Promise.all([
       supabase
         .from("approved_antibiogram_pathogen_rows_with_source")
@@ -181,6 +225,19 @@ export async function loadAntibiogramDetails(
         .in("sheet_key", sheetKeys)
         .order("sheet_key", { ascending: true })
         .order("risk_type", { ascending: true }),
+      supabase
+        .from("approved_antibiogram_risk_criteria_with_source")
+        .select("*")
+        .in("sheet_key", sheetKeys)
+        .order("sheet_key", { ascending: true })
+        .order("criterion_name", { ascending: true }),
+      supabase
+        .from("approved_antibiogram_footnotes_with_source")
+        .select("*")
+        .in("sheet_key", sheetKeys)
+        .order("sheet_key", { ascending: true })
+        .order("risk_type", { ascending: true })
+        .order("note", { ascending: true }),
     ]);
 
     return {
@@ -191,9 +248,21 @@ export async function loadAntibiogramDetails(
       empiricTherapy: therapyError
         ? []
         : asArray(therapyRows as AntibiogramEmpiricTherapy[] | null),
+      riskCriteria: riskCriteriaError
+        ? []
+        : asArray(riskCriteriaRows as AntibiogramRiskCriterion[] | null),
+      footnotes: footnoteError
+        ? []
+        : asArray(footnoteRows as AntibiogramFootnote[] | null),
     };
   } catch {
-    return { sheets: [], pathogenRows: [], empiricTherapy: [] };
+    return {
+      sheets: [],
+      pathogenRows: [],
+      empiricTherapy: [],
+      riskCriteria: [],
+      footnotes: [],
+    };
   }
 }
 
@@ -209,6 +278,61 @@ export async function loadStewardshipPearls(): Promise<StewardshipPearl[]> {
       return [];
     }
     return asArray(data as StewardshipPearl[] | null);
+  } catch {
+    return [];
+  }
+}
+
+export async function loadAntimicrobialPearlPoints(): Promise<
+  AntimicrobialPearlPoint[]
+> {
+  try {
+    const { data, error } = await supabase
+      .from("approved_antimicrobial_pearl_point_rows_with_source")
+      .select("*")
+      .order("section_name", { ascending: true })
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      return [];
+    }
+    return asArray(data as AntimicrobialPearlPoint[] | null);
+  } catch {
+    return [];
+  }
+}
+
+export async function loadSynergyTestingRows(): Promise<SynergyTestingRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("approved_synergy_testing_rows_with_source")
+      .select("*")
+      .order("organism", { ascending: true });
+
+    if (error) {
+      return [];
+    }
+    return asArray(data as SynergyTestingRow[] | null);
+  } catch {
+    return [];
+  }
+}
+
+export async function loadAntifungalSusceptibilityRows(): Promise<
+  AntifungalSusceptibilityRow[]
+> {
+  try {
+    const { data, error } = await supabase
+      .from("approved_antifungal_susceptibility_rows_with_source")
+      .select("*")
+      .order("organism_group", { ascending: true })
+      .order("species", { ascending: true })
+      .order("drug", { ascending: true });
+
+    if (error) {
+      return [];
+    }
+    return asArray(data as AntifungalSusceptibilityRow[] | null);
   } catch {
     return [];
   }

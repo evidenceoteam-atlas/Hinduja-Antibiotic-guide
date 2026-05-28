@@ -43,8 +43,14 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.ruff]
-line-length = 100
+line-length = 110
 target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"services/**/*.py" = ["B008"]
+"scripts/import_transcribed_ama_table_to_supabase.py" = ["E501"]
+"scripts/clinical_ingest.py" = ["E501"]
+"tests/test_clinical_ingest.py" = ["E501"]

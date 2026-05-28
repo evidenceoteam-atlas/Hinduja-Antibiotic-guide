@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from shared.clinical.rules import (
@@ -61,15 +61,6 @@ async def protocols():
     return ApiResponse(message="Protocols loaded", data=INFECTION_SITES)
 
 
-@app.get("/api/v1/protocols/{infection_code}", response_model=ApiResponse[dict])
-async def protocol(infection_code: str):
-    if infection_code not in RULES.get("recommendation_matrix", {}):
-        raise HTTPException(status_code=404, detail="Protocol not found")
-    return ApiResponse(
-        message="Protocol loaded", data=RULES["recommendation_matrix"][infection_code]
-    )
-
-
 @app.post("/api/v1/protocols/evaluate", response_model=ApiResponse[ProtocolEvaluationResult])
 async def evaluate(payload: ProtocolEvaluationRequest):
     result = JsonRuleEvaluator(RULES).evaluate(payload)
@@ -93,12 +84,4 @@ async def evaluate(payload: ProtocolEvaluationRequest):
 async def result(case_id: str):
     return ApiResponse(
         message="Protocol result loaded", data={"case_id": case_id, "status": "available"}
-    )
-
-
-@app.get("/api/v1/protocols/{infection_code}/details", response_model=ApiResponse[dict])
-async def protocol_details(infection_code: str):
-    raise HTTPException(
-        status_code=404,
-        detail="No approved source-linked protocol details available. Refer institutional guideline / ID specialist.",
     )

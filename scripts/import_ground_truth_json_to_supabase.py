@@ -20,7 +20,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
 GROUND_TRUTH_PATH = Path("docs/ground_truth/hinduja_antibiotic_guide_2025.reviewed.json")
 
 REQUIRED_TOP_LEVEL_SECTIONS = [
@@ -223,7 +222,7 @@ def source_quote_for(section: str, value: Any) -> str:
 
 def source_span_for(section: str, value: Any, source_page: int | None = None) -> SourceSpanPlan:
     source_quote = source_quote_for(section, value)
-    digest = hashlib.sha256(f"{section}:{source_quote}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(f"{section}:{source_quote}".encode()).hexdigest()
     span_start = int(digest[:12], 16)
     return SourceSpanPlan(
         source_quote=source_quote,

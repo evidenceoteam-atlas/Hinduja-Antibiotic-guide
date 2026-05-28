@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-import pytest
 import httpx
+import pytest
 
 from scripts.import_clinical_jsonl_to_supabase import (
     SupabaseRestConfig,
