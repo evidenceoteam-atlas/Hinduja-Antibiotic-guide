@@ -230,7 +230,11 @@ def source_quote_for(section: str, value: Any) -> str:
 def source_span_for(section: str, value: Any, source_page: int | None = None) -> SourceSpanPlan:
     source_quote = source_quote_for(section, value)
     digest = hashlib.sha256(f"{section}:{source_quote}".encode()).hexdigest()
-    span_start = int(digest[:12], 16)
+    # 7 hex chars = 28 bits; fits clinical_source_spans.span_start (int32) with
+    # room to spare. Was previously digest[:12] which produced 48-bit values and
+    # overflowed the column on every run. The existing 721 production rows were
+    # imported under digest[:7] (confirmed max span_start = 267,441,140 < 2^28).
+    span_start = int(digest[:7], 16)
     return SourceSpanPlan(
         source_quote=source_quote,
         source_page=source_page if source_page is not None else SECTION_PAGES.get(section),
