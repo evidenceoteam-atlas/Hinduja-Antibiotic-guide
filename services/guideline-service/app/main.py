@@ -148,6 +148,71 @@ async def list_stewardship_pearls(
     return ApiResponse(message="Approved stewardship pearls loaded", data=rows)
 
 
+@app.get("/api/v1/pearl-points", response_model=ApiResponse[list[dict]])
+async def list_pearl_points(
+    repository: GroundTruthRepository = Depends(get_ground_truth_repository),
+):
+    try:
+        rows = await repository.pearl_points()
+    except SQLAlchemyError:
+        return safe_empty_response()
+    if not rows:
+        return safe_empty_response()
+    return ApiResponse(message="Approved pearl points loaded", data=rows)
+
+
+@app.get("/api/v1/synergy-testing", response_model=ApiResponse[list[dict]])
+async def list_synergy_testing(
+    repository: GroundTruthRepository = Depends(get_ground_truth_repository),
+):
+    try:
+        rows = await repository.synergy_testing()
+    except SQLAlchemyError:
+        return safe_empty_response()
+    if not rows:
+        return safe_empty_response()
+    return ApiResponse(message="Approved synergy testing loaded", data=rows)
+
+
+@app.get("/api/v1/antifungal-susceptibility", response_model=ApiResponse[list[dict]])
+async def list_antifungal_susceptibility(
+    repository: GroundTruthRepository = Depends(get_ground_truth_repository),
+):
+    try:
+        rows = await repository.antifungal_susceptibility()
+    except SQLAlchemyError:
+        return safe_empty_response()
+    if not rows:
+        return safe_empty_response()
+    return ApiResponse(message="Approved antifungal susceptibility loaded", data=rows)
+
+
+@app.get("/api/v1/synergy-antifungal-notes", response_model=ApiResponse[list[dict]])
+async def list_synergy_antifungal_notes(
+    repository: GroundTruthRepository = Depends(get_ground_truth_repository),
+):
+    try:
+        rows = await repository.synergy_antifungal_notes()
+    except SQLAlchemyError:
+        return safe_empty_response()
+    if not rows:
+        return safe_empty_response()
+    return ApiResponse(message="Approved synergy/antifungal notes loaded", data=rows)
+
+
+@app.get("/api/v1/guide-metadata", response_model=ApiResponse[dict])
+async def get_guide_metadata(
+    repository: GroundTruthRepository = Depends(get_ground_truth_repository),
+):
+    try:
+        row = await repository.guide_metadata()
+    except SQLAlchemyError:
+        row = None
+    if not row:
+        return ApiResponse(message=SAFE_EMPTY_MESSAGE, data={})
+    return ApiResponse(message="Approved guide metadata loaded", data=row)
+
+
 @app.get("/api/v1/perioperative", response_model=ApiResponse[dict])
 async def get_perioperative(
     repository: GroundTruthRepository = Depends(get_ground_truth_repository),

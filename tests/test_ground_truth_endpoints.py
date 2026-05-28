@@ -26,6 +26,21 @@ class FakeGroundTruthRepository:
     async def stewardship_pearls(self):
         return self.data.get("stewardship_pearls", [])
 
+    async def pearl_points(self):
+        return self.data.get("pearl_points", [])
+
+    async def synergy_testing(self):
+        return self.data.get("synergy_testing", [])
+
+    async def antifungal_susceptibility(self):
+        return self.data.get("antifungal_susceptibility", [])
+
+    async def synergy_antifungal_notes(self):
+        return self.data.get("synergy_antifungal_notes", [])
+
+    async def guide_metadata(self):
+        return self.data.get("guide_metadata")
+
     async def perioperative(self):
         return self.data.get("perioperative", {})
 
@@ -135,6 +150,50 @@ def test_antibiogram_service_exposes_database_backed_antibiograms(antibiogram_mo
     assert body["meta"] == {"infection_type": "BSI"}
 
 
+def test_guideline_service_exposes_new_section_endpoints(guideline_module):
+    async def override_repository():
+        return FakeGroundTruthRepository(
+            {
+                "pearl_points": [{"pearl_text": "Lipophilic antibiotics", "source_quote": "{}"}],
+                "synergy_testing": [{"organism": "E. coli", "source_quote": "{}"}],
+                "antifungal_susceptibility": [
+                    {"organism_group": "aspergillus", "species": "A. flavus", "drug": "Voriconazole"}
+                ],
+                "synergy_antifungal_notes": [
+                    {"note_text": "EUCAST-AFST", "sort_order": 0, "source_quote": "{}"}
+                ],
+                "guide_metadata": {
+                    "source_document": "Hinduja Antibiotic Protocol Pocket Guide",
+                    "surveillance_period": "January 2021 – December 2023",
+                    "valid_till": "December 2025",
+                },
+            }
+        )
+
+    guideline_module.app.dependency_overrides[
+        guideline_module.get_ground_truth_repository
+    ] = override_repository
+    client = TestClient(guideline_module.app)
+
+    assert (
+        client.get("/api/v1/pearl-points").json()["data"][0]["pearl_text"]
+        == "Lipophilic antibiotics"
+    )
+    assert client.get("/api/v1/synergy-testing").json()["data"][0]["organism"] == "E. coli"
+    assert (
+        client.get("/api/v1/antifungal-susceptibility").json()["data"][0]["species"]
+        == "A. flavus"
+    )
+    assert (
+        client.get("/api/v1/synergy-antifungal-notes").json()["data"][0]["note_text"]
+        == "EUCAST-AFST"
+    )
+    assert (
+        client.get("/api/v1/guide-metadata").json()["data"]["valid_till"]
+        == "December 2025"
+    )
+
+
 def test_ground_truth_repository_queries_only_approved_views():
     source = import_module("shared.clinical.ground_truth")
     module_text = source.__loader__.get_source(source.__name__)
@@ -144,6 +203,11 @@ def test_ground_truth_repository_queries_only_approved_views():
     assert "approved_duration_guideline_rows_with_source" in module_text
     assert "approved_antibiogram_sheets_with_source" in module_text
     assert "approved_stewardship_pearl_rows_with_source" in module_text
+    assert "approved_antimicrobial_pearl_point_rows_with_source" in module_text
+    assert "approved_synergy_testing_rows_with_source" in module_text
+    assert "approved_antifungal_susceptibility_rows_with_source" in module_text
+    assert "approved_synergy_antifungal_notes_with_source" in module_text
+    assert "approved_clinical_guide_documents_with_source" in module_text
     assert "approved_perioperative_procedure_recommendations_with_source" in module_text
     assert "from public.icmr_guideline_rows" not in module_text
     assert "from public.duration_guideline_rows" not in module_text

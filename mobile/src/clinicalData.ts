@@ -114,6 +114,20 @@ export type PerioperativeNote = SourceBackedRow & {
   sort_order: number;
 };
 
+export type SynergyAntifungalNote = SourceBackedRow & {
+  note_text: string;
+  sort_order: number;
+};
+
+export type GuideDocumentMetadata = SourceBackedRow & {
+  source_document: string;
+  institution_address: string | null;
+  contact: string | null;
+  surveillance_period: string | null;
+  valid_till: string | null;
+  document_index: Array<{ sno: number; description: string; page: string }> | null;
+};
+
 export type AntibiogramDetails = {
   sheets: AntibiogramSheet[];
   pathogenRows: AntibiogramPathogenRow[];
@@ -335,6 +349,40 @@ export async function loadAntifungalSusceptibilityRows(): Promise<
     return asArray(data as AntifungalSusceptibilityRow[] | null);
   } catch {
     return [];
+  }
+}
+
+export async function loadSynergyAntifungalNotes(): Promise<SynergyAntifungalNote[]> {
+  try {
+    const { data, error } = await supabase
+      .from("approved_synergy_antifungal_notes_with_source")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      return [];
+    }
+    return asArray(data as SynergyAntifungalNote[] | null);
+  } catch {
+    return [];
+  }
+}
+
+export async function loadGuideMetadata(): Promise<GuideDocumentMetadata | null> {
+  try {
+    const { data, error } = await supabase
+      .from("approved_clinical_guide_documents_with_source")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+    return data as GuideDocumentMetadata;
+  } catch {
+    return null;
   }
 }
 

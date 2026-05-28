@@ -39,6 +39,7 @@ EXPECTED_COUNTS = {
     "antibiogram_infection_groups": 4,
     "antibiogram_sheets": 16,
     "synergy_testing_rows": 2,
+    "synergy_antifungal_notes_rows": 3,
     "perioperative_procedure_rows": 11,
     "perioperative_antibiotic_dosing_rows": 4,
 }
@@ -50,6 +51,7 @@ SECTION_PAGES = {
     "antibiograms": 13,
     "synergy_testing": 46,
     "antifungal_susceptibility": 46,
+    "synergy_antifungal_notes": 46,
     "stewardship_pearls": 48,
     "pearl_points": 50,
     "perioperative": 52,
@@ -162,6 +164,10 @@ def validate_ground_truth_payload(payload: dict[str, Any], path: Path) -> Valida
         synergy_and_antifungal.get("synergy_testing"),
         "synergy_and_antifungal.synergy_testing",
     )
+    synergy_notes = expect_list(
+        synergy_and_antifungal.get("notes"),
+        "synergy_and_antifungal.notes",
+    )
     procedure_rows = expect_list(
         perioperative.get("procedure_recommendations"),
         "perioperative.procedure_recommendations",
@@ -177,6 +183,7 @@ def validate_ground_truth_payload(payload: dict[str, Any], path: Path) -> Valida
         "antibiogram_infection_groups": len(antibiograms),
         "antibiogram_sheets": count_antibiogram_sheets(antibiograms),
         "synergy_testing_rows": len(synergy_testing),
+        "synergy_antifungal_notes_rows": len(synergy_notes),
         "perioperative_procedure_rows": len(procedure_rows),
         "perioperative_antibiotic_dosing_rows": len(dosing_rows),
     }
@@ -528,6 +535,21 @@ def build_synergy_antifungal_rows(
                         reviewer_id=reviewer_id,
                     )
                 )
+    for index, note_text in enumerate(
+        expect_list(section.get("notes"), "synergy_and_antifungal.notes")
+    ):
+        row = {"note_text": note_text, "sort_order": index}
+        span = source_span_for("synergy_antifungal_notes", row)
+        rows.append(
+            row_plan(
+                table="synergy_antifungal_notes",
+                payload=row,
+                identity={"note_text": note_text, "sort_order": index},
+                source_span=span,
+                approve=approve,
+                reviewer_id=reviewer_id,
+            )
+        )
     return rows
 
 

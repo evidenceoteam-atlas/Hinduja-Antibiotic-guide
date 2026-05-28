@@ -34,9 +34,11 @@ import {
   loadAntifungalSusceptibilityRows,
   loadAntimicrobialPearlPoints,
   loadDurationGuidelines,
+  loadGuideMetadata,
   loadIcmrGuidelines,
   loadPerioperativeGuidelines,
   loadStewardshipPearls,
+  loadSynergyAntifungalNotes,
   loadSynergyTestingRows,
   type AntibiogramDetails,
   type AntibiogramEmpiricTherapy,
@@ -47,12 +49,14 @@ import {
   type AntifungalSusceptibilityRow,
   type AntimicrobialPearlPoint,
   type DurationGuidelineRow,
+  type GuideDocumentMetadata,
   type IcmrGuidelineRow,
   type PerioperativeAntibioticDosing,
   type PerioperativeGuidelines,
   type PerioperativeNote,
   type PerioperativeRecommendation,
   type StewardshipPearl,
+  type SynergyAntifungalNote,
   type SynergyTestingRow,
 } from "./clinicalData";
 import { isSupabaseConfigured, supabase } from "./supabase";
@@ -2395,6 +2399,12 @@ export default function App() {
   >([]);
   const [antifungalLoading, setAntifungalLoading] = useState(false);
   const [antifungalError, setAntifungalError] = useState("");
+  const [synergyAntifungalNotes, setSynergyAntifungalNotes] = useState<
+    SynergyAntifungalNote[]
+  >([]);
+  const [guideMetadata, setGuideMetadata] = useState<GuideDocumentMetadata | null>(
+    null,
+  );
   const [perioperativeGuidelines, setPerioperativeGuidelines] =
     useState<PerioperativeGuidelines>({
       recommendations: [],
@@ -3581,16 +3591,25 @@ export default function App() {
     setAntifungalError("");
     setPerioperativeError("");
 
-    const [synergyRows, approvedAntifungalRows, approvedPerioperativeGuidelines] =
-      await Promise.all([
-        loadSynergyTestingRows(),
-        loadAntifungalSusceptibilityRows(),
-        loadPerioperativeGuidelines(),
-      ]);
+    const [
+      synergyRows,
+      approvedAntifungalRows,
+      approvedPerioperativeGuidelines,
+      approvedSynergyAntifungalNotes,
+      approvedGuideMetadata,
+    ] = await Promise.all([
+      loadSynergyTestingRows(),
+      loadAntifungalSusceptibilityRows(),
+      loadPerioperativeGuidelines(),
+      loadSynergyAntifungalNotes(),
+      loadGuideMetadata(),
+    ]);
 
     setSynergyTestingRows(synergyRows);
     setAntifungalRows(approvedAntifungalRows);
     setPerioperativeGuidelines(approvedPerioperativeGuidelines);
+    setSynergyAntifungalNotes(approvedSynergyAntifungalNotes);
+    setGuideMetadata(approvedGuideMetadata);
     setSynergyTestingLoading(false);
     setAntifungalLoading(false);
     setPerioperativeLoading(false);
@@ -4964,6 +4983,18 @@ export default function App() {
                 />
               ))
             )}
+            {synergyAntifungalNotes.length > 0 ? (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoCardTitle}>
+                  Synergy & antifungal notes
+                </Text>
+                {synergyAntifungalNotes.map((note) => (
+                  <Text key={note.id} style={styles.infoCardBody}>
+                    {note.note_text}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
           </View>
         ) : null}
         {selectedGuidelineSection === "perioperative" ? (
@@ -6584,6 +6615,43 @@ export default function App() {
             Authorized doctor account · Offline enabled · Activity audited
           </Text>
         </View>
+        {guideMetadata ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>About this guide</Text>
+            <Text style={styles.infoCardBody}>
+              {guideMetadata.source_document}
+            </Text>
+            {guideMetadata.institution_address ? (
+              <Text style={styles.infoCardBody}>
+                {guideMetadata.institution_address}
+              </Text>
+            ) : null}
+            {guideMetadata.surveillance_period ? (
+              <Text style={styles.infoCardBody}>
+                Surveillance period: {guideMetadata.surveillance_period}
+              </Text>
+            ) : null}
+            {guideMetadata.valid_till ? (
+              <Text style={styles.infoCardBody}>
+                Valid till: {guideMetadata.valid_till}
+              </Text>
+            ) : null}
+            {guideMetadata.document_index &&
+            guideMetadata.document_index.length > 0 ? (
+              <View>
+                <Text style={styles.groupLabel}>Contents</Text>
+                {guideMetadata.document_index.map((entry) => (
+                  <Text
+                    key={`guide-index-${entry.sno}`}
+                    style={styles.infoCardBody}
+                  >
+                    {entry.sno}. {entry.description} (page {entry.page})
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
         <PrimaryButton
           label="Edit Profile"
           onPress={() => {

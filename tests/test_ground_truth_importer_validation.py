@@ -40,6 +40,9 @@ def valid_payload() -> dict:
                 {} for _ in range(EXPECTED_COUNTS["synergy_testing_rows"])
             ],
             "antifungal_susceptibility": {},
+            "notes": [
+                "" for _ in range(EXPECTED_COUNTS["synergy_antifungal_notes_rows"])
+            ],
         },
         "stewardship_pearls": {},
         "pearl_points": {},
