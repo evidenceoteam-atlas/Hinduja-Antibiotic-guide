@@ -10,6 +10,7 @@ from scripts.import_ground_truth_json_to_supabase import (
     build_parser,
     load_ground_truth_json,
     main,
+    source_span_for,
     validate_ground_truth_file,
     where_clause,
 )
@@ -275,3 +276,23 @@ def test_idempotency_identity_includes_source_quote() -> None:
 
     assert "source_quote is not distinct from" in where_sql
     assert row.payload["source_quote"] in values
+
+
+def test_source_span_for_fits_in_int32() -> None:
+    """Regression: span_start/span_end must fit clinical_source_spans.span_start
+    (declared as integer / int32 in supabase/migrations/20260516). Earlier code
+    used digest[:12] which overflowed every run; digest[:7] keeps values <= 2^28."""
+    int32_max = 2**31 - 1
+    probe_sections = REQUIRED_TOP_LEVEL_SECTIONS + [
+        "synergy_testing",
+        "antifungal_susceptibility",
+        "synergy_antifungal_notes",
+    ]
+    for section in probe_sections:
+        plan = source_span_for(section, {"probe": section})
+        assert 0 <= plan.span_start <= int32_max, (
+            f"span_start={plan.span_start} for {section} exceeds int32 range"
+        )
+        assert 0 <= plan.span_end <= int32_max, (
+            f"span_end={plan.span_end} for {section} exceeds int32 range"
+        )

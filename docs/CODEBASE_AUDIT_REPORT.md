@@ -28,8 +28,11 @@ plus all interim Codex-generated audit snapshots.
 | Backend FastAPI gateway was missing endpoints for `synergy_testing`, `antifungal_susceptibility`, `pearl_points`, `synergy_antifungal_notes`, and `guide_metadata`. Mobile fetched direct from Supabase views so end-users saw data, but the gateway was inconsistent. | PR #2 adds `GroundTruthRepository.synergy_testing()`, `antifungal_susceptibility()`, `pearl_points()`, `synergy_antifungal_notes()`, `guide_metadata()` and matching `/api/v1/...` endpoints in `services/guideline-service/app/main.py` plus 5 nginx routes. |
 | `metadata.source_document`, `surveillance_period`, `valid_till`, `document_index` were imported into `clinical_guide_documents` but never surfaced in the mobile UI. | PR #2 adds `loadGuideMetadata()` + `GuideDocumentMetadata` type in `mobile/src/clinicalData.ts` and an "About this guide" card in the Profile screen showing the source document, surveillance period, valid till, and the 7-section content index. |
 | `antibiograms.*.section_notes` (AMSP-committee disclaimers about Ceftazidime-avibactam empiric recommendations) was stored in JSONB but believed un-rendered. | Already implemented in `main` at `mobile/src/AppRoot.tsx:6469-6478` (Antibiogram detail screen renders each entry under "Section Notes"). Verified during the audit; no code change required. |
+| Importer `span_start = int(digest[:12], 16)` overflowed `clinical_source_spans.span_start` (declared `integer` / int32) — caused `asyncpg.DataError: value out of int32 range` on every fresh import. Existing 721 production rows fit because they were imported by older code using `digest[:7]`. | PR #3 changes `digest[:12]` → `digest[:7]` at `scripts/import_ground_truth_json_to_supabase.py:233`. Adds regression test `test_source_span_for_fits_in_int32` asserting span_start/span_end ≤ 2^31-1 for every section. |
 
 After PR #2 the test suite is green: `61 passed, 0 failed` (`python3 -m pytest -q`), validator includes the new `synergy_antifungal_notes_rows: 3` count, and all 8 top-level JSON sections (A–H) are fully conformant across schema / importer / backend / mobile.
+
+After PR #3 (importer span_start fix): `62 passed, 0 failed`.
 
 ## Open
 
@@ -54,16 +57,34 @@ After PR #2 the test suite is green: `61 passed, 0 failed` (`python3 -m pytest -
 
 ## Verification
 
-Last verified 2026-05-28 on the conformance-fixes-2026-05-28 branch.
+Last verified 2026-05-29 on `importer-span-int32-safe-2026-05-29` (PR #3) on top of PR #2 merged main.
 
 ```text
-python3 -m pytest -q                                       61 passed, 0 failed
+python3 -m pytest -q                                       62 passed, 0 failed
 python3 -m ruff check .                                    All checks passed!
 cd mobile && npx tsc --noEmit                              no errors
-cd mobile && npx expo export --platform web                ~781 kB bundle, dist/ produced
-python3 scripts/import_ground_truth_json_to_supabase.py validate   PASS (25 + 22 + 16 sheets + 2 synergy + 3 synergy_antifungal_notes + 11 + 4)
+python3 scripts/import_ground_truth_json_to_supabase.py validate   PASS (25 + 22 + 16 + 2 + 3 + 11 + 4)
 ```
 
-The full Supabase production import (`import-all --approve`) is pending live DB
-credentials. Canonical commands + expected approved-view counts are documented
-in the deploy plan and in the importer's `--help`.
+## Production verification — 2026-05-29
+
+Supabase project: `ebnmtviysnhljrymfngc`. Approved-view counts from `supabase/sql/verify_ground_truth_import.sql` plus supplementary checks:
+
+| View | Actual | Status |
+|---|---|---|
+| approved_clinical_guide_documents_with_source | 1 | PASS |
+| approved_icmr_guideline_rows_with_source | 25 | PASS |
+| approved_duration_rows_with_source | 22 | PASS |
+| approved_antibiogram_sheets_with_source | 16 | PASS |
+| approved_antibiogram_pathogen_rows_with_source | 140 | PASS |
+| approved_antibiogram_risk_criteria_with_source | 64 | PASS |
+| approved_antibiogram_empiric_therapy_with_source | 48 | PASS |
+| approved_antibiogram_footnotes_with_source | 18 | PASS |
+| approved_synergy_testing_rows_with_source | 2 | PASS |
+| approved_antifungal_susceptibility_rows_with_source | 72 | PASS |
+| approved_synergy_antifungal_notes_with_source | 3 | PASS (new from PR #2) |
+| approved_stewardship_pearl_rows_with_source | 36 | PASS |
+| approved_antimicrobial_pearl_point_rows_with_source | 28 | PASS |
+| approved_perioperative_procedure_recommendations_with_source | 11 | PASS |
+| approved_perioperative_antibiotic_dosing_with_source | 4 | PASS |
+| approved_perioperative_notes_with_source | 11 | PASS |
