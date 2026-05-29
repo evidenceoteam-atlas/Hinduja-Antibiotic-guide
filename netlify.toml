@@ -1,0 +1,51 @@
+# Netlify configuration for the Expo React Native Web build.
+#
+# Without this file Netlify auto-detect reports "Detected 0 framework(s)" and
+# "No build steps found", so the deploy keeps shipping whatever was previously
+# uploaded (a static snapshot from an earlier point in time). This file wires
+# Netlify to the Expo CLI's web export.
+
+[build]
+  base = "mobile"
+  publish = "dist"
+  command = "npm ci && npx expo export --platform web"
+
+[build.environment]
+  # Match the Node version already on the build image; Expo SDK 54 supports 20+
+  # but the project's package-lock.json was generated under 22.
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# The mobile/app.config.js reads EXPO_PUBLIC_* from .env files at build time,
+# but Netlify build VMs do not have a .env file. EXPO_PUBLIC_SUPABASE_URL and
+# EXPO_PUBLIC_SUPABASE_ANON_KEY must be set in:
+#   Netlify dashboard -> Site settings -> Build & deploy -> Environment variables
+# on the Production scope. They are baked into the JS bundle at build time;
+# rebuild after changing them.
+
+# Cache headers mirror mobile/vercel.json so the auth-screen HTML is never
+# cached by intermediaries (avoids stale OAuth redirects after a redeploy)
+# while the hashed JS bundles can be cached for a year.
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
+
+[[headers]]
+  for = "/_expo/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# The mobile app is a client-side state-machine router (see AppRoot.tsx
+# currentScreen state). Every navigation lives at the same /index.html, so any
+# deep link should fall back to it rather than 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
