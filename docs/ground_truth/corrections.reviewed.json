@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "dataset_release": {
+    "release_key": "hinduja-pocket-guide-2025-csv-candidate-v1",
+    "guide_version": "2025",
+    "status": "pending_review",
+    "valid_through": "2025-12-31",
+    "reviewer_id": null,
+    "reviewed_at": null,
+    "activation_note": "Expired source release retained for reproducibility only. Revalidation and a new release are required before doctor-facing activation."
+  },
+  "corrections": [
+    {
+      "correction_id": "CSV02-HCAP-ONSET-001",
+      "source_file_sha256": "cc716b185a05526c2781693c9f75d12011b8f1161ab2b610159d39f84030c27b",
+      "source_locator": {"row_start": 5, "row_end": 5, "column": "Clinical Condition"},
+      "field": "clinical_condition",
+      "source_value": "HCAP / Early onset VAP",
+      "proposed_value": "HCAP / Late onset VAP",
+      "reason": "The reviewed JSON treated the duplicated source label as a source-export defect; this semantic correction requires clinical confirmation.",
+      "classification": "source_export_error",
+      "review_status": "pending_review",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "required_for_activation": true
+    },
+    {
+      "correction_id": "CSV02-LUNG-ABSCESS-001",
+      "source_file_sha256": "cc716b185a05526c2781693c9f75d12011b8f1161ab2b610159d39f84030c27b",
+      "source_locator": {"row_start": 7, "row_end": 7, "column": "Clinical Condition"},
+      "field": "clinical_condition",
+      "source_value": "Lung Abscess",
+      "proposed_value": "Susceptible host (Nocardia spp, Actinomyces spp, Burkholderia pseudomallei)",
+      "reason": "The reviewed JSON inferred a condition label from adjacent pathogen content; this requires clinical confirmation.",
+      "classification": "source_export_error",
+      "review_status": "pending_review",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "required_for_activation": true
+    },
+    {
+      "correction_id": "CSV02-PVE-ROLE-001",
+      "source_file_sha256": "cc716b185a05526c2781693c9f75d12011b8f1161ab2b610159d39f84030c27b",
+      "source_locator": {"row_start": 9, "row_end": 9, "column": "Empirical AMA"},
+      "field": "recommendation_role",
+      "source_value": "Both ceftriaxone- and meropenem-based regimens occur in Empirical AMA",
+      "proposed_value": "Reviewed JSON moved the meropenem regimen to Alternate AMA",
+      "reason": "Moving a regimen between empirical and alternate roles is a clinical change and cannot be approved by engineering.",
+      "classification": "clinical_change",
+      "review_status": "pending_review",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "required_for_activation": true
+    },
+    {
+      "correction_id": "CSV06-ACQUISITION-001",
+      "source_flag_code": "SOURCE_ACQUISITION_CONFLICT",
+      "source_file_sha256": "41e97fdd43c65121f68fa20563ed7a98c27a644d6d374e9393d6402048ac1c7f",
+      "source_locator": {"row_start": 4, "row_end": 4, "column": 1},
+      "field": "acquisition",
+      "source_value": "COMMUNITY ACQUIRED",
+      "proposed_value": "hospital_acquired",
+      "reason": "The internal title conflicts with the HA filename; the authoritative institutional source must resolve this.",
+      "classification": "clinical_change",
+      "review_status": "pending_review",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "required_for_activation": true
+    },
+    {
+      "correction_id": "CSV20-MENINGITIS-OWNERSHIP-001",
+      "source_file_sha256": "d9fe099ea2f41fe45733e32e646777c4fbffa7d9d1a106bc6d71ce44c1e7d64f",
+      "source_locator": {"row_start": 68, "row_end": 72, "column": 1},
+      "field": "content_family",
+      "source_value": "MENINGITIS section in stewardship pearls CSV",
+      "proposed_value": "stewardship_pearls",
+      "reason": "The legacy JSON moved these rows to pearl points. Source ownership is preserved pending clinical taxonomy approval.",
+      "classification": "clinical_change",
+      "review_status": "pending_review",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "required_for_activation": true
+    }
+  ],
+  "non_csv_source_assets": [
+    {"asset_key": "guide_metadata", "status": "missing", "required_for_activation": true},
+    {"asset_key": "antibiogram_pathogen_and_sensitivity_tables", "status": "missing", "required_for_activation": true},
+    {"asset_key": "synergy_testing_table", "status": "missing", "required_for_activation": true},
+    {"asset_key": "antifungal_susceptibility_table", "status": "missing", "required_for_activation": true},
+    {"asset_key": "external_antibiogram_footnotes", "status": "missing", "required_for_activation": true}
+  ]
+}

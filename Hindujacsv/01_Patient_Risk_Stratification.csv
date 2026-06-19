@@ -1,0 +1,26 @@
+﻿""
+""
+Patient Risk Stratification
+""
+Type 1
+Meeting ALL below mentioned criteria
+""
+No contact with hospital in last 90 days
+No antibiotics in last 90 days
+No co-morbid conditions
+""
+""
+Type 2
+Meeting ANY ONE of the below mentioned criteria
+""
+Contact with hospital in last 90 days WITHOUT invasive procedure/devices
+Antibiotic therapy (oral / parenteral) in last 90 days
+Patient with 2 or less co-morbidities
+""
+""
+Type 3
+Meeting ANY ONE of the below mentioned criteria
+""
+Hospitalisation in last 90 days with invasive procedure/devices
+MORE THAN 2 antibiotics (oral/ parenteral) in last 90 days 
+"Greater than 2 co-morbidities (e.g. DM, HT, COPD) or Immunodeficiency"

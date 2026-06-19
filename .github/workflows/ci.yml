@@ -16,6 +16,8 @@ jobs:
         run: pip install -e ".[dev]"
       - name: Lint
         run: ruff check .
+      - name: Validate CSV source bundle
+        run: python scripts/hinduja_csv_bundle.py validate
       - name: Test
         run: pytest --maxfail=1 -q
       - name: Security scan

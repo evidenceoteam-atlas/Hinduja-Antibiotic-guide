@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "bundle_id": "hinduja-antibiotic-pocket-guide-csv-2025",
+  "source_root": "Hindujacsv",
+  "source_owner": "P. D. Hinduja Hospital & Medical Research Centre",
+  "guide_version": "valid-through-2025-12-31",
+  "record_sha256": "5d9c9a200519d7fe8f4aef3b47b115c63f4ed8e1228b8799a02261c16b4d20eb",
+  "immutability_rule": "Source bytes must not be edited in place. A changed byte requires a new manifest and dataset release.",
+  "files": [
+    {
+      "filename": "01_Patient_Risk_Stratification.csv",
+      "byte_size": 699,
+      "sha256": "9e22b079edbc9d5dbb64905290087da878997b702e27ffeaeef2c15cb1a3a390",
+      "adapter": "risk",
+      "expected_counts": {"criteria": 4}
+    },
+    {
+      "filename": "02_ICMR_guidelines.csv",
+      "byte_size": 13890,
+      "sha256": "cc716b185a05526c2781693c9f75d12011b8f1161ab2b610159d39f84030c27b",
+      "adapter": "icmr",
+      "expected_counts": {"guidelines": 25, "nonempty_duration_cells": 20}
+    },
+    {
+      "filename": "03_BSI_ICU_CA.csv",
+      "byte_size": 437,
+      "sha256": "c416c3556b3aad581fce7b340fc790b55b5062bf4f194a7c0f80057128549804",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 1}
+    },
+    {
+      "filename": "04_BSI_ICU_HA.csv",
+      "byte_size": 412,
+      "sha256": "ebe40d013b7462fa30c44f63e3104083ce4582a88f5c8607a98da099e5e881c3",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 1}
+    },
+    {
+      "filename": "05_BSI_Wards_CA.csv",
+      "byte_size": 302,
+      "sha256": "439e8fa4e466cae94ca7ea9a338e75d30b92a8449d9688e8e2616d778a8015b2",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 0}
+    },
+    {
+      "filename": "06_BSI_Wards_HA.csv",
+      "byte_size": 365,
+      "sha256": "41e97fdd43c65121f68fa20563ed7a98c27a644d6d374e9393d6402048ac1c7f",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 1}
+    },
+    {
+      "filename": "07_UTI_ICU_CA.csv",
+      "byte_size": 518,
+      "sha256": "237da378aa5c56cd60882d027177b597f8641ad54919209b45e01257c423063d",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 1}
+    },
+    {
+      "filename": "08_UTI_ICU_HA.csv",
+      "byte_size": 467,
+      "sha256": "0cc3632da1742b5dbfa3ba7f30b2cff71b215a8376657b3637a2e0df3fcc614d",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 1}
+    },
+    {
+      "filename": "09_UTI_Wards_CA.csv",
+      "byte_size": 495,
+      "sha256": "d5069066d90ca51cf7353bcec144567d9b62e8b1b7488e88946edd0e78df441c",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 1}
+    },
+    {
+      "filename": "10_UTI_Wards_HA.csv",
+      "byte_size": 443,
+      "sha256": "ec58c887f4f043a135ed086452cc2fc92ae55d9745958ee3174ffe240b4c078b",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 1}
+    },
+    {
+      "filename": "11_RS_ICU_CA.csv",
+      "byte_size": 479,
+      "sha256": "daa929d0c9e69d496d9ef5d64b94dc69a9ab45dfd0f2b4fc7a073647a54dd7fd",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 1}
+    },
+    {
+      "filename": "12_RS_ICU_HA.csv",
+      "byte_size": 387,
+      "sha256": "b31ac1ca748842e63f6d4301f4950dfdd260321681fa87b8b8d6e6332f067495",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 1}
+    },
+    {
+      "filename": "13_RS_WARDS_CA.csv",
+      "byte_size": 295,
+      "sha256": "d8e28a8470b4358f480d8f0073a0271c27671a5a7dee3ef49a3675d170a5dd32",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 0}
+    },
+    {
+      "filename": "14_RS_WARDS_HA.csv",
+      "byte_size": 228,
+      "sha256": "51969e1fc5daa1ba6b06153b72f2b800a6478d597a2ab7edcb5c37fbeae3ad26",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 0}
+    },
+    {
+      "filename": "15_ABDO_ICU_CA.csv",
+      "byte_size": 441,
+      "sha256": "b0ae58a7f161f718ac250df79ef3e4fddb3d7cbaad64ced35c63b9d919030e69",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 1}
+    },
+    {
+      "filename": "16_ABDO_ICU_HA.csv",
+      "byte_size": 335,
+      "sha256": "cfcf54fa9254529165e4cb093aecab06ffb7e6ab186a87ae53210b64bb9741b9",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 1}
+    },
+    {
+      "filename": "17_ABDO_WARDS_CA.csv",
+      "byte_size": 359,
+      "sha256": "3cb84d01c28485e7366361d27a45a4fbd81bc3bd1928c368e70287f0d3530269",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 3, "blank_therapies": 0, "notes": 1}
+    },
+    {
+      "filename": "18_ABDO_WARDS_HA.csv",
+      "byte_size": 171,
+      "sha256": "f74e081f22345ce82a520eac88c464218118436523578750cc89630cf44ace81",
+      "adapter": "local_therapy",
+      "expected_counts": {"sheets": 1, "therapy_slots": 3, "nonempty_therapies": 2, "blank_therapies": 1, "notes": 0}
+    },
+    {
+      "filename": "19_Perioperative_Prohylaxis.csv",
+      "byte_size": 2299,
+      "sha256": "8fef516f1405c039c989e319205ec163eb97757776525dd1302242f434616db6",
+      "adapter": "perioperative",
+      "expected_counts": {"procedures": 11, "dosing": 4, "notes": 11}
+    },
+    {
+      "filename": "20_Pearls.csv",
+      "byte_size": 3453,
+      "sha256": "d9fe099ea2f41fe45733e32e646777c4fbffa7d9d1a106bc6d71ce44c1e7d64f",
+      "adapter": "stewardship_pearls",
+      "expected_counts": {"pearls": 40, "sections": 9}
+    },
+    {
+      "filename": "21_AMA_Pearls.csv",
+      "byte_size": 1929,
+      "sha256": "d89040e2163d9dde5c5289bf9b94e8ca66b34968c3e9e86803d3fdc055b085cc",
+      "adapter": "ama_pearls",
+      "expected_counts": {"pearls": 24, "sections": 5}
+    }
+  ]
+}
