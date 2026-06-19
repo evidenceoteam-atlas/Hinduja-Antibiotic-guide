@@ -1,16 +1,6 @@
-import json
-from pathlib import Path
-from uuid import uuid4
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from shared.clinical.rules import (
-    JsonRuleEvaluator,
-    ProtocolEvaluationRequest,
-    ProtocolEvaluationResult,
-)
-from shared.events.bus import EventBus
 from shared.schemas.common import ApiResponse
 from shared.schemas.mobile import DashboardCard, DashboardMetadata
 from shared.utils.health import register_health_routes
@@ -20,10 +10,6 @@ configure_logging("protocol-engine")
 app = FastAPI(title="Protocol Engine", version="1.0.0", openapi_url="/api/v1/openapi.json")
 register_health_routes(app, "protocol-engine")
 Instrumentator().instrument(app).expose(app)
-events = EventBus()
-RULES = json.loads(Path("rules/hinduja_protocols.json").read_text())
-
-
 INFECTION_SITES = [
     DashboardCard(
         code="BSI", title="Blood Stream Infection (BSI)", icon="droplet", color="#C026D3"
@@ -61,27 +47,23 @@ async def protocols():
     return ApiResponse(message="Protocols loaded", data=INFECTION_SITES)
 
 
-@app.post("/api/v1/protocols/evaluate", response_model=ApiResponse[ProtocolEvaluationResult])
-async def evaluate(payload: ProtocolEvaluationRequest):
-    result = JsonRuleEvaluator(RULES).evaluate(payload)
-    result.case_id = str(uuid4())
-    await events.publish(
-        "protocol.generated",
-        {
-            "case_id": result.case_id,
-            "infection_code": result.infection_code,
-            "risk_type": result.risk_type,
-        },
+@app.post("/api/v1/protocols/evaluate", status_code=status.HTTP_410_GONE)
+async def evaluate():
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=(
+            "The weighted protocol evaluator is retired. The supported mobile flow "
+            "uses the exact active Supabase scenario view and fails closed."
+        ),
     )
-    if result.stewardship_alerts:
-        await events.publish(
-            "alert.triggered", {"case_id": result.case_id, "alerts": result.stewardship_alerts}
-        )
-    return ApiResponse(message="Protocol evaluated successfully", data=result)
 
 
-@app.get("/api/v1/protocols/result/{case_id}", response_model=ApiResponse[dict])
+@app.get("/api/v1/protocols/result/{case_id}", status_code=status.HTTP_410_GONE)
 async def result(case_id: str):
-    return ApiResponse(
-        message="Protocol result loaded", data={"case_id": case_id, "status": "available"}
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=(
+            f"Legacy protocol result {case_id!r} is unavailable because the weighted "
+            "evaluation flow is retired."
+        ),
     )

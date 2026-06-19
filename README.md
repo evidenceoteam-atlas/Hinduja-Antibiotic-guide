@@ -1,55 +1,48 @@
 # Hinduja Antibiotic Guide
 
-Production-oriented backend scaffold for the Hinduja Antibiotic Guide clinical decision support platform. The API supports the exact reference mobile flow: OTP login, dashboard metadata, infection selection, setting/acquisition/risk assessment, auto-classification, protocol result, details, save/export/share, and stewardship alerts.
+Clinical decision-support application with a source-controlled Hinduja CSV ingestion pipeline and a fail-closed mobile protocol flow.
 
-## Quick Start
+## Safety status
 
-```bash
-cp .env.example .env
-docker compose up --build
-```
+The bundled 2025 guide expired on 2025-12-31. It is reproducible but cannot become an active doctor-facing release. A clinician-reviewed, non-expired replacement release and the missing non-CSV source assets are required before protocol display is enabled.
 
-Gateway URL:
+## Supported runtime flow
 
-```text
-http://localhost:8080/api/v1
-```
-
-Key docs:
-
-- [Architecture](docs/ARCHITECTURE.md)
-- [Mobile API Flow](docs/API_FLOW.md)
-- [Seed Data](docs/SEED_DATA.md)
-
-## Example Evaluation
-
-```bash
-curl -X POST http://localhost:8080/api/v1/protocols/evaluate \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "infection_code": "UTI",
-    "setting": "ICU",
-    "acquisition": "Community-acquired",
-    "risk_factors": [
-      {"key": "hospital_contact_90d", "value": false},
-      {"key": "recent_antibiotics_90d", "value": true},
-      {"key": "invasive_device_or_procedure_90d", "value": false},
-      {"key": "more_than_two_antibiotics_90d", "value": false},
-      {"key": "comorbidities_or_immunodeficiency", "value": false}
-    ]
-  }'
-```
-
-## Repository Layout
+The mobile app has no sign-in flow. It reads approved, public clinical views from Supabase and stores optional doctor profile details locally for report personalization. For BSI, UTI, RTI, and IAI, treatment selection uses one exact key:
 
 ```text
-services/       Independently deployable FastAPI services
-shared/         Database, auth, schemas, event bus, clinical rules, ML/search adapters
-rules/          JSON-driven clinical protocol configuration
-infra/          Docker, NGINX, Kubernetes, Helm, monitoring
-docs/           Integration and architecture notes
-tests/          Unit and integration-style tests
+infection_type + location + acquisition + risk_type
 ```
 
-Clinical note: seeded recommendations are implementation examples and must be clinically reviewed and approved before production use.
+The query target is `approved_current_protocol_scenarios_with_source`. It exposes only the active, non-expired dataset release and returns `available` or `no_source_therapy`. Permission, network, schema, malformed-row, missing-scenario, and expired-release states fail closed.
 
+The former weighted `/api/v1/protocols/evaluate` and dummy result endpoints return HTTP 410 and are not supported runtime paths.
+
+## Validate the source bundle
+
+```bash
+python3 scripts/hinduja_csv_bundle.py validate
+python3 scripts/import_hinduja_csv_bundle_to_supabase.py dry-run
+pytest -q
+cd mobile && ./node_modules/.bin/tsc --noEmit
+```
+
+The activation check is expected to fail for the bundled candidate until clinical governance resolves its blockers:
+
+```bash
+python3 scripts/hinduja_csv_bundle.py validate-release --as-of 2026-06-19
+```
+
+## Repository layout
+
+```text
+Hindujacsv/                 Immutable CSV source bytes
+scripts/hinduja_csv/        Six schema-aware adapters and validation gates
+docs/ground_truth/          Hash manifest and correction/adjudication ledger
+supabase/migrations/        Versioned releases, provenance, exact current views
+mobile/src/                 Direct-Supabase exact selector and fail-closed UI
+services/                   Supporting FastAPI services; weighted engine retired
+tests/                      Source-fidelity, mutation, flow, and contract tests
+```
+
+See [Architecture](docs/ARCHITECTURE.md), [Runtime Flow](docs/API_FLOW.md), and [Source Ingestion](docs/SOURCE_INGESTION.md).

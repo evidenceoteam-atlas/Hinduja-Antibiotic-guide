@@ -1,28 +1,43 @@
 # System Architecture
 
-Hinduja Antibiotic Guide is scaffolded as independently scalable FastAPI services behind an NGINX or ingress gateway.
+## Clinical data lineage
+
+```text
+Hindujacsv source bytes + SHA-256 manifest
+  -> six deterministic schema-aware adapters
+  -> pending correction/adjudication ledger
+  -> versioned dataset release
+  -> source-linked specialized tables
+  -> active + non-expired approved views
+  -> exact mobile scenario query
+```
+
+Raw source values and reviewer-approved corrections are separate records. Generated JSON is an artifact, never a source. CSV locators use logical row/column coordinates; PDF pages remain null unless a verified PDF crosswalk exists.
+
+## Dataset releases
+
+`clinical_dataset_releases` owns guide validity and activation. Activation is rejected unless the release has:
+
+- clinician reviewer evidence and a current validity date;
+- 21 verified CSV assets and no unresolved required source assets;
+- no unresolved required correction records;
+- 16 approved local antibiogram sheets;
+- 48 approved source slots;
+- exactly 40 non-empty approved therapy rows; and
+- four approved risk-criterion rows.
+
+All legacy approved-view RLS policies are release- and expiry-gated. The 2025 legacy JSON is attached to an expired release.
+
+## Mobile
+
+The mobile app uses Supabase directly. Treatment selection never uses substring, token-overlap, ranking, progressive fallback, or infection-only fallback. Fuzzy matching remains limited to navigation/search.
+
+The treatment view expands each approved sheet across Type 1/2/3 and left-joins the 40 non-empty therapies. The eight blank source cells remain source slots with null therapy and return `no_source_therapy`; they are not manufactured treatment rows.
 
 ## Services
 
-- Auth Service: OTP login, JWT issuance, refresh token rotation, device tracking, audit hooks.
-- User Service: RBAC, departments, hospital mapping, permission matrix.
-- Protocol Engine: JSON-driven decision tree, weighted risk scoring, recommendation reasoning, stewardship events.
-- Antibiogram Service: organism, antibiotic, sensitivity, and resistance trend APIs.
-- Guideline Service: draft/publish workflow and future OpenSearch indexing.
-- Case Service: save, reopen, and share clinical recommendations.
-- Report Service: PDF export with QR-friendly case links.
-- Share Service: QR and deep-link generation.
-- Alert Service: stewardship alert queues and acknowledgement.
+FastAPI services still provide authentication-related scaffolding, dashboard metadata, guidelines, reports, sharing, and operational endpoints. The weighted protocol evaluator is retired with HTTP 410. A future API protocol endpoint must delegate to the exact Supabase selector rather than introduce another recommendation store.
 
-## Production Notes
+## Rollback
 
-- PostgreSQL is the source of record. All clinical entities use UUIDs, timestamps, soft-delete fields, indexes, and foreign-key-ready models.
-- Redis backs OTPs, rate limits, cache, and the event stream. Kafka can replace `EventBus` behind the same interface.
-- OpenTelemetry, structured JSON logs, and Prometheus metrics are built into the service pattern.
-- Rules live outside code in `rules/hinduja_protocols.json` so clinical governance can version protocols without code changes.
-- `shared/ml/adapter.py` is the future handoff point for resistance prediction, ranking, NLP, or LLM-based ID assistance.
-
-## Security Posture
-
-The scaffold includes JWT auth, RBAC dependencies, rate-limit hooks, secure gateway headers, audit-log models, PHI-minimizing case records, and environment-based secrets. Production rollout should add managed secrets, mTLS between services, WAF policies, encrypted backups, and full audit retention policies.
-
+`supabase/sql/disable_active_dataset_release.sql` enters a fail-closed maintenance state by removing the active release pointer. Rollback never re-enables the fuzzy or weighted recommendation paths.

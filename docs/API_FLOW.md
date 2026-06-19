@@ -1,47 +1,35 @@
-# Mobile API Flow
+# Mobile Runtime Flow
 
-The mobile UI in the reference screens is supported by these calls without changing the screen order.
+## Architecture decision
 
-1. `POST /api/v1/auth/send-otp`
-2. `POST /api/v1/auth/verify-otp`
-3. `GET /api/v1/mobile/dashboard`
-4. `GET /api/v1/protocols`
-5. User selects `setting`: `ICU` or `Ward`
-6. User selects `acquisition`: `Community-acquired` or `Hospital-acquired`
-7. `POST /api/v1/protocols/evaluate`
-8. `GET /api/v1/protocols/result/{case_id}`
-9. `GET /api/v1/protocols/{infection_code}/details`
-10. `POST /api/v1/cases`
-11. `POST /api/v1/reports/pdf`
-12. `POST /api/v1/share/qr`
-13. `POST /api/v1/share/link`
-14. `GET /api/v1/alerts`
+The current mobile application reads Supabase directly. It does not call the FastAPI protocol, case, report, or sharing services.
 
-All JSON endpoints return:
+1. The app restores optional doctor profile details from local device storage; this is personalization, not authentication or authorization.
+2. The unauthenticated client reads `approved_current_patient_risk_criteria_with_source` through approved-content-only Supabase policies.
+3. All three patient criteria must be selected exactly; incomplete or unknown values require manual review.
+4. The app builds the canonical key `(infection_type, location, acquisition, risk_type)`.
+5. `loadProtocolScenario` queries `approved_current_protocol_scenarios_with_source` with four strict `.eq(...)` filters.
+6. A result is one of `found`, `no_source_therapy`, `expired`, or `data_error`.
+7. Protocol details, save, local PDF export, and device sharing are available only for `found`.
+8. Changing any scenario dimension clears the previous result before a new query runs.
 
-```json
-{
-  "success": true,
-  "message": "Human readable status",
-  "data": {},
-  "meta": {}
-}
-```
+`supabase/migrations/20260619_zz_public_approved_clinical_read.sql` grants the `anon` role read-only access to approved rows from the active, non-expired release and to only the provenance referenced by those rows. It grants no insert, update, delete, review, or draft access.
 
-## Risk Assessment Payload
+Saved cases currently live in React state until the app is closed. PDF export uses Expo Print. Sharing uses device/web sharing mechanisms. These are local client actions, not persistence or messaging APIs.
 
-```json
-{
-  "infection_code": "UTI",
-  "setting": "ICU",
-  "acquisition": "Community-acquired",
-  "risk_factors": [
-    { "key": "hospital_contact_90d", "value": false },
-    { "key": "recent_antibiotics_90d", "value": true },
-    { "key": "invasive_device_or_procedure_90d", "value": false },
-    { "key": "more_than_two_antibiotics_90d", "value": false },
-    { "key": "comorbidities_or_immunodeficiency", "value": false }
-  ]
-}
-```
+## Retired endpoints
 
+`POST /api/v1/protocols/evaluate` and `GET /api/v1/protocols/result/{case_id}` return HTTP 410. They used a weighted risk model that contradicted CSV 01 and had no treatment matrix. They must not be restored unless they delegate to the same exact current database view and reviewed risk criteria.
+
+## Fail-closed messages
+
+The app distinguishes:
+
+- an intentional blank source therapy (`no_source_therapy`);
+- an expired guide;
+- no installed/reviewed release;
+- a missing exact scenario in an otherwise active release;
+- permission denial;
+- network failure;
+- schema/query failure; and
+- malformed or internally inconsistent rows.

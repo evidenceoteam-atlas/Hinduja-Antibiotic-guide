@@ -350,6 +350,10 @@ async def import_rows(
     *,
     apply_schema_migration: bool,
 ) -> tuple[ImportCounts, list[asyncpg.Record]]:
+    raise RuntimeError(
+        "Hard-coded AMA transcription imports are retired. Import the source-pinned "
+        "Hinduja CSV bundle as a pending dataset release instead."
+    )
     counts = ImportCounts()
     conn = await asyncpg.connect(database_url)
     try:

@@ -1,0 +1,25 @@
+{
+  "files": 21,
+  "records": 195,
+  "record_sha256": "5d9c9a200519d7fe8f4aef3b47b115c63f4ed8e1228b8799a02261c16b4d20eb",
+  "counts": {
+    "criteria": 4,
+    "guidelines": 25,
+    "nonempty_duration_cells": 20,
+    "sheets": 16,
+    "therapy_slots": 48,
+    "nonempty_therapies": 40,
+    "blank_therapies": 8,
+    "notes": 23,
+    "procedures": 11,
+    "dosing": 4,
+    "pearls": 64,
+    "sections": 14
+  },
+  "critical_source_values": {
+    "diabetic_foot_comment": "Surgical source control where possible.",
+    "rti_wards_ha_type_3": "Cefoperazone-Sulbactam OR Piperacillin/Tazobactam OR Imipenem OR Meropenem",
+    "iai_wards_ca_note": "There is insufficient data on the susceptibility of Ceftazidime-avibactam + Aztreonam. The recommendation for empiric is based on the opinion of the AMSP committee.",
+    "vancomycin_weight_based_dose": "15 mg/kg initial dose"
+  }
+}

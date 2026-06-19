@@ -11,7 +11,6 @@ Phase 3B keeps imports conservative:
 from __future__ import annotations
 
 import argparse
-import asyncio
 import hashlib
 import json
 import os
@@ -146,18 +145,14 @@ def count_antibiogram_sheets(antibiograms: dict[str, Any]) -> int:
 
 
 def validate_ground_truth_payload(payload: dict[str, Any], path: Path) -> ValidationSummary:
-    missing_sections = [
-        section for section in REQUIRED_TOP_LEVEL_SECTIONS if section not in payload
-    ]
+    missing_sections = [section for section in REQUIRED_TOP_LEVEL_SECTIONS if section not in payload]
     if missing_sections:
         raise ValueError("Missing required sections: " + ", ".join(missing_sections))
 
     icmr_guidelines = expect_list(payload["icmr_guidelines"], "icmr_guidelines")
     durations = expect_list(payload["duration_of_treatment"], "duration_of_treatment")
     antibiograms = expect_object(payload["antibiograms"], "antibiograms")
-    synergy_and_antifungal = expect_object(
-        payload["synergy_and_antifungal"], "synergy_and_antifungal"
-    )
+    synergy_and_antifungal = expect_object(payload["synergy_and_antifungal"], "synergy_and_antifungal")
     perioperative = expect_object(payload["perioperative"], "perioperative")
 
     synergy_testing = expect_list(
@@ -456,6 +451,10 @@ def build_antibiogram_sheet_child_rows(
             )
         )
     for risk_type, therapy in sheet.get("empiric_therapy", {}).items():
+        if therapy is None or not str(therapy).strip():
+            continue
+        if str(therapy).strip().lower() == "(not enough data)":
+            continue
         value = {"sheet_key": sheet_key, "risk_type": risk_type, "empiric_therapy": therapy}
         span = source_span_for("antibiograms", value)
         rows.append(
@@ -539,9 +538,7 @@ def build_synergy_antifungal_rows(
                         reviewer_id=reviewer_id,
                     )
                 )
-    for index, note_text in enumerate(
-        expect_list(section.get("notes"), "synergy_and_antifungal.notes")
-    ):
+    for index, note_text in enumerate(expect_list(section.get("notes"), "synergy_and_antifungal.notes")):
         row = {"note_text": note_text, "sort_order": index}
         span = source_span_for("synergy_antifungal_notes", row)
         rows.append(
@@ -634,9 +631,7 @@ def build_perioperative_rows(
                     "drug": row["Drug"],
                     "standard_dose": row.get("Standard Dose"),
                     "weight_based_dose": row.get("Weight-Based Dose"),
-                    "bolus_or_infusion_duration": row.get(
-                        "Duration for Bolus Injection (Infusion)"
-                    ),
+                    "bolus_or_infusion_duration": row.get("Duration for Bolus Injection (Infusion)"),
                 },
                 identity={"drug": row["Drug"]},
                 source_span=span,
@@ -889,9 +884,7 @@ def print_import_summary(command: str, counts: ImportCounts, *, dry_run: bool) -
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Validate or import the reviewed Hinduja ground-truth JSON."
-    )
+    parser = argparse.ArgumentParser(description="Validate or import the reviewed Hinduja ground-truth JSON.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     validate_parser = subparsers.add_parser(
         "validate",
@@ -953,8 +946,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.dry_run:
             counts = dry_run_counts(rows)
         else:
-            counts = asyncio.run(
-                import_rows_to_supabase(database_url_from_env(), args.path, rows)
+            database_url_from_env()
+            raise RuntimeError(
+                "Legacy reviewed-JSON database imports are retired. Use "
+                "scripts/import_hinduja_csv_bundle_to_supabase.py import-pending."
             )
     except (RuntimeError, ValueError) as exc:
         print("Ground truth import summary")
