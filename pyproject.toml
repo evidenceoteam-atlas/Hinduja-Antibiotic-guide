@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Clinical decision support backend for Hinduja Antibiotic Guide"
 requires-python = ">=3.11"
 dependencies = [
-  "fastapi>=0.111.0",
+  # Cap below 0.116.0: FastAPI >=0.116 adds routing._IncludedRouter (a BaseRoute
+  # without .path) which prometheus-fastapi-instrumentator's route iteration cannot
+  # handle, breaking the service apps. 0.115.x is the locally verified, passing range.
+  "fastapi>=0.111.0,<0.116.0",
   "uvicorn[standard]>=0.30.0",
   "pydantic>=2.7.0",
   "pydantic-settings>=2.2.1",
