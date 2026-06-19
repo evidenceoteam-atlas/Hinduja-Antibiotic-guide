@@ -234,6 +234,20 @@ def extract_docx_text(path: Path) -> str:
 
 
 def extract_csv_text(path: Path) -> str:
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        raw_rows = list(csv.reader(handle))
+    if not raw_rows:
+        raise ValueError(f"CSV source is empty: {path}")
+    header = [value.strip() for value in raw_rows[0]]
+    if (
+        len(header) < 2
+        or any(not value for value in header)
+        or len(set(header)) != len(header)
+    ):
+        raise ValueError(
+            "CSV layout is headerless, sectioned, or ambiguous; use a schema-aware "
+            "adapter (for the Hinduja bundle: scripts/hinduja_csv_bundle.py)."
+        )
     rows: list[str] = []
     with path.open(newline="", encoding="utf-8-sig") as handle:
         reader = csv.DictReader(handle)

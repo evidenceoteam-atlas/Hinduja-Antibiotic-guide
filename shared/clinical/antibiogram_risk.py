@@ -12,20 +12,24 @@ ANTIBIOTIC_EXPOSURE = "Antibiotic exposure"
 CO_MORBIDITIES = "Co-morbidities"
 
 GROUND_TRUTH_RISK_CRITERIA: dict[str, dict[str, str]] = {
+    # Verbatim from Hindujacsv/01_Patient_Risk_Stratification.csv (after csv strip).
+    # These are exact fallback defaults; the production path passes DB-sourced
+    # criteria. Keep byte-identical to the CSV so the named GROUND_TRUTH constant is
+    # not a normalized paraphrase (see test_ground_truth_constants_match_parsed_csv).
     DEFINITION: {
-        "1": "Meeting ALL criteria below",
-        "2": "Meeting ANY ONE of criteria below",
-        "3": "Meeting ANY ONE of criteria below",
+        "1": "Meeting ALL below mentioned criteria",
+        "2": "Meeting ANY ONE of the below mentioned criteria",
+        "3": "Meeting ANY ONE of the below mentioned criteria",
     },
     HOSPITAL_CONTACT: {
         "1": "No contact with hospital in last 90 days",
         "2": "Contact with hospital in last 90 days WITHOUT invasive procedure/devices",
-        "3": "Hospitalisation in last 90 days WITH invasive procedure/devices",
+        "3": "Hospitalisation in last 90 days with invasive procedure/devices",
     },
     ANTIBIOTIC_EXPOSURE: {
         "1": "No antibiotics in last 90 days",
-        "2": "Antibiotic therapy (oral/parenteral) in last 90 days",
-        "3": "MORE THAN 2 antibiotics (oral/parenteral) in last 90 days",
+        "2": "Antibiotic therapy (oral / parenteral) in last 90 days",
+        "3": "MORE THAN 2 antibiotics (oral/ parenteral) in last 90 days",
     },
     CO_MORBIDITIES: {
         "1": "No co-morbid conditions",
@@ -43,6 +47,7 @@ class AntibiogramRiskClassification:
     status: str
     matched_criteria: dict[str, str]
     missing_criteria: list[str]
+    invalid_criteria: list[str]
 
 
 def classify_antibiogram_risk(
@@ -60,6 +65,31 @@ def classify_antibiogram_risk(
         for criterion_name in PATIENT_CRITERION_LABELS
     }
 
+    missing = [
+        criterion_name
+        for criterion_name, selected_value in normalized.items()
+        if not selected_value
+    ]
+    invalid = [
+        criterion_name
+        for criterion_name, selected_value in normalized.items()
+        if selected_value
+        and selected_value
+        not in {
+            risk_criteria.get(criterion_name, {}).get("1"),
+            risk_criteria.get(criterion_name, {}).get("2"),
+            risk_criteria.get(criterion_name, {}).get("3"),
+        }
+    ]
+    if missing or invalid:
+        return AntibiogramRiskClassification(
+            risk_type=None,
+            status=f"insufficient/{MANUAL_REVIEW}",
+            matched_criteria={},
+            missing_criteria=missing,
+            invalid_criteria=invalid,
+        )
+
     type_3_matches = exact_matches(normalized, risk_criteria, "3")
     if type_3_matches:
         return AntibiogramRiskClassification(
@@ -67,6 +97,7 @@ def classify_antibiogram_risk(
             status="classified",
             matched_criteria=type_3_matches,
             missing_criteria=[],
+            invalid_criteria=[],
         )
 
     type_2_matches = exact_matches(normalized, risk_criteria, "2")
@@ -76,13 +107,9 @@ def classify_antibiogram_risk(
             status="classified",
             matched_criteria=type_2_matches,
             missing_criteria=[],
+            invalid_criteria=[],
         )
 
-    missing = [
-        criterion_name
-        for criterion_name, selected_value in normalized.items()
-        if not selected_value
-    ]
     type_1_matches = exact_matches(normalized, risk_criteria, "1")
     if not missing and len(type_1_matches) == len(PATIENT_CRITERION_LABELS):
         return AntibiogramRiskClassification(
@@ -90,6 +117,7 @@ def classify_antibiogram_risk(
             status="classified",
             matched_criteria=type_1_matches,
             missing_criteria=[],
+            invalid_criteria=[],
         )
 
     return AntibiogramRiskClassification(
@@ -97,6 +125,7 @@ def classify_antibiogram_risk(
         status=f"insufficient/{MANUAL_REVIEW}",
         matched_criteria=type_1_matches,
         missing_criteria=missing,
+        invalid_criteria=invalid,
     )
 
 

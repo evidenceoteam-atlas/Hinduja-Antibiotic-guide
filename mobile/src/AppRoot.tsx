@@ -1,7 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import type { User } from "@supabase/supabase-js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -25,9 +25,9 @@ import {
 import {
   classifyAntibiogramRisk,
   defaultAntibiogramRiskAnswers,
-  groundTruthRiskCriteria,
   patientCriterionLabels,
   type AntibiogramRiskAnswers,
+  type AntibiogramRiskCriteria,
 } from "./antibiogramRisk";
 import {
   loadAntibiogramDetails,
@@ -36,6 +36,7 @@ import {
   loadDurationGuidelines,
   loadGuideMetadata,
   loadIcmrGuidelines,
+  loadCurrentPatientRiskCriteria,
   loadPerioperativeGuidelines,
   loadStewardshipPearls,
   loadSynergyAntifungalNotes,
@@ -51,6 +52,7 @@ import {
   type DurationGuidelineRow,
   type GuideDocumentMetadata,
   type IcmrGuidelineRow,
+  type CurrentPatientRiskCriterion,
   type PerioperativeAntibioticDosing,
   type PerioperativeGuidelines,
   type PerioperativeNote,
@@ -60,6 +62,12 @@ import {
   type SynergyTestingRow,
 } from "./clinicalData";
 import { isSupabaseConfigured, supabase } from "./supabase";
+import {
+  loadProtocolScenario,
+  protocolScenarioMessage,
+  type ProtocolScenarioKey,
+  type ProtocolScenarioResult,
+} from "./protocolScenario";
 
 declare const __DEV__: boolean | undefined;
 
@@ -105,7 +113,6 @@ type AppIconName =
   | "chevron-left"
   | "chevron-right"
   | "menu"
-  | "logout"
   | "edit"
   | "save"
   | "file"
@@ -118,7 +125,6 @@ type AppIconName =
   | "plus";
 
 type Screen =
-  | "login"
   | "doctorDetails"
   | "dashboard"
   | "guidelines"
@@ -279,15 +285,6 @@ const sites: InfectionSite[] = [
   { code: "FN", label: "Febrile Neutropenia", icon: "thermometer", tone: "#7C3AED" },
 ];
 
-const riskCriterionGroups = patientCriterionLabels.map((criterionName) => ({
-  criterionName,
-  options: [
-    groundTruthRiskCriteria[criterionName]["1"],
-    groundTruthRiskCriteria[criterionName]["2"],
-    groundTruthRiskCriteria[criterionName]["3"],
-  ],
-}));
-
 type BottomTab =
   | "Home"
   | "Guidelines"
@@ -346,13 +343,47 @@ type DoctorProfile = {
   contactNumber: string;
 };
 
+const DOCTOR_PROFILE_STORAGE_KEY = "hinduja-doctor-profile-v1";
+
+const emptyDoctorProfile = (): DoctorProfile => ({
+  name: "",
+  email: "",
+  employeeId: "",
+  contactNumber: "",
+});
+
+const parseStoredDoctorProfile = (value: string | null): DoctorProfile => {
+  if (!value) {
+    return emptyDoctorProfile();
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Partial<DoctorProfile>;
+    return {
+      name: typeof parsed.name === "string" ? parsed.name.trim() : "",
+      email: typeof parsed.email === "string" ? parsed.email.trim() : "",
+      employeeId:
+        typeof parsed.employeeId === "string" ? parsed.employeeId.trim() : "",
+      contactNumber:
+        typeof parsed.contactNumber === "string"
+          ? parsed.contactNumber.trim()
+          : "",
+    };
+  } catch {
+    return emptyDoctorProfile();
+  }
+};
+
+const hasCompleteDoctorProfile = (profile: DoctorProfile) =>
+  Boolean(profile.name && profile.employeeId && profile.contactNumber);
+
 type SavedClinicalCase = {
   id: string;
   infectionSite: string;
   setting: string;
   acquisition: string;
   riskLevel: string;
-  riskType: RiskType;
+  riskType: RiskType | null;
   recommendations: SourceRecommendation[];
   warningRecommendations: SourceRecommendation[];
   consultRecommendations: SourceRecommendation[];
@@ -1242,39 +1273,6 @@ const AppIcon = ({
             <Line style={{ width: size * 0.72, top: size * 0.75 }} />
           </>
         );
-      case "logout":
-        return (
-          <>
-            <View
-              style={[
-                outline,
-                {
-                  width: size * 0.42,
-                  height: size * 0.58,
-                  borderRadius: stroke * 2,
-                  left: size * 0.12,
-                },
-              ]}
-            />
-            <Line style={{ width: size * 0.48, left: size * 0.4, top: size * 0.5 }} />
-            <Line
-              style={{
-                width: size * 0.22,
-                left: size * 0.66,
-                top: size * 0.42,
-                transform: [{ rotate: "35deg" }],
-              }}
-            />
-            <Line
-              style={{
-                width: size * 0.22,
-                left: size * 0.66,
-                top: size * 0.58,
-                transform: [{ rotate: "-35deg" }],
-              }}
-            />
-          </>
-        );
       case "edit":
         return (
           <>
@@ -1448,99 +1446,6 @@ const AppIcon = ({
 
   return <View style={[root, style]}>{content}</View>;
 };
-
-const completeOAuthRedirectSession = async () => {
-  if (Platform.OS !== "web" || typeof window === "undefined") {
-    return;
-  }
-
-  const callbackUrl = new URL(window.location.href);
-  const code = callbackUrl.searchParams.get("code");
-  const hashParams = new URLSearchParams(callbackUrl.hash.replace(/^#/, ""));
-  const accessToken = hashParams.get("access_token");
-  const refreshToken = hashParams.get("refresh_token");
-
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (error) {
-      throw error;
-    }
-  } else if (accessToken && refreshToken) {
-    const { error } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-    if (error) {
-      throw error;
-    }
-  } else {
-    return;
-  }
-
-  window.history.replaceState(
-    {},
-    document.title,
-    `${callbackUrl.origin}${callbackUrl.pathname}`,
-  );
-};
-
-const friendlyAuthError = (message: string | undefined, fallback: string) => {
-  const normalized = (message ?? "").toLowerCase();
-
-  if (normalized.includes("rate limit") || normalized.includes("too many")) {
-    return "Too many authentication requests. Please wait a few minutes before trying again.";
-  }
-
-  return fallback;
-};
-
-const profileFromUser = (user: User | null): DoctorProfile => {
-  const metadata = user?.user_metadata ?? {};
-  const metadataName =
-    typeof metadata.full_name === "string"
-      ? metadata.full_name
-      : typeof metadata.display_name === "string"
-        ? metadata.display_name
-        : typeof metadata.name === "string"
-          ? metadata.name
-          : "";
-  const userEmail = user?.email ?? "";
-  const fallbackName = userEmail ? userEmail.split("@")[0] : "";
-  const employeeId =
-    typeof metadata.employee_id === "string" ? metadata.employee_id : "";
-  const contactNumber =
-    typeof metadata.contact_number === "string" ? metadata.contact_number : "";
-
-  return {
-    name: metadataName.trim() || fallbackName,
-    email: userEmail,
-    employeeId: employeeId.trim(),
-    contactNumber: contactNumber.trim(),
-  };
-};
-
-const hasCompleteDoctorDetails = (user: User | null) => {
-  const metadata = user?.user_metadata ?? {};
-  const name =
-    typeof metadata.full_name === "string"
-      ? metadata.full_name
-      : typeof metadata.display_name === "string"
-        ? metadata.display_name
-        : typeof metadata.name === "string"
-          ? metadata.name
-          : "";
-  const employeeId =
-    typeof metadata.employee_id === "string" ? metadata.employee_id : "";
-  const contactNumber =
-    typeof metadata.contact_number === "string" ? metadata.contact_number : "";
-
-  return Boolean(name.trim() && employeeId.trim() && contactNumber.trim());
-};
-
-const postAuthScreenForUser = (user: User | null): Screen =>
-  hasCompleteDoctorDetails(user) ? "dashboard" : "doctorDetails";
 
 const initialsForName = (name: string, email: string) => {
   const label = name.trim() || email.trim();
@@ -2307,29 +2212,24 @@ export default function App() {
     [],
   );
 
-  const [routeStack, setRouteStack] = useState<Screen[]>(["login"]);
+  const [routeStack, setRouteStack] = useState<Screen[]>(["doctorDetails"]);
   const screen = routeStack[routeStack.length - 1];
-  const [sessionReady, setSessionReady] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [doctorProfile, setDoctorProfile] = useState<DoctorProfile>({
-    name: "",
-    email: "",
-    employeeId: "",
-    contactNumber: "",
-  });
+  const [appReady, setAppReady] = useState(false);
+  const [doctorProfile, setDoctorProfile] = useState<DoctorProfile>(
+    emptyDoctorProfile,
+  );
   const [doctorNameInput, setDoctorNameInput] = useState("");
+  const [doctorEmailInput, setDoctorEmailInput] = useState("");
   const [doctorEmployeeIdInput, setDoctorEmployeeIdInput] = useState("");
   const [doctorContactInput, setDoctorContactInput] = useState("");
   const [doctorDetailsError, setDoctorDetailsError] = useState("");
   const [doctorDetailsLoading, setDoctorDetailsLoading] = useState(false);
   const [profileNameInput, setProfileNameInput] = useState("");
+  const [profileEmailInput, setProfileEmailInput] = useState("");
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [loginError, setLoginError] = useState("");
   const [activeTab, setActiveTab] = useState<BottomTab>("Home");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSite, setSelectedSite] = useState<InfectionSite>(sites[1]);
@@ -2339,7 +2239,7 @@ export default function App() {
   const [riskAnswers, setRiskAnswers] = useState<AntibiogramRiskAnswers>(
     defaultAntibiogramRiskAnswers,
   );
-  const [riskType, setRiskType] = useState<RiskType>("Type 2");
+  const [riskType, setRiskType] = useState<RiskType | null>(null);
   const [protocolDetailTab, setProtocolDetailTab] =
     useState<ProtocolDetailTab>("Notes");
   const [selectedGuidelineSection, setSelectedGuidelineSection] =
@@ -2420,20 +2320,26 @@ export default function App() {
     useState(false);
   const [sourceRecommendationError, setSourceRecommendationError] =
     useState("");
+  const [protocolScenarioResult, setProtocolScenarioResult] =
+    useState<ProtocolScenarioResult | null>(null);
+  const [protocolScenarioLoading, setProtocolScenarioLoading] = useState(false);
+  const [currentRiskCriteriaRows, setCurrentRiskCriteriaRows] = useState<
+    CurrentPatientRiskCriterion[]
+  >([]);
+  const [currentRiskCriteriaLoading, setCurrentRiskCriteriaLoading] = useState(false);
+  const [currentRiskCriteriaError, setCurrentRiskCriteriaError] = useState("");
   const [savedCases, setSavedCases] = useState<SavedClinicalCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<SavedClinicalCase | null>(
     null,
   );
   const [actionMessage, setActionMessage] = useState("");
-  const isAuthScreen = screen === "login";
 
-  const applyUserProfile = (user: User | null) => {
-    const nextProfile = profileFromUser(user);
-
-    setCurrentUser(user);
+  const applyDoctorProfile = (nextProfile: DoctorProfile) => {
     setDoctorProfile(nextProfile);
     setProfileNameInput(nextProfile.name);
+    setProfileEmailInput(nextProfile.email);
     setDoctorNameInput(nextProfile.name);
+    setDoctorEmailInput(nextProfile.email);
     setDoctorEmployeeIdInput(nextProfile.employeeId);
     setDoctorContactInput(nextProfile.contactNumber);
     setDoctorDetailsError("");
@@ -2442,81 +2348,55 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setLoginError(
-        "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
-      );
-      setSessionReady(true);
-      return;
-    }
+    let active = true;
 
-    const restoreSession = async () => {
+    const initializeApplication = async () => {
       try {
-        await completeOAuthRedirectSession();
+        const storedProfile = parseStoredDoctorProfile(
+          await AsyncStorage.getItem(DOCTOR_PROFILE_STORAGE_KEY),
+        );
 
-        const { data, error } = await supabase.auth.getSession();
-
-        if (error) {
-          setLoginError(
-            friendlyAuthError(error.message, "Unable to restore your session. Please login again."),
-          );
+        if (!active) {
+          return;
         }
 
-        const hasSession = Boolean(data.session);
-        const nextScreen = hasSession
-          ? postAuthScreenForUser(data.session?.user ?? null)
-          : "login";
-        console.log(`OAuth getSession has session: ${hasSession}`);
-        setIsAuthenticated(hasSession);
-        applyUserProfile(data.session?.user ?? null);
-        setRouteStack([nextScreen]);
-        setSessionReady(true);
-        if (hasSession) {
+        applyDoctorProfile(storedProfile);
+        setRouteStack([
+          hasCompleteDoctorProfile(storedProfile) ? "dashboard" : "doctorDetails",
+        ]);
+
+        if (isSupabaseConfigured) {
           void loadApprovedSourceRecommendations();
+          void loadApprovedCurrentRiskCriteria();
           void loadApprovedIcmrGuidelines();
           void loadApprovedDurationGuidelines();
           void loadApprovedAntibiograms();
           void loadApprovedPearls();
           void loadApprovedSpecialGuidelineSections();
         }
-      } catch {
-        console.log("OAuth getSession has session: false");
-        setLoginError("Google login could not be completed. Please try again.");
-        setIsAuthenticated(false);
-        applyUserProfile(null);
-        setRouteStack(["login"]);
-        setSessionReady(true);
+      } catch (error) {
+        console.error("[profile] local profile restore failed", {
+          name: error instanceof Error ? error.name : "UnknownError",
+        });
+
+        if (!active) {
+          return;
+        }
+
+        applyDoctorProfile(emptyDoctorProfile());
+        setRouteStack(["doctorDetails"]);
+      } finally {
+        if (active) {
+          setAppReady(true);
+        }
       }
     };
 
-    void restoreSession();
+    void initializeApplication();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-        console.log(`OAuth auth state event: ${event}`);
-      }
-      const hasSession = Boolean(session);
-      const nextScreen = hasSession
-        ? postAuthScreenForUser(session?.user ?? null)
-        : "login";
-      setIsAuthenticated(hasSession);
-      applyUserProfile(session?.user ?? null);
-      setRouteStack([nextScreen]);
-      setActiveTab("Home");
-      if (hasSession) {
-        setLoginError("");
-        void loadApprovedSourceRecommendations();
-        void loadApprovedIcmrGuidelines();
-        void loadApprovedDurationGuidelines();
-        void loadApprovedAntibiograms();
-        void loadApprovedPearls();
-        void loadApprovedSpecialGuidelineSections();
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -2524,7 +2404,7 @@ export default function App() {
       return;
     }
 
-    const styleId = "login-input-focus-reset";
+    const styleId = "app-input-focus-reset";
     if (document.getElementById(styleId)) {
       return;
     }
@@ -2537,29 +2417,6 @@ export default function App() {
         background: transparent !important;
         outline: none !important;
         box-shadow: none !important;
-      }
-
-      [data-testid="login-email-input"],
-      [data-testid="signup-name-input"],
-      [data-testid="signup-email-input"],
-      [data-testid="login-email-input"]:focus,
-      [data-testid="signup-name-input"]:focus,
-      [data-testid="signup-email-input"]:focus,
-      [data-testid="login-email-input"] input,
-      [data-testid="signup-name-input"] input,
-      [data-testid="signup-email-input"] input,
-      [data-testid="login-email-input"] input:focus,
-      [data-testid="signup-name-input"] input:focus,
-      [data-testid="signup-email-input"] input:focus {
-        background: transparent !important;
-        border: 0 !important;
-        outline: none !important;
-        box-shadow: none !important;
-        -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-        -webkit-text-fill-color: #0B2850 !important;
-        caret-color: #0B2850 !important;
-        -webkit-appearance: none !important;
-        appearance: none !important;
       }
 
       input:-webkit-autofill,
@@ -2589,39 +2446,38 @@ export default function App() {
       ? "Low Risk"
       : riskType === "Type 2"
         ? "Medium Risk"
-        : "High Risk";
+        : riskType === "Type 3"
+          ? "High Risk"
+          : "Unclassified";
   const riskColor =
     riskType === "Type 1"
       ? palette.green
       : riskType === "Type 2"
         ? palette.orange
-        : palette.red;
+        : riskType === "Type 3"
+          ? palette.red
+          : palette.muted;
   const riskIconName: AppIconName =
     riskType === "Type 1"
       ? "risk-low"
       : riskType === "Type 2"
         ? "risk-medium"
-        : "risk-high";
+        : riskType === "Type 3"
+          ? "risk-high"
+          : "alert";
   const selectedIsRiskTyped = isRiskTypedInfection(
     `${selectedSite.code} ${selectedSite.label}`,
   );
   const selectedRiskDisplay = selectedIsRiskTyped
-    ? `${riskType} - ${riskLabel}`
+    ? riskType
+      ? `${riskType} - ${riskLabel}`
+      : "Risk assessment incomplete"
     : selectedSourceRisk || "Protocol-specific";
   const fieldMatches = (value: string | null, expected: string) => {
     const normalizedValue = normalizeMatchText(value);
     const normalizedExpected = normalizeMatchText(expected);
 
-    if (!normalizedValue || !normalizedExpected) {
-      return true;
-    }
-
-    return (
-      normalizedValue === normalizedExpected ||
-      normalizedValue.includes(normalizedExpected) ||
-      normalizedExpected.includes(normalizedValue) ||
-      hasSharedToken(normalizedValue, normalizedExpected)
-    );
+    return Boolean(normalizedValue && normalizedExpected && normalizedValue === normalizedExpected);
   };
 
   const recommendationMatchesSite = (
@@ -2675,12 +2531,18 @@ export default function App() {
     [selectedSite, sourceRecommendations],
   );
   const selectedSettingOptions = useMemo(
-    () => sourceFieldOptions(selectedInfectionRows, "setting"),
-    [selectedInfectionRows],
+    () =>
+      selectedIsRiskTyped
+        ? ["ICU", "Wards"]
+        : sourceFieldOptions(selectedInfectionRows, "setting"),
+    [selectedInfectionRows, selectedIsRiskTyped],
   );
   const selectedAcquisitionOptions = useMemo(
-    () => sourceFieldOptions(selectedInfectionRows, "acquisition"),
-    [selectedInfectionRows],
+    () =>
+      selectedIsRiskTyped
+        ? ["Community-acquired", "Hospital-acquired"]
+        : sourceFieldOptions(selectedInfectionRows, "acquisition"),
+    [selectedInfectionRows, selectedIsRiskTyped],
   );
   const selectedRiskOptions = useMemo(
     () => sourceFieldOptions(selectedInfectionRows, "risk"),
@@ -2697,6 +2559,74 @@ export default function App() {
     hasSelectedRisk ? selectedRiskDisplay : null,
   ].filter(Boolean) as string[];
   const selectedScenarioSummary = selectedScenarioParts.join(" • ");
+  const activeRiskCriteria = useMemo<AntibiogramRiskCriteria | null>(() => {
+    const byCode = new Map(currentRiskCriteriaRows.map((row) => [row.criterion_code, row]));
+    const hospital = byCode.get("hospital_contact");
+    const antibiotic = byCode.get("antibiotic_exposure");
+    const comorbidities = byCode.get("co_morbidities");
+    if (!hospital || !antibiotic || !comorbidities) {
+      return null;
+    }
+    return {
+      "Hospital contact": { "1": hospital.type_1, "2": hospital.type_2, "3": hospital.type_3 },
+      "Antibiotic exposure": { "1": antibiotic.type_1, "2": antibiotic.type_2, "3": antibiotic.type_3 },
+      "Co-morbidities": { "1": comorbidities.type_1, "2": comorbidities.type_2, "3": comorbidities.type_3 },
+    };
+  }, [currentRiskCriteriaRows]);
+  const riskCriterionGroups = useMemo(
+    () =>
+      patientCriterionLabels.map((criterionName) => ({
+        criterionName,
+        options: activeRiskCriteria
+          ? [
+              activeRiskCriteria[criterionName]["1"],
+              activeRiskCriteria[criterionName]["2"],
+              activeRiskCriteria[criterionName]["3"],
+            ]
+          : [],
+      })),
+    [activeRiskCriteria],
+  );
+
+  const protocolScenarioKey = useMemo<ProtocolScenarioKey | null>(() => {
+    if (!selectedIsRiskTyped || !riskType) {
+      return null;
+    }
+    const infectionType = ["BSI", "UTI", "RTI", "IAI"].includes(selectedSite.code)
+      ? (selectedSite.code as ProtocolScenarioKey["infectionType"])
+      : null;
+    const location = setting === "ICU" ? "ICU" : setting === "Wards" ? "wards" : null;
+    const acquisitionCode =
+      acquisition === "Community-acquired"
+        ? "community_acquired"
+        : acquisition === "Hospital-acquired"
+          ? "hospital_acquired"
+          : null;
+    const riskCode = riskType === "Type 1" ? "1" : riskType === "Type 2" ? "2" : "3";
+    if (!infectionType || !location || !acquisitionCode) {
+      return null;
+    }
+    return { infectionType, location, acquisition: acquisitionCode, riskType: riskCode };
+  }, [acquisition, riskType, selectedIsRiskTyped, selectedSite.code, setting]);
+
+  useEffect(() => {
+    setProtocolScenarioResult(null);
+    if (!protocolScenarioKey || !isSupabaseConfigured) {
+      setProtocolScenarioLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setProtocolScenarioLoading(true);
+    void loadProtocolScenario(protocolScenarioKey).then((result) => {
+      if (!cancelled) {
+        setProtocolScenarioResult(result);
+        setProtocolScenarioLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [protocolScenarioKey]);
 
   useEffect(() => {
     if (
@@ -2732,109 +2662,6 @@ export default function App() {
     selectedSourceRisk,
     setting,
   ]);
-
-  const riskMatchesSelection = (item: SourceRecommendation) => {
-    const sourceRiskValues = [item.risk_type, item.severity_category].filter(
-      hasDisplayValue,
-    );
-
-    if (sourceRiskValues.length === 0) {
-      return true;
-    }
-
-    const expectedRisk = selectedIsRiskTyped
-      ? `${riskType} ${riskLabel}`
-      : selectedSourceRisk;
-
-    return sourceRiskValues.some(
-      (value) =>
-        fieldMatches(value, expectedRisk) ||
-        (selectedIsRiskTyped &&
-          (fieldMatches(value, riskType) || fieldMatches(value, riskLabel))),
-    );
-  };
-
-  const infectionMatchesSelection = (item: SourceRecommendation) => {
-    return recommendationMatchesSite(item, selectedSite);
-  };
-
-  const applyProgressiveFilter = (
-    rows: SourceRecommendation[],
-    predicate: (item: SourceRecommendation) => boolean,
-  ) => {
-    const filteredRows = rows.filter(predicate);
-
-    return filteredRows.length > 0 ? filteredRows : rows;
-  };
-
-  const progressivelyMatchScenarioRows = (rows: SourceRecommendation[]) => {
-    let matchedRows = rows;
-    const stepCounts: Record<string, number> = { infection: rows.length };
-
-    if (selectedSettingOptions.length > 0) {
-      matchedRows = applyProgressiveFilter(
-        matchedRows,
-        (item) => !hasDisplayValue(item.setting) || fieldMatches(item.setting, setting),
-      );
-      stepCounts.setting = matchedRows.length;
-    }
-
-    if (selectedAcquisitionOptions.length > 0) {
-      matchedRows = applyProgressiveFilter(
-        matchedRows,
-        (item) =>
-          !hasDisplayValue(item.acquisition) ||
-          fieldMatches(item.acquisition, acquisition),
-      );
-      stepCounts.acquisition = matchedRows.length;
-    }
-
-    if (selectedRiskOptions.length > 0) {
-      matchedRows = applyProgressiveFilter(matchedRows, riskMatchesSelection);
-      stepCounts.risk = matchedRows.length;
-    }
-
-    console.log("[clinical-match] progressive selection", {
-      selected: {
-        infection: selectedSite.label,
-        setting,
-        acquisition,
-        risk: selectedRiskDisplay,
-      },
-      availableOptions: {
-        settings: selectedSettingOptions,
-        acquisitions: selectedAcquisitionOptions,
-        risks: selectedRiskOptions,
-      },
-      stepCounts,
-      finalRows: matchedRows.length,
-    });
-
-    return matchedRows;
-  };
-
-  const scoreSourceRecommendation = (item: SourceRecommendation) => {
-    const hasSourceRisk =
-      hasDisplayValue(item.risk_type) || hasDisplayValue(item.severity_category);
-    const scenarioScore =
-      (item.setting && fieldMatches(item.setting, setting) ? 3 : 0) +
-      (item.acquisition && fieldMatches(item.acquisition, acquisition)
-        ? 3
-        : 0) +
-      (hasSourceRisk && riskMatchesSelection(item) ? 4 : 0);
-    const completenessScore =
-      clinicalFieldScore(item.dose) * 3 +
-      clinicalFieldScore(item.route) * 2 +
-      clinicalFieldScore(item.frequency) * 2 +
-      clinicalFieldScore(item.duration);
-    const safetyScore =
-      (hasMeaningfulText(item.renal_adjustment) ? 1 : 0) +
-      (hasMeaningfulText(item.allergy_warning) ? 1 : 0) +
-      (hasMeaningfulText(item.stewardship_note) ? 1 : 0) +
-      (hasMeaningfulText(item.id_consult_trigger) ? 1 : 0);
-
-    return scenarioScore + completenessScore + safetyScore;
-  };
 
   const dynamicInfectionSites = useMemo(() => {
     const infectionMap = new Map<string, InfectionSite>();
@@ -3203,6 +3030,8 @@ export default function App() {
           row.drug,
           row.standard_dose,
           row.weight_based_dose,
+          row.bolus_duration,
+          row.infusion_duration,
           row.bolus_or_infusion_duration,
           row.source_quote,
           row.source_section,
@@ -3287,6 +3116,7 @@ export default function App() {
     setDrawerOpen(false);
     setActiveTab("Profile");
     setProfileNameInput(doctorProfile.name);
+    setProfileEmailInput(doctorProfile.email);
     setProfileError("");
     setProfileSuccess("");
     go("editProfile");
@@ -3309,27 +3139,26 @@ export default function App() {
   const firstScenarioScreenForSite = (site: InfectionSite): Screen => {
     const options = scenarioOptionsForSite(site);
 
-    if (options.settings.length > 1) {
+    if (options.isRiskTyped) {
       return "setting";
     }
 
-    if (options.acquisitions.length > 1) {
-      return "acquisition";
-    }
-
-    if (options.isRiskTyped) {
-      return "riskAssessment";
-    }
-
-    if (options.risks.length > 1) {
-      return "riskSelection";
-    }
-
-    return "protocolResult";
+    return "guidelineSection";
   };
 
   const prepareScenarioForSite = (site: InfectionSite) => {
     const options = scenarioOptionsForSite(site);
+
+    setProtocolScenarioResult(null);
+    setRiskAnswers(defaultAntibiogramRiskAnswers);
+    setRiskType(null);
+
+    if (options.isRiskTyped) {
+      setSetting("ICU");
+      setAcquisition("Community-acquired");
+      setSelectedSourceRisk("");
+      return;
+    }
 
     if (options.settings[0]) {
       setSetting(options.settings[0]);
@@ -3433,6 +3262,10 @@ export default function App() {
     setSelectedSite(site);
     setSearchQuery("");
     prepareScenarioForSite(site);
+    if (!isRiskTypedInfection(`${site.code} ${site.label}`)) {
+      setSelectedGuidelineSection("icmr");
+      setIcmrGuidelineSearch(site.label);
+    }
     go(firstScenarioScreenForSite(site));
   };
 
@@ -3463,6 +3296,28 @@ export default function App() {
 
     setSourceRecommendations(approvedRows);
     setSourceRecommendationError("");
+  };
+
+  const loadApprovedCurrentRiskCriteria = async () => {
+    if (!isSupabaseConfigured) {
+      setCurrentRiskCriteriaRows([]);
+      setCurrentRiskCriteriaError("Supabase is not configured.");
+      return;
+    }
+    setCurrentRiskCriteriaLoading(true);
+    setCurrentRiskCriteriaError("");
+    const result = await loadCurrentPatientRiskCriteria();
+    setCurrentRiskCriteriaLoading(false);
+    if (result.status === "found") {
+      setCurrentRiskCriteriaRows(result.data);
+      return;
+    }
+    setCurrentRiskCriteriaRows([]);
+    setCurrentRiskCriteriaError(
+      result.status === "empty"
+        ? "No active, non-expired patient risk criteria are available."
+        : result.message,
+    );
   };
 
   const loadApprovedIcmrGuidelines = async () => {
@@ -3632,75 +3487,81 @@ export default function App() {
     );
   };
 
-  const selectedSourceRecommendations = useMemo(() => {
-    const infectionRows = sourceRecommendations.filter(infectionMatchesSelection);
-
-    if (infectionRows.length === 0) {
-      console.log("[clinical-match] no infection/syndrome rows", {
-        selected: `${selectedSite.code} ${selectedSite.label}`,
-        totalApprovedRows: sourceRecommendations.length,
-      });
-      return [];
+  const selectedSourceRecommendations = useMemo<SourceRecommendation[]>(() => {
+    if (selectedIsRiskTyped) {
+      if (
+        protocolScenarioResult?.status !== "found" ||
+        !protocolScenarioKey ||
+        protocolScenarioResult.row.infection_type !== protocolScenarioKey.infectionType ||
+        protocolScenarioResult.row.location !== protocolScenarioKey.location ||
+        protocolScenarioResult.row.acquisition !== protocolScenarioKey.acquisition ||
+        protocolScenarioResult.row.risk_type !== protocolScenarioKey.riskType
+      ) {
+        return [];
+      }
+      const row = protocolScenarioResult.row;
+      return [
+        {
+          id: row.therapy_id ?? row.sheet_key,
+          syndrome: row.sheet_title,
+          infection_site: row.infection_type,
+          setting: row.location,
+          acquisition: row.acquisition,
+          risk_type: row.risk_type,
+          severity_category: null,
+          organism: null,
+          pathogen: null,
+          drug: row.empiric_therapy,
+          dose: null,
+          route: null,
+          frequency: null,
+          duration: null,
+          renal_adjustment: null,
+          hepatic_adjustment: null,
+          pregnancy_lactation_caution: null,
+          allergy_warning: null,
+          contraindication: null,
+          stewardship_note: row.section_notes.join("\n") || null,
+          id_consult_trigger: null,
+          clinical_condition: row.sheet_title,
+          common_pathogens: null,
+          empirical_ama: row.empiric_therapy,
+          alternate_ama: null,
+          comments: null,
+          ama_role: "empirical" as const,
+          source_image: null,
+          source_page: null,
+          review_status: "approved" as const,
+          source_filename: row.source_filename,
+          page_number: null,
+          section_heading: row.sheet_title,
+          source_quote: row.source_quote,
+          extracted_at: "",
+        },
+      ];
     }
-
-    const matchedRows = progressivelyMatchScenarioRows(infectionRows);
-    const cleanMatchedRows = cleanRecommendationRows(matchedRows);
-    const cleanInfectionRows = cleanRecommendationRows(infectionRows);
-    const sourceRows =
-      cleanMatchedRows.length > 0 ? cleanMatchedRows : cleanInfectionRows;
-
-    const cleanRows = sourceRows
-      .sort(
-        (left, right) =>
-          scoreSourceRecommendation(right) - scoreSourceRecommendation(left),
-      )
-      .slice(0, 6);
-
-    console.log("[clinical-match] recommendation result", {
-      selected: {
-        infection: selectedSite.label,
-        setting,
-        acquisition,
-        risk: selectedRiskDisplay,
-      },
-      infectionRows: infectionRows.length,
-      matchedRows: matchedRows.length,
-      cleanMatchedRows: cleanMatchedRows.length,
-      cleanInfectionFallbackRows: cleanInfectionRows.length,
-      finalRows: cleanRows.length,
-      sample: infectionRows.slice(0, 8).map((item) => ({
-        id: item.id,
-        infection_site: item.infection_site,
-        syndrome: item.syndrome,
-        setting: item.setting,
-        acquisition: item.acquisition,
-        risk_type: item.risk_type,
-        severity_category: item.severity_category,
-        drug: item.drug,
-        matchedSetting:
-          !hasDisplayValue(item.setting) || fieldMatches(item.setting, setting),
-        matchedAcquisition:
-          !hasDisplayValue(item.acquisition) ||
-          fieldMatches(item.acquisition, acquisition),
-        matchedRisk: riskMatchesSelection(item),
-      })),
-    });
-
-    return cleanRows;
+    return [];
   }, [
-    acquisition,
-    riskType,
-    selectedAcquisitionOptions,
-    selectedRiskOptions,
-    selectedSite,
-    selectedSourceRisk,
-    selectedSettingOptions,
-    setting,
-    sourceRecommendations,
+    protocolScenarioResult,
+    protocolScenarioKey,
+    selectedIsRiskTyped,
   ]);
 
   const failClosedMessage =
     "No approved recommendation available. Refer institutional guideline / ID specialist.";
+  const protocolFlowLoading = selectedIsRiskTyped
+    ? protocolScenarioLoading
+    : sourceRecommendationLoading;
+  const protocolFlowMessage = selectedIsRiskTyped
+    ? protocolScenarioResult
+      ? protocolScenarioMessage(protocolScenarioResult)
+      : protocolScenarioKey
+        ? "Loading the exact approved scenario..."
+        : "Complete all scenario and risk fields before viewing a protocol."
+    : sourceRecommendationError || failClosedMessage;
+  const canUseProtocolActions = selectedIsRiskTyped
+    ? protocolScenarioResult?.status === "found"
+    : selectedSourceRecommendations.length > 0;
   const meaningfulWarningRecommendations = selectedSourceRecommendations.filter(
     (item) =>
       hasMeaningfulText(item.renal_adjustment) ||
@@ -3721,30 +3582,6 @@ export default function App() {
     recommendedTreatmentRecommendations.length,
     6,
   );
-  const durationProtocolGroups = useMemo(() => {
-    const infectionRows = sourceRecommendations.filter(infectionMatchesSelection);
-
-    if (infectionRows.length === 0) {
-      return [];
-    }
-
-    const matchedRows = progressivelyMatchScenarioRows(infectionRows);
-    const sourceRows = matchedRows.length > 0 ? matchedRows : infectionRows;
-    const cleanRows = cleanRecommendationRows(sourceRows);
-    const durationRows = cleanRows.length > 0 ? cleanRows : sourceRows;
-
-    return getDurationRecommendation(durationRows).slice(0, 4);
-  }, [
-    acquisition,
-    riskType,
-    selectedAcquisitionOptions,
-    selectedRiskOptions,
-    selectedSite,
-    selectedSourceRisk,
-    selectedSettingOptions,
-    setting,
-    sourceRecommendations,
-  ]);
   const approvedCleanRecommendations = useMemo(
     () => cleanRecommendationRows(sourceRecommendations),
     [sourceRecommendations],
@@ -3989,7 +3826,7 @@ export default function App() {
     return [
       "Hinduja Antibiotic Guide Protocol Report",
       "",
-      `Doctor: ${reportCase.doctorName || "Authenticated doctor"}`,
+      `Doctor: ${reportCase.doctorName || "Doctor not specified"}`,
       `Email: ${reportCase.doctorEmail}`,
       `Generated: ${formatDateTime(reportCase.savedAt)}`,
       "",
@@ -4034,8 +3871,8 @@ export default function App() {
     </html>
   `;
   const saveCurrentCase = () => {
-    if (selectedSourceRecommendations.length === 0) {
-      setActionMessage(failClosedMessage);
+    if (!canUseProtocolActions) {
+      setActionMessage(protocolFlowMessage || failClosedMessage);
       return;
     }
 
@@ -4156,43 +3993,9 @@ export default function App() {
       setActionMessage("PDF export is not available on this device. Report text can be shared instead.");
     }
   };
-  const signInWithGoogle = async () => {
-    if (!isSupabaseConfigured) {
-      setLoginError(
-        "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
-      );
-      return;
-    }
-
-    setAuthLoading(true);
-    setLoginError("");
-
-    const redirectTo =
-      typeof window !== "undefined" ? window.location.origin : undefined;
-
-    // Supabase production setup required:
-    // Authentication -> Providers -> Google enabled.
-    // Authentication -> URL Configuration -> Site URL:
-    // https://hinduja-antibiotic-guide.vercel.app
-    // Redirect URLs:
-    // https://hinduja-antibiotic-guide.vercel.app
-    // https://hinduja-antibiotic-guide.vercel.app/**
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-      },
-    });
-
-    if (error) {
-      setAuthLoading(false);
-      setLoginError("Google login failed. Please try again or contact administrator.");
-      return;
-    }
-  };
-
   const saveDoctorDetails = async () => {
     const fullName = doctorNameInput.trim();
+    const email = doctorEmailInput.trim();
     const employeeId = doctorEmployeeIdInput.trim();
     const contactNumber = doctorContactInput.trim();
 
@@ -4201,39 +4004,34 @@ export default function App() {
       return;
     }
 
-    if (!currentUser) {
-      setDoctorDetailsError("Please login again before saving doctor details.");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setDoctorDetailsError("Enter a valid email address or leave it blank.");
       return;
     }
 
     setDoctorDetailsLoading(true);
     setDoctorDetailsError("");
 
-    const { data, error } = await supabase.auth.updateUser({
-      data: {
-        full_name: fullName,
-        display_name: fullName,
-        employee_id: employeeId,
-        contact_number: contactNumber,
-      },
-    });
+    const nextProfile: DoctorProfile = {
+      name: fullName,
+      email,
+      employeeId,
+      contactNumber,
+    };
 
-    setDoctorDetailsLoading(false);
-
-    if (error) {
-      setDoctorDetailsError(
-        friendlyAuthError(error.message, "Unable to save doctor details. Please try again."),
+    try {
+      await AsyncStorage.setItem(
+        DOCTOR_PROFILE_STORAGE_KEY,
+        JSON.stringify(nextProfile),
       );
+      applyDoctorProfile(nextProfile);
+    } catch {
+      setDoctorDetailsError("Unable to save doctor details on this device.");
+      setDoctorDetailsLoading(false);
       return;
     }
 
-    applyUserProfile(data.user ?? currentUser);
-    setDoctorProfile({
-      name: fullName,
-      email: currentUser.email ?? "",
-      employeeId,
-      contactNumber,
-    });
+    setDoctorDetailsLoading(false);
     setActiveTab("Home");
     go("dashboard", "reset");
   };
@@ -4246,6 +4044,7 @@ export default function App() {
 
   const updateProfile = async () => {
     const trimmedName = profileNameInput.trim();
+    const trimmedEmail = profileEmailInput.trim();
 
     if (!trimmedName) {
       setProfileError("Name is required.");
@@ -4253,8 +4052,8 @@ export default function App() {
       return;
     }
 
-    if (!currentUser) {
-      setProfileError("Please login again before updating your profile.");
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setProfileError("Enter a valid email address or leave it blank.");
       setProfileSuccess("");
       return;
     }
@@ -4263,60 +4062,35 @@ export default function App() {
     setProfileError("");
     setProfileSuccess("");
 
-    const { data, error } = await supabase.auth.updateUser({
-      data: {
-        full_name: trimmedName,
-        display_name: trimmedName,
-        employee_id: doctorProfile.employeeId,
-        contact_number: doctorProfile.contactNumber,
-      },
-    });
-
-    setProfileLoading(false);
-
-    if (error) {
-      setProfileError(
-        friendlyAuthError(error.message, "Unable to update profile. Please try again."),
-      );
-      return;
-    }
-
-    applyUserProfile(data.user ?? currentUser);
-    setDoctorProfile((previousProfile) => ({
-      ...previousProfile,
+    const nextProfile: DoctorProfile = {
+      ...doctorProfile,
       name: trimmedName,
-    }));
-    setProfileNameInput(trimmedName);
-    setProfileSuccess("Profile has been updated.");
-  };
+      email: trimmedEmail,
+    };
 
-  const logout = async () => {
-    setDrawerOpen(false);
-    setAuthLoading(true);
-    const { error } = await supabase.auth.signOut();
-    setAuthLoading(false);
-
-    if (error) {
-      setLoginError(friendlyAuthError(error.message, "Unable to logout. Please try again."));
-      return;
+    try {
+      await AsyncStorage.setItem(
+        DOCTOR_PROFILE_STORAGE_KEY,
+        JSON.stringify(nextProfile),
+      );
+      applyDoctorProfile(nextProfile);
+      setProfileSuccess("Profile has been updated on this device.");
+    } catch {
+      setProfileError("Unable to update the profile on this device.");
+    } finally {
+      setProfileLoading(false);
     }
-
-    setIsAuthenticated(false);
-    applyUserProfile(null);
-    setDoctorNameInput("");
-    setDoctorEmployeeIdInput("");
-    setDoctorContactInput("");
-    setDoctorDetailsError("");
-    setSourceRecommendations([]);
-    setSourceRecommendationError("");
-    setSavedCases([]);
-    setSelectedCase(null);
-    setActionMessage("");
-    go("login", "reset");
   };
 
   const classify = () => {
-    const result = classifyAntibiogramRisk(riskAnswers);
+    if (!activeRiskCriteria) {
+      setActionMessage(
+        currentRiskCriteriaError ||
+          "No active, non-expired patient risk criteria are available. Manual review is required.",
+      );
+      return;
+    }
+    const result = classifyAntibiogramRisk(riskAnswers, activeRiskCriteria);
 
     if (!result.riskType) {
       setActionMessage("Risk criteria are incomplete. Manual review is required.");
@@ -4413,72 +4187,6 @@ export default function App() {
     </TouchableOpacity>
   );
 
-  const LogoHeader = () => (
-    <View style={styles.brand}>
-      <View style={styles.hospitalRow}>
-        <View style={styles.logoCircle}>
-          <AppIcon name="shield" size={36} color="#0057B8" />
-        </View>
-        <View>
-          <Text style={styles.hospitalName}>P. D. HINDUJA HOSPITAL &</Text>
-          <Text style={styles.hospitalName}>MEDICAL RESEARCH CENTRE</Text>
-        </View>
-      </View>
-      <View style={styles.shield}>
-        <AppIcon name="shield" size={38} color="#0057B8" />
-      </View>
-      <Text style={styles.appTitle}>Hinduja{"\n"}Antibiotic Guide</Text>
-      <Text style={styles.subtitle}>Evidence Based. Hospital Specific.</Text>
-    </View>
-  );
-
-  const Login = () => (
-    <View style={styles.centerScreen}>
-      <LogoHeader />
-      <View style={styles.loginPanel}>
-        <Text style={styles.authTitle}>Doctor sign in</Text>
-        <Text style={styles.authSubtitle}>
-          Continue with your authorized Google account.
-        </Text>
-        {loginError ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{loginError}</Text>
-          </View>
-        ) : null}
-        <TouchableOpacity
-          activeOpacity={0.88}
-          disabled={authLoading}
-          onPress={() => {
-            void signInWithGoogle();
-          }}
-          style={[styles.googleButton, authLoading && styles.disabledButton]}
-          accessibilityRole="button"
-          accessibilityLabel="Continue with Google"
-        >
-          {authLoading ? (
-            <ActivityIndicator color="#2563EB" />
-          ) : (
-            <>
-              <View style={styles.googleBadge}>
-                <Text style={styles.googleBadgeText}>G</Text>
-              </View>
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </>
-          )}
-        </TouchableOpacity>
-        <View style={styles.doctorOnly}>
-          <AppIcon name="shield" size={15} color="#0057B8" />
-          <Text style={styles.doctorText}>
-            Restricted to authorized doctors only.
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.bundleMarkerText}>
-        scoreSourceRecommendation getDurationRecommendation isRiskTypedInfection
-      </Text>
-    </View>
-  );
-
   const DoctorDetails = () =>
     appShell(
       <View>
@@ -4507,6 +4215,25 @@ export default function App() {
               autoCorrect={false}
               textContentType="name"
               autoComplete="name"
+              style={[styles.textInput, webTextInputReset]}
+            />
+          </View>
+          <Text style={styles.fieldLabel}>Work Email (optional)</Text>
+          <View style={styles.inputWrap}>
+            <AppIcon name="mail" size={18} color="#5C6F86" style={styles.inputInlineIcon} />
+            <TextInput
+              value={doctorEmailInput}
+              onChangeText={(value) => {
+                setDoctorEmailInput(value);
+                setDoctorDetailsError("");
+              }}
+              placeholder="Enter work email"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              autoComplete="email"
               style={[styles.textInput, webTextInputReset]}
             />
           </View>
@@ -4563,14 +4290,6 @@ export default function App() {
     { label: "Alerts", icon: "alert", action: () => goTab("Alerts") },
     { label: "Profile", icon: "user", action: () => goTab("Profile") },
     { label: "Edit Profile", icon: "edit", action: goEditProfile },
-    {
-      label: "Logout",
-      icon: "logout",
-      action: () => {
-        void logout();
-      },
-      danger: true,
-    },
   ];
 
   const AppHeader = () => (
@@ -4587,7 +4306,7 @@ export default function App() {
       <View style={styles.headerTextBlock}>
         <Text style={styles.headerTitle}>Hinduja Antibiotic Guide</Text>
         <Text style={styles.headerDoctor}>
-          {doctorProfile.name || doctorProfile.email || "Authenticated doctor"}
+          {doctorProfile.name || doctorProfile.email || "Doctor profile"}
         </Text>
       </View>
     </View>
@@ -4613,10 +4332,10 @@ export default function App() {
             <View style={styles.drawerIdentity}>
               <Text style={styles.drawerTitle}>Clinical Menu</Text>
               <Text style={styles.drawerName}>
-                {doctorProfile.name || "Authenticated doctor"}
+                {doctorProfile.name || "Doctor profile"}
               </Text>
               <Text style={styles.drawerEmail}>
-                {doctorProfile.email || "Email not available"}
+                {doctorProfile.email || "Email not provided"}
               </Text>
             </View>
           </View>
@@ -5332,11 +5051,15 @@ export default function App() {
           </Text>
         </View>
         <View style={styles.antibiogramMiniCell}>
-          <Text style={styles.recommendationFieldLabel}>
-            Duration for Bolus Injection (Infusion)
-          </Text>
+          <Text style={styles.recommendationFieldLabel}>Duration for Bolus</Text>
           <Text style={styles.infoCardBody}>
-            {item.bolus_or_infusion_duration ?? "not documented"}
+            {item.bolus_duration ?? "not documented"}
+          </Text>
+        </View>
+        <View style={styles.antibiogramMiniCell}>
+          <Text style={styles.recommendationFieldLabel}>Duration for Infusion</Text>
+          <Text style={styles.infoCardBody}>
+            {item.infusion_duration ?? "not documented"}
           </Text>
         </View>
       </View>
@@ -6257,7 +5980,7 @@ export default function App() {
               <div class="meta">Generated ${escapeHtml(formatDateTime(reportCase.savedAt))}</div>
             </div>
             <div class="meta">
-              <strong>${escapeHtml(reportCase.doctorName || "Authenticated doctor")}</strong><br />
+              <strong>${escapeHtml(reportCase.doctorName || "Doctor not specified")}</strong><br />
               ${escapeHtml(reportCase.doctorEmail)}
             </div>
           </header>
@@ -6265,7 +5988,7 @@ export default function App() {
           <section class="section">
             <h2>Doctor / Report Information</h2>
             <div class="grid">
-              <div class="field"><div class="label">Doctor</div><div class="value">${escapeHtml(reportCase.doctorName || "Authenticated doctor")}</div></div>
+              <div class="field"><div class="label">Doctor</div><div class="value">${escapeHtml(reportCase.doctorName || "Doctor not specified")}</div></div>
               <div class="field"><div class="label">Email</div><div class="value">${escapeHtml(reportCase.doctorEmail)}</div></div>
               <div class="field"><div class="label">Generated</div><div class="value">${escapeHtml(formatDateTime(reportCase.savedAt))}</div></div>
               <div class="field"><div class="label">Report Type</div><div class="value">Antimicrobial stewardship recommendation</div></div>
@@ -6383,57 +6106,9 @@ export default function App() {
         </View>
         {durationGuidelineRows.length === 0 ? (
           <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Legacy Protocol-Derived Fallback</Text>
-            {sourceRecommendationLoading ? (
-              <ActivityIndicator color={palette.blue} />
-            ) : selectedSourceRecommendations.length === 0 &&
-              durationProtocolGroups.length === 0 ? (
-              <Text style={styles.infoCardBody}>
-                {sourceRecommendationError || failClosedMessage}
-              </Text>
-            ) : durationProtocolGroups.length === 0 ? (
-              <Text style={styles.infoCardBody}>
-                Duration not available in the current protocol.
-              </Text>
-            ) : (
-              durationProtocolGroups.map((group) => (
-                <View key={group.duration} style={styles.durationCard}>
-                  <Text style={styles.durationValue}>{group.duration}</Text>
-                  {group.items.map((item) => (
-                    <View key={item.id} style={styles.durationTreatmentRow}>
-                      {hasMeaningfulTreatment(item) ? (
-                        <Text style={styles.infoCardTitle}>{item.drug?.trim()}</Text>
-                      ) : null}
-                      <RecommendationField label="Dose" value={item.dose} />
-                      <RecommendationField label="Route" value={item.route} />
-                      <RecommendationField
-                        label="Frequency"
-                        value={item.frequency}
-                      />
-                    </View>
-                  ))}
-                </View>
-              ))
-            )}
-          </View>
-        ) : null}
-        {durationGuidelineRows.length === 0 &&
-        durationProtocolGroups.some((group) => group.notes.length > 0) ? (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Legacy Clinical Notes</Text>
-            {durationProtocolGroups.flatMap((group) => group.notes).slice(0, 4).map((note) => (
-              <Text key={note} style={styles.infoCardBody}>
-                {note}
-              </Text>
-            ))}
-          </View>
-        ) : null}
-        {durationGuidelineRows.length === 0 ? (
-          <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>Review Trigger</Text>
             <Text style={styles.infoCardBody}>
-              {durationProtocolGroups[0]?.reviewTrigger ??
-                "Reassess duration when cultures, source control, and clinical response are available."}
+              Reassess duration when cultures, source control, and clinical response are available.
             </Text>
           </View>
         ) : null}
@@ -6545,11 +6220,11 @@ export default function App() {
       <View>
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Stewardship Review</Text>
-          {sourceRecommendationLoading ? (
+          {protocolFlowLoading ? (
             <ActivityIndicator color={palette.blue} />
           ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
-              {sourceRecommendationError || failClosedMessage}
+              {protocolFlowMessage || failClosedMessage}
             </Text>
           ) : meaningfulWarningRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
@@ -6601,7 +6276,7 @@ export default function App() {
           {doctorProfile.name || "Name not set"}
         </Text>
         <Text style={styles.profileMeta}>
-          {doctorProfile.email || "Email not available"}
+          {doctorProfile.email || "Email not provided"}
         </Text>
         {doctorProfile.employeeId ? (
           <Text style={styles.profileMeta}>Employee ID: {doctorProfile.employeeId}</Text>
@@ -6610,9 +6285,9 @@ export default function App() {
           <Text style={styles.profileMeta}>Contact: {doctorProfile.contactNumber}</Text>
         ) : null}
         <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Access</Text>
+          <Text style={styles.infoCardTitle}>Local profile</Text>
           <Text style={styles.infoCardBody}>
-            Authorized doctor account · Offline enabled · Activity audited
+            Stored on this device for report personalization. It does not authenticate or authorize access.
           </Text>
         </View>
         {guideMetadata ? (
@@ -6656,18 +6331,11 @@ export default function App() {
           label="Edit Profile"
           onPress={() => {
             setProfileNameInput(doctorProfile.name);
+            setProfileEmailInput(doctorProfile.email);
             setProfileError("");
             setProfileSuccess("");
             go("editProfile");
           }}
-        />
-        <PrimaryButton
-          label="Logout"
-          onPress={() => {
-            void logout();
-          }}
-          loading={authLoading}
-          red
         />
       </View>,
     );
@@ -6706,24 +6374,26 @@ export default function App() {
               style={[styles.textInput, webTextInputReset]}
             />
           </View>
-          <Text style={styles.fieldLabel}>Email *</Text>
-          <View style={[styles.inputWrap, styles.readOnlyInputWrap]}>
+          <Text style={styles.fieldLabel}>Work Email (optional)</Text>
+          <View style={styles.inputWrap}>
             <AppIcon name="mail" size={18} color="#5C6F86" style={styles.inputInlineIcon} />
             <TextInput
-              value={doctorProfile.email}
-              editable={false}
-              selectTextOnFocus={false}
-              placeholder="Authenticated email"
+              value={profileEmailInput}
+              onChangeText={(value) => {
+                setProfileEmailInput(value);
+                setProfileError("");
+                setProfileSuccess("");
+              }}
+              placeholder="Enter work email"
               placeholderTextColor="#94A3B8"
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
-              style={[styles.textInput, styles.readOnlyTextInput, webTextInputReset]}
+              textContentType="emailAddress"
+              autoComplete="email"
+              style={[styles.textInput, webTextInputReset]}
             />
           </View>
-          <Text style={styles.readOnlyHint}>
-            Email changes require a verified Supabase email update flow.
-          </Text>
           <PrimaryButton
             label="Update Profile"
             onPress={() => {
@@ -6992,6 +6662,15 @@ export default function App() {
         <Text style={styles.riskHeading}>
           Please answer the following{"\n"}risk assessment questions
         </Text>
+        {currentRiskCriteriaLoading ? (
+          <ActivityIndicator color={palette.blue} />
+        ) : currentRiskCriteriaError ? (
+          <View style={[styles.noteBlue, styles.actionAlert]}>
+            <Text style={[styles.noteText, styles.actionBodyRed]}>
+              {currentRiskCriteriaError}
+            </Text>
+          </View>
+        ) : null}
         {riskCriterionGroups.map((group) => (
           <View key={group.criterionName} style={styles.riskRow}>
             <Text style={styles.riskQuestion}>{group.criterionName}</Text>
@@ -7023,7 +6702,11 @@ export default function App() {
             </View>
           </View>
         ))}
-        <PrimaryButton label="View Result" onPress={classify} />
+        <PrimaryButton
+          label="View Result"
+          onPress={classify}
+          disabled={!activeRiskCriteria || currentRiskCriteriaLoading}
+        />
       </View>,
       `${selectedSite.code} - ${setting} - ${acquisition}`,
     );
@@ -7035,7 +6718,7 @@ export default function App() {
           <AppIcon name={riskIconName} size={48} color={riskColor} style={styles.classShield} />
           <View>
             <Text style={[styles.classType, { color: riskColor }]}>
-              {riskType.toUpperCase()}
+              {riskType?.toUpperCase() ?? "UNCLASSIFIED"}
             </Text>
             <Text style={[styles.classLabel, { color: riskColor }]}>
               {riskLabel}
@@ -7050,13 +6733,13 @@ export default function App() {
           <View key={group.criterionName} style={styles.summaryLineRow}>
             <AppIcon
               name={
-                riskAnswers[group.criterionName] === groundTruthRiskCriteria[group.criterionName]["1"]
+                riskAnswers[group.criterionName] === activeRiskCriteria?.[group.criterionName]["1"]
                   ? "check"
                   : "alert"
               }
               size={14}
               color={
-                riskAnswers[group.criterionName] === groundTruthRiskCriteria[group.criterionName]["1"]
+                riskAnswers[group.criterionName] === activeRiskCriteria?.[group.criterionName]["1"]
                   ? palette.green
                   : palette.orange
               }
@@ -7090,14 +6773,14 @@ export default function App() {
           ) : null}
         </View>
         <Text style={styles.resultSection}>Recommended Treatment Protocol</Text>
-        {sourceRecommendationLoading ? (
+        {protocolFlowLoading ? (
           <View style={styles.noteBlue}>
             <Text style={styles.noteText}>Loading approved treatment data...</Text>
           </View>
         ) : selectedSourceRecommendations.length === 0 ? (
           <View style={[styles.noteBlue, styles.actionAlert]}>
             <Text style={[styles.noteText, styles.actionBodyRed]}>
-              {sourceRecommendationError || failClosedMessage}
+              {protocolFlowMessage || failClosedMessage}
             </Text>
           </View>
         ) : (
@@ -7113,10 +6796,12 @@ export default function App() {
             ) : null}
           </View>
         )}
-        <PrimaryButton
-          label="View Details"
-          onPress={() => go("protocolDetails")}
-        />
+        {canUseProtocolActions ? (
+          <PrimaryButton
+            label="View Details"
+            onPress={() => go("protocolDetails")}
+          />
+        ) : null}
       </View>,
       "Protocol Result",
       false,
@@ -7144,14 +6829,14 @@ export default function App() {
         </View>
         <View>
           <Text style={styles.detailsTitle}>Recommended Treatment Protocol</Text>
-          {sourceRecommendationLoading ? (
+          {protocolFlowLoading ? (
             <View style={styles.noteBlue}>
               <Text style={styles.noteText}>Loading approved treatment data...</Text>
             </View>
           ) : selectedSourceRecommendations.length === 0 ? (
             <View style={[styles.noteBlue, styles.actionAlert]}>
               <Text style={[styles.noteText, styles.actionBodyRed]}>
-                {sourceRecommendationError || failClosedMessage}
+                  {protocolFlowMessage || failClosedMessage}
               </Text>
             </View>
           ) : (
@@ -7193,10 +6878,12 @@ export default function App() {
             response are available.
           </Text>
         </View>
-        <PrimaryButton
-          label="Continue to Actions"
-          onPress={() => go("actions")}
-        />
+        {canUseProtocolActions ? (
+          <PrimaryButton
+            label="Continue to Actions"
+            onPress={() => go("actions")}
+          />
+        ) : null}
       </View>,
       "Protocol Details",
       false,
@@ -7205,6 +6892,15 @@ export default function App() {
   const Actions = () =>
     appShell(
       <View>
+        {!canUseProtocolActions ? (
+          <View style={[styles.noteBlue, styles.actionAlert]}>
+            <Text style={[styles.noteText, styles.actionBodyRed]}>
+              {protocolFlowMessage || failClosedMessage}
+            </Text>
+            <PrimaryButton label="Back to Scenario" onPress={() => go("infectionSite")} />
+          </View>
+        ) : (
+          <>
         {actionMessage ? (
           <View style={styles.successBanner}>
             <Text style={styles.successBannerText}>{actionMessage}</Text>
@@ -7254,6 +6950,8 @@ export default function App() {
             onPress={() => go("protocolDetails")}
           />
         </View>
+          </>
+        )}
       </View>,
       "Actions",
       false,
@@ -7500,7 +7198,7 @@ export default function App() {
         <View style={styles.reportSection}>
           <Text style={styles.detailsTitle}>Doctor</Text>
           <Text style={styles.infoCardBody}>
-            {reportCase.doctorName || "Authenticated doctor"}
+            {reportCase.doctorName || "Doctor not specified"}
           </Text>
           <Text style={styles.infoCardBody}>{reportCase.doctorEmail}</Text>
         </View>
@@ -7554,11 +7252,11 @@ export default function App() {
       <View>
         <View style={styles.infoCard}>
           <Text style={styles.infoCardTitle}>Stewardship Alert Details</Text>
-          {sourceRecommendationLoading ? (
+          {protocolFlowLoading ? (
             <ActivityIndicator color={palette.blue} />
           ) : selectedSourceRecommendations.length === 0 ? (
             <Text style={styles.infoCardBody}>
-              {sourceRecommendationError || failClosedMessage}
+              {protocolFlowMessage || failClosedMessage}
             </Text>
           ) : !shouldShowStewardshipAlert ? (
             <Text style={styles.infoCardBody}>
@@ -7597,8 +7295,6 @@ export default function App() {
 
   const renderScreen = () => {
     switch (screen) {
-      case "login":
-        return Login();
       case "doctorDetails":
         return DoctorDetails();
       case "dashboard":
@@ -7657,21 +7353,20 @@ export default function App() {
     }
   };
 
-  if (!sessionReady) {
+  if (!appReady) {
     return (
-      <SafeAreaView style={[styles.safe, styles.authSafe]}>
+      <SafeAreaView style={styles.safe}>
         <StatusBar style="dark" />
-        <View style={[styles.centerScreen, { minHeight: contentMinHeight }]}>
-          <LogoHeader />
+        <View style={[styles.loadingScreen, { minHeight: contentMinHeight }]}>
           <ActivityIndicator color={palette.blue} />
-          <Text style={styles.infoText}>Restoring secure session...</Text>
+          <Text style={styles.infoText}>Loading application...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safe, isAuthScreen && styles.authSafe]}>
+    <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         style={styles.keyboard}
@@ -7684,7 +7379,6 @@ export default function App() {
               minHeight: contentMinHeight,
               paddingVertical: width > 600 ? 26 : 10,
             },
-            isAuthScreen && styles.authStage,
           ]}
           showsVerticalScrollIndicator={false}
         >
@@ -7692,7 +7386,6 @@ export default function App() {
             style={[
               styles.phone,
               { width: phoneWidth },
-              isAuthScreen && styles.authPhone,
             ]}
           >
             {renderScreen()}
@@ -7706,7 +7399,6 @@ export default function App() {
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: p.bg },
-    authSafe: { backgroundColor: "#F7FBFF" },
     keyboard: { flex: 1 },
     stage: {
       flexGrow: 1,
@@ -7714,7 +7406,6 @@ const makeStyles = (p: Palette) =>
       justifyContent: "center",
       paddingHorizontal: 14,
     },
-    authStage: { backgroundColor: "#F7FBFF" },
     phone: {
       minHeight: 720,
       borderRadius: 34,
@@ -7726,85 +7417,12 @@ const makeStyles = (p: Palette) =>
       shadowRadius: 34,
       elevation: 8,
     },
-    authPhone: { backgroundColor: "#F7FBFF" },
-    centerScreen: {
+    loadingScreen: {
       flex: 1,
-      minHeight: 720,
-      paddingHorizontal: 26,
-      paddingTop: 42,
-      paddingBottom: 34,
-      backgroundColor: "#F7FBFF",
-    },
-    loginPanel: {
-      flex: 1,
-      justifyContent: "center",
-      paddingBottom: 36,
-    },
-    brand: { alignItems: "center", marginBottom: 22 },
-    hospitalRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 11,
-      marginBottom: 34,
-    },
-    logoCircle: {
-      width: 58,
-      height: 58,
-      borderRadius: 29,
-      borderWidth: 2,
-      borderColor: "#0057B8",
-      backgroundColor: "#EAF4FF",
       alignItems: "center",
       justifyContent: "center",
-    },
-    logoText: { color: "#0057B8", fontSize: 18, fontWeight: "900" },
-    hospitalName: {
-      color: "#004AA3",
-      fontSize: 13,
-      lineHeight: 17,
-      fontWeight: "900",
-    },
-    shield: {
-      width: 62,
-      height: 62,
-      borderRadius: 22,
-      borderWidth: 1,
-      borderColor: "#DDEAF7",
-      backgroundColor: "#EEF6FF",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 12,
-    },
-    shieldText: { color: "#0057B8", fontSize: 26, fontWeight: "900" },
-    appTitle: {
-      color: "#004AA3",
-      fontSize: 28,
-      lineHeight: 32,
-      fontWeight: "900",
-      textAlign: "center",
-    },
-    subtitle: {
-      color: "#004AA3",
-      fontSize: 12,
-      lineHeight: 18,
-      fontWeight: "700",
-      marginTop: 5,
-    },
-    authTitle: {
-      color: "#0B2850",
-      fontSize: 24,
-      lineHeight: 30,
-      fontWeight: "900",
-      textAlign: "center",
-      marginBottom: 4,
-    },
-    authSubtitle: {
-      color: "#5C6F86",
-      fontSize: 13,
-      lineHeight: 19,
-      fontWeight: "800",
-      textAlign: "center",
-      marginBottom: 18,
+      gap: 12,
+      paddingHorizontal: 24,
     },
     inputWrap: {
       height: 52,
@@ -7835,117 +7453,12 @@ const makeStyles = (p: Palette) =>
       elevation: 0,
       includeFontPadding: false,
     },
-    keepRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 9,
-      marginTop: 2,
-      marginBottom: 8,
-    },
-    checkbox: {
-      width: 18,
-      height: 18,
-      borderRadius: 5,
-      borderWidth: 1,
-      borderColor: "#DDEAF7",
-      backgroundColor: "#FFFFFF",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    checkboxActive: {
-      borderColor: p.blue,
-      backgroundColor: p.blue,
-    },
-    checkboxMark: {
-      color: "#FFFFFF",
-      fontSize: 12,
-      lineHeight: 16,
-      fontWeight: "900",
-    },
-    keepText: {
-      color: "#0B2850",
-      fontSize: 12,
-      lineHeight: 16,
-      fontWeight: "800",
-    },
-    otpHeaderRow: {
-      height: 34,
-      justifyContent: "center",
-      marginBottom: 8,
-    },
-    otpBack: {
-      color: "#0B2850",
-      fontSize: 32,
-      lineHeight: 34,
-      fontWeight: "500",
-    },
-    otpTitle: {
-      color: "#0B2850",
-      fontSize: 24,
-      lineHeight: 31,
-      fontWeight: "900",
-      textAlign: "center",
-      marginBottom: 18,
-    },
-    otpSubtitle: {
-      color: "#0B2850",
-      fontSize: 14,
-      lineHeight: 22,
-      fontWeight: "700",
-      textAlign: "center",
-      marginBottom: 24,
-    },
-    otpRow: {
-      flexDirection: "row",
-      justifyContent: "center",
-      gap: 9,
-      marginBottom: 20,
-    },
-    otpBox: {
-      width: 42,
-      height: 48,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: "#C8D8EA",
-      backgroundColor: "#FFFFFF",
-      color: "#0B2850",
-      textAlign: "center",
-      fontSize: 19,
-      fontWeight: "900",
-      padding: 0,
-    },
-    resendText: {
-      color: "#0B2850",
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "700",
-      textAlign: "center",
-      marginBottom: 22,
-    },
     errorBox: {
       borderRadius: 8,
       backgroundColor: "#FEE2E2",
       paddingHorizontal: 12,
       paddingVertical: 9,
       marginBottom: 8,
-    },
-    authLinkRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      marginTop: 14,
-    },
-    authMuted: {
-      color: "#5C6F86",
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "700",
-    },
-    authLink: {
-      color: p.blue,
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "900",
     },
     errorText: {
       color: p.red,
@@ -7969,14 +7482,6 @@ const makeStyles = (p: Palette) =>
       lineHeight: 16,
       fontWeight: "800",
       textAlign: "center",
-    },
-    cooldownText: {
-      color: p.muted,
-      fontSize: 12,
-      lineHeight: 16,
-      fontWeight: "800",
-      textAlign: "center",
-      marginBottom: 8,
     },
     primaryButton: {
       minHeight: 52,
@@ -8003,57 +7508,6 @@ const makeStyles = (p: Palette) =>
       letterSpacing: 0.2,
       textAlign: "center",
     },
-    googleButton: {
-      minHeight: 56,
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: "#C8D8EA",
-      backgroundColor: "#FFFFFF",
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 12,
-      paddingHorizontal: 18,
-      paddingVertical: 13,
-      marginTop: 6,
-      shadowColor: p.shadow,
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.1,
-      shadowRadius: 18,
-      elevation: 3,
-    },
-    googleBadge: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      borderWidth: 1,
-      borderColor: "#DDEAF7",
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "#F8FBFF",
-    },
-    googleBadgeText: {
-      color: "#2563EB",
-      fontSize: 16,
-      lineHeight: 20,
-      fontWeight: "900",
-    },
-    googleButtonText: {
-      color: "#0B2850",
-      fontSize: 15,
-      lineHeight: 21,
-      fontWeight: "800",
-      textAlign: "center",
-    },
-    doctorOnly: {
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 8,
-      marginTop: 18,
-    },
-    smallShield: { color: "#0057B8", fontSize: 14, fontWeight: "900" },
-    doctorText: { color: "#004AA3", fontSize: 13, fontWeight: "800" },
     infoBox: {
       flexDirection: "row",
       alignItems: "center",
@@ -8157,21 +7611,6 @@ const makeStyles = (p: Palette) =>
       marginBottom: 8,
       marginTop: 10,
     },
-    readOnlyInputWrap: {
-      backgroundColor: "#F1F6FC",
-      borderColor: "#CADBEC",
-    },
-    readOnlyTextInput: {
-      color: p.muted,
-    },
-    readOnlyHint: {
-      color: p.muted,
-      fontSize: 11,
-      lineHeight: 16,
-      fontWeight: "700",
-      marginTop: -6,
-      marginBottom: 14,
-    },
     footerRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -8180,11 +7619,6 @@ const makeStyles = (p: Palette) =>
       marginTop: 34,
     },
     versionText: { color: "#5C6F86", fontSize: 10, fontWeight: "700" },
-    bundleMarkerText: {
-      height: 0,
-      opacity: 0,
-      overflow: "hidden",
-    },
     offlineDot: {
       width: 6,
       height: 6,

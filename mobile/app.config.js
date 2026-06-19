@@ -1,8 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 
-const { expo } = require("./app.json");
-
 const dotenvFiles = [
   path.resolve(__dirname, "../.env"),
   path.resolve(__dirname, "../.env.local"),
@@ -59,15 +57,13 @@ for (const [key, value] of Object.entries(fileEnv)) {
   }
 }
 
-module.exports = {
-  expo: {
-    ...expo,
-    extra: {
-      ...(expo.extra ?? {}),
-      supabaseEnv: {
-        hasUrl: Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL),
-        hasAnonKey: Boolean(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY),
-      },
+module.exports = ({ config }) => ({
+  ...config,
+  extra: {
+    ...(config.extra ?? {}),
+    supabaseEnv: {
+      hasUrl: Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL),
+      hasAnonKey: Boolean(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY),
     },
   },
-};
+});

@@ -1,21 +1,20 @@
-ile filter logic, the "no match → no recommendation, show insufficient-data message" path must still trigger.
-- **Don't put secrets in the mobile bundle.** The Expo build can only see `EXPO_PUBLIC_*` vars. Service-role keys, JWT secrets, DB URLs must never a# Hinduja Antibiotic Guide — Claude Code Context
+# Hinduja Antibiotic Guide — Claude Code Context
 
 This file is auto-loaded as context for every Claude Code session in this repo. Read it first.
 
 ## 1. Project Overview
 
-A clinical decision support platform for antibiotic stewardship at Hinduja Hospital. Clinicians enter an infection site, care setting (ICU/Ward), acquisition mode (Community-/Hospital-acquired), and risk factors; the system returns a risk classification (Type 1/2/3) and recommended therapy with stewardship alerts.
+A clinical decision support platform for antibiotic stewardship at Hinduja Hospital. Clinicians enter an infection site, care setting (ICU/Ward), acquisition mode (Community-/Hospital-acquired), and risk factors; the system returns a risk classification (Type 1/2/3) and source-backed recommended therapy with stewardship alerts.
 
 **Two surfaces:** a Python FastAPI microservices backend (currently mostly scaffold/demo) and an Expo React Native mobile app that reads approved clinical content directly from Supabase Postgres.
 
-**Safety posture — non-negotiable:** the system is **fail-closed**. If no approved recommendation exists for the inputs, the app shows an "insufficient validated data" message and prompts ID consult — it does **not** guess. All clinical content carries `review_status` (`draft → in_review → approved → retired`); doctors only see `approved` rows via Supabase RLS.
+**Safety posture — non-negotiable:** the system is **fail-closed**. If no approved recommendation exists for the inputs, the app shows an "insufficient validated data" message and prompts ID consult — it does **not** guess. All clinical content carries `review_status` (`draft → in_review → approved → retired`); doctors only see `approved` rows that belong to an **active, non-expired dataset release**, via Supabase RLS.
 
 ## 2. Tech Stack
 
 **Backend (Python 3.11):** FastAPI 0.111+, Uvicorn, SQLAlchemy 2 async, asyncpg, Alembic, Redis 5 (OTP + event bus via streams), python-jose + bcrypt (JWT), structlog, Prometheus + OpenTelemetry, ReportLab + qrcode. See [pyproject.toml](pyproject.toml).
 
-**Mobile (TypeScript):** Expo 54, React 19, React Native 0.81, `@supabase/supabase-js` 2.105+, `expo-secure-store`, `@react-native-async-storage/async-storage`. See [mobile/package.json](mobile/package.json).
+**Mobile (TypeScript):** Expo 54, React 19, React Native 0.81, a read-only PostgREST client, and `@react-native-async-storage/async-storage`. See [mobile/package.json](mobile/package.json).
 
 **Infra:** PostgreSQL 16 (Supabase-hosted in prod, local in dev), Redis 7-alpine, NGINX 1.27-alpine gateway, Docker Compose for local, Kubernetes/Helm under [infra/](infra/) for prod.
 
@@ -26,49 +25,54 @@ services/       9 independently deployable FastAPI services (mostly scaffolds to
 shared/         Shared Python library: clinical rules, schemas, auth, events, DB, ML, search
 mobile/         Expo React Native app — entire UI is in mobile/src/AppRoot.tsx
 supabase/       Postgres schema migrations for the Supabase project
-rules/          JSON-driven clinical protocol matrices (hot-swappable without redeploy)
+Hindujacsv/     The 21 source CSVs — the authoritative clinical content (SHA-pinned by a manifest)
+scripts/hinduja_csv/  Schema-aware CSV adapters + bundle validation (source of truth pipeline)
+rules/          Retired weighted-protocol JSON stub (kept only as a tombstone; not a data source)
 alembic/        Backend DB migrations (separate from Supabase migrations)
 infra/          Dockerfile, NGINX config, Kubernetes/Helm, OpenTelemetry monitoring
-tests/          pytest suite (currently focused on the rules engine)
+tests/          pytest suite (CSV bundle fidelity, versioned-release flow, risk classifier, engine retirement)
 docs/           Architecture notes, API flow, seed data, prior audits
-.github/        CI workflow (ruff + pytest only)
+.github/        CI workflow (ruff + pytest)
 ```
 
 ## 4. Architecture at a Glance
 
 **Three layers, loosely coupled:**
 
-1. **Backend microservices** under [services/](services/) — 9 FastAPI apps fronted by NGINX gateway on `:8080/api/v1`. Inter-service comms via Redis event bus ([shared/events/bus.py](shared/events/bus.py)). **Important:** every service `main.py` is currently 37–120 lines of demo/scaffold code with hardcoded sample data — treat them as architectural placeholders, not implementations. Services: `auth-service`, `protocol-engine`, `antibiogram-service`, `guideline-service`, `case-service`, `report-service`, `alert-service`, `share-service`, `user-service`.
+1. **Backend microservices** under [services/](services/) — 9 FastAPI apps fronted by NGINX gateway on `:8080/api/v1`. Inter-service comms via Redis event bus ([shared/events/bus.py](shared/events/bus.py)). **Important:** every service `main.py` is currently 37–120 lines of demo/scaffold code with hardcoded sample data — treat them as architectural placeholders, not implementations. The legacy weighted protocol-engine endpoints are now **retired** (HTTP 410); see §5. Services: `auth-service`, `protocol-engine`, `antibiogram-service`, `guideline-service`, `case-service`, `report-service`, `alert-service`, `share-service`, `user-service`.
 
-2. **Mobile app** — the entire UI lives in [mobile/src/AppRoot.tsx](mobile/src/AppRoot.tsx) (~5,446 lines). It's a screen-router state machine (no React Navigation); the `currentScreen` state determines which view renders. The mobile app talks **directly to Supabase** for clinical content reads and auth; the FastAPI backend is not currently the data source for the mobile app.
+2. **Mobile app** — the entire UI lives in [mobile/src/AppRoot.tsx](mobile/src/AppRoot.tsx). It's a screen-router state machine (no React Navigation); the current screen state determines which view renders. The mobile app talks **directly to Supabase** for approved public clinical-content reads. It has no sign-in flow; profile details are local personalization only. The main Protocol Result reads the exact-key view `approved_current_protocol_scenarios_with_source` via [mobile/src/protocolScenario.ts](mobile/src/protocolScenario.ts).
 
-3. **Supabase** — Postgres schema in [supabase/migrations/001_clinical_decision_support.sql](supabase/migrations/001_clinical_decision_support.sql). RLS policies gate every clinical table to `review_status='approved'` for doctors; reviewers/admins see all. Audit triggers capture before/after JSON snapshots on every mutation.
+3. **Supabase** — base schema in [supabase/migrations/20260516_source_clinical_ingestion.sql](supabase/migrations/20260516_source_clinical_ingestion.sql) (source files/spans/recommendations) and [supabase/migrations/20260526_ground_truth_sections.sql](supabase/migrations/20260526_ground_truth_sections.sql) (the 16 section tables); the versioned release flow is in [supabase/migrations/20260619_versioned_csv_release_flow.sql](supabase/migrations/20260619_versioned_csv_release_flow.sql) and public read access in [supabase/migrations/20260619_zz_public_approved_clinical_read.sql](supabase/migrations/20260619_zz_public_approved_clinical_read.sql). RLS gates every clinical table to `review_status='approved'` **and** an active, non-expired `dataset_release`; reviewers/admins see all. Audit triggers capture before/after JSON snapshots on every mutation.
 
 ## 5. Clinical Domain & Data Flow
 
-**Risk scoring engine** — [shared/clinical/rules.py](shared/clinical/rules.py):
+**Source of truth — the SHA-pinned CSV bundle.** Clinical content flows from the 21 files in [Hindujacsv/](Hindujacsv/) through schema-aware adapters, not from any hardcoded Python/TS table:
 
-- `JsonRuleEvaluator` ([rules.py:59](shared/clinical/rules.py#L59)) — declarative, JSON-driven. **No clinical pathways hardcoded in Python.**
-- Inputs: `infection_code`, `setting` (`ICU`|`Ward`), `acquisition` (`Community-acquired`|`Hospital-acquired`), list of `{key, value: bool}` risk factors.
-- Scoring: each true risk factor adds its weight from `rules.risk_weights`; setting and acquisition add context weights; total score is bucketed by `thresholds` into `Type 1 / 2 / 3`.
-- Matrix lookup: `recommendation_matrix[infection_code][setting][acquisition][risk_type]`. **If empty, fails closed** ([rules.py:96-119](shared/clinical/rules.py#L96)) — returns `insufficient_validated_data=True`, empty therapy list, ID consult required.
-- Stewardship alerts triggered automatically for Type 3 and for carbapenem recommendations ([rules.py:155-165](shared/clinical/rules.py#L155)).
+```text
+Hindujacsv/*.csv
+  → scripts/hinduja_csv/adapters.py + bundle.py   (6 adapters; SHA + byte-size + count contracts; review flags; fail-closed candidate)
+  → scripts/import_hinduja_csv_bundle_to_supabase.py   (writes a pending_review dataset release; NO --approve switch)
+  → supabase/migrations/20260619_versioned_csv_release_flow.sql   (versioned releases, activation guard trigger, expiry-gated RLS)
+  → approved_current_protocol_scenarios_with_source / approved_current_patient_risk_criteria_with_source
+  → mobile/src/protocolScenario.ts (exact 4-field key) → AppRoot Protocol Result
+```
 
-**Rule data** — [rules/hinduja_protocols.json](rules/hinduja_protocols.json):
+- **Risk classification** — [shared/clinical/antibiogram_risk.py](shared/clinical/antibiogram_risk.py) and [mobile/src/antibiogramRisk.ts](mobile/src/antibiogramRisk.ts): exact-match against the reviewed Patient Risk Stratification criteria. Type 1 requires **ALL** criteria at level 1; Type 2/3 trigger on **ANY ONE** criterion; precedence Type 3 > Type 2 > Type 1. Missing/partial/invalid input → `insufficient/manual_review` (fail-closed; no default Type 2).
+- **Scenario coverage** — BSI, UTI, RTI, IAI are sourced from CSV therapy sheets 03–18 (ICU/wards × community-/hospital-acquired × Type 1/2/3). The **8 hospital-acquired Type-1 cells are intentionally blank** → `availability_status='no_source_therapy'` (fail-closed, never an invented placeholder). CNS/SSTI/FN are not yet sourced as risk-typed scenarios.
+- **Fail-closed lookup** — the exact 4-field key (`infection_type.location.acquisition.risk_type`) returns `found` / `no_source_therapy` / `expired` / `missing_scenario`; there is **no fuzzy fallback** on the protocol-result path.
 
-- Only **UTI** has populated pathways. **BSI, RTI, IAI, CNS, SSTI, FN are empty placeholders by design** — fail-closed until clinical reviewers populate them.
+**Retired weighted engine.** The old `JsonRuleEvaluator` ([shared/clinical/rules.py](shared/clinical/rules.py)) and [rules/hinduja_protocols.json](rules/hinduja_protocols.json) are **retired** (the JSON is a `{"status":"retired"}` tombstone; the class carries a do-not-use docstring and is never instantiated). `POST /api/v1/protocols/evaluate` and `GET /api/v1/protocols/result/{id}` now return **HTTP 410 GONE** ([services/protocol-engine/app/main.py](services/protocol-engine/app/main.py)). Do **not** reintroduce weighted scoring — it contradicted the reviewed risk criteria.
 
-**Evaluation API** — `POST /api/v1/protocols/evaluate` in [services/protocol-engine/app/main.py:73](services/protocol-engine/app/main.py#L73). On evaluation, publishes `protocol.generated` (and `alert.triggered` if alerts present) to the Redis event bus.
+**Tests** — [tests/test_hinduja_csv_bundle.py](tests/test_hinduja_csv_bundle.py) and [tests/test_versioned_protocol_flow_static.py](tests/test_versioned_protocol_flow_static.py) pin source fidelity, blank-cell preservation, exact-key selection, and engine retirement. [tests/test_protocol_engine.py](tests/test_protocol_engine.py) asserts the 410 retirement.
 
-**Tests** — [tests/test_protocol_engine.py](tests/test_protocol_engine.py) exercises Type 2 happy path, Type 3 alert path, and the fail-closed pathway. Tests read the live JSON file, so rules-data edits are validated by CI.
+**DB-backed clinical metadata** — the section tables (ICMR guidelines, duration, antibiogram sheets/pathogen/empiric/risk/footnotes, synergy, antifungal, stewardship/AMA pearls, perioperative) live in [supabase/migrations/20260526_ground_truth_sections.sql](supabase/migrations/20260526_ground_truth_sections.sql). Every row has `review_status`, `reviewer_id`, and a `dataset_release_id`.
 
-**DB-backed clinical metadata** — [supabase/migrations/001_clinical_decision_support.sql](supabase/migrations/001_clinical_decision_support.sql) defines `antibiotics`, `infections`, `treatment_guidelines`, `guideline_antibiotics`, `renal_adjustments`, `hepatic_adjustments`, `pregnancy_lactation_safety`, `contraindications`, `allergy_cross_reactivity`, `adverse_effects`, `drug_interactions`, `references`. Every row has `review_status`, `last_reviewed_at`, `reviewer_id`.
+## 6. Access and Authentication
 
-## 6. Auth Flow
+**Mobile (live):** no authentication method. The app opens directly, reads only approved public Supabase views, and stores optional doctor profile details in local device storage. Local profile data does not authorize access.
 
-**Mobile (live):** Supabase email OTP via [mobile/src/supabase.ts](mobile/src/supabase.ts). Storage is platform-aware — `localStorage` on web, `expo-secure-store` on native. `auth.signInWithOtp({ shouldCreateUser: true })` sends the magic-link / OTP; the app uses 6-digit OTP entry. Session restoration + `onAuthStateChange` wired into [mobile/src/AppRoot.tsx](mobile/src/AppRoot.tsx).
-
-**Backend (scaffold):** [services/auth-service/app/main.py](services/auth-service/app/main.py) implements its own OTP + JWT flow using Redis for hashes and `python-jose` for tokens — but it hardcodes `DEMO_USER_ID` and returns `Dr. Ananya Sharma` as the profile ([auth-service/app/main.py:32-33](services/auth-service/app/main.py#L32), [:106-115](services/auth-service/app/main.py#L106)). The mobile app does not call this; it goes directly to Supabase. Decide before launch: keep Supabase-only, or finish the FastAPI auth path.
+**Backend (scaffold):** [services/auth-service/app/main.py](services/auth-service/app/main.py) retains a separate OTP + JWT scaffold using Redis and `python-jose`. It is not connected to the mobile app and contains no federated sign-in integration.
 
 ## 7. Common Commands
 
@@ -82,63 +86,61 @@ docker compose up --build
 pytest -q
 ruff check .
 
+# Validate the source CSV bundle (hashes, schemas, fidelity counts)
+python scripts/hinduja_csv_bundle.py validate
+# Preview the pending-review import (no DB writes)
+python scripts/import_hinduja_csv_bundle_to_supabase.py dry-run
+
 # Mobile
 cd mobile && cp .env.example .env.local
 npm install
 npm run web         # or: npm run ios / npm run android
 
-# Supabase migration (run before first mobile use against a real project)
-# Apply supabase/migrations/001_clinical_decision_support.sql via Supabase CLI or dashboard.
-
-# Alembic (backend Postgres, separate from Supabase)
-alembic upgrade head
+# Supabase migrations (apply the whole supabase/migrations/ folder in filename order via CLI or dashboard)
 ```
 
-Sample evaluation curl is in [README.md](README.md#L48-L63).
+The README's "Validate the source bundle" section has the runnable example.
 
 ## 8. Environment Variables
 
-**Backend** — see [.env.example](.env.example): `APP_ENV`, `PROJECT_NAME`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL` (asyncpg), `REDIS_URL`, `JWT_SECRET`, `JWT_ISSUER`, `ACCESS_TOKEN_MINUTES`, `REFRESH_TOKEN_DAYS`, `OTP_TTL_SECONDS`, `ALLOWED_ORIGINS`, `PDF_STORAGE_PATH`, `EVENT_STREAM`.
+**Backend** — see [.env.example](.env.example): `APP_ENV`, `PROJECT_NAME`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL` (asyncpg), `REDIS_URL`, `JWT_SECRET`, `JWT_ISSUER`, `ACCESS_TOKEN_MINUTES`, `REFRESH_TOKEN_DAYS`, `OTP_TTL_SECONDS`, `ALLOWED_ORIGINS`, `PDF_STORAGE_PATH`, `EVENT_STREAM`. The importer additionally reads `SUPABASE_DB_URL` (Postgres connection string) for `import-pending`.
 
 **Mobile** — see [mobile/.env.example](mobile/.env.example): only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (anon key is intentionally public-safe; **never** put the service-role key in the mobile build). Loaded via [mobile/app.config.js](mobile/app.config.js), which reads `.env`, `.env.local`, and the parent `.env.local` in that order.
 
 ## 9. CI/CD
 
-[.github/workflows/ci.yml](.github/workflows/ci.yml) — single job on push/PR: install backend deps, `ruff check .`, `pytest -q`. **No Docker builds, no Expo builds, no migration runners, no deploy automation.** Adding these is an open task.
+[.github/workflows/ci.yml](.github/workflows/ci.yml) — single backend job on push/PR: install deps, `ruff check .`, `python scripts/hinduja_csv_bundle.py validate` (CSV source-bundle fidelity), `pytest`, `pip-audit`, and `docker compose build`. **No Expo builds, no migration runners, no deploy automation, no live-DB integration tests** (the [tests/integration/](tests/integration/) scaffold runs only when `HINDUJA_TEST_DATABASE_URL` is set). Adding these is an open task.
 
 ## 10. Key Files for Navigation
 
 | Concern | File | Lines |
 |---|---|---|
-| Rules engine core | [shared/clinical/rules.py](shared/clinical/rules.py) | 59–175 |
-| Clinical rule data | [rules/hinduja_protocols.json](rules/hinduja_protocols.json) | full file |
-| Protocol eval API | [services/protocol-engine/app/main.py](services/protocol-engine/app/main.py) | 73–89 |
-| Backend auth scaffold | [services/auth-service/app/main.py](services/auth-service/app/main.py) | full file |
-| Mobile screen router | [mobile/src/AppRoot.tsx](mobile/src/AppRoot.tsx) | ~40–68 (cases) |
-| Mobile clinical fetch | [mobile/src/AppRoot.tsx](mobile/src/AppRoot.tsx) | ~1235–1328 |
-| Supabase client | [mobile/src/supabase.ts](mobile/src/supabase.ts) | full file |
-| DB schema + RLS | [supabase/migrations/001_clinical_decision_support.sql](supabase/migrations/001_clinical_decision_support.sql) | full file |
-| Rules engine tests | [tests/test_protocol_engine.py](tests/test_protocol_engine.py) | full file |
-| Local stack | [docker-compose.yml](docker-compose.yml) | full file |
+| CSV adapters / bundle | [scripts/hinduja_csv/adapters.py](scripts/hinduja_csv/adapters.py), [bundle.py](scripts/hinduja_csv/bundle.py) | full files |
+| CSV source manifest | [docs/ground_truth/hinduja_csv_manifest.json](docs/ground_truth/hinduja_csv_manifest.json) | full file |
+| Pending-review importer | [scripts/import_hinduja_csv_bundle_to_supabase.py](scripts/import_hinduja_csv_bundle_to_supabase.py) | full file |
+| Versioned release flow | [supabase/migrations/20260619_versioned_csv_release_flow.sql](supabase/migrations/20260619_versioned_csv_release_flow.sql) | full file |
+| Public approved-read RLS | [supabase/migrations/20260619_zz_public_approved_clinical_read.sql](supabase/migrations/20260619_zz_public_approved_clinical_read.sql) | full file |
+| Risk classifier | [shared/clinical/antibiogram_risk.py](shared/clinical/antibiogram_risk.py), [mobile/src/antibiogramRisk.ts](mobile/src/antibiogramRisk.ts) | full files |
+| Mobile exact-key scenario loader | [mobile/src/protocolScenario.ts](mobile/src/protocolScenario.ts) | full file |
+| Retired engine (tombstone) | [services/protocol-engine/app/main.py](services/protocol-engine/app/main.py), [rules/hinduja_protocols.json](rules/hinduja_protocols.json) | full files |
+| Base schema + RLS | [supabase/migrations/20260516_source_clinical_ingestion.sql](supabase/migrations/20260516_source_clinical_ingestion.sql), [20260526_ground_truth_sections.sql](supabase/migrations/20260526_ground_truth_sections.sql) | full files |
+| Bundle / flow tests | [tests/test_hinduja_csv_bundle.py](tests/test_hinduja_csv_bundle.py), [tests/test_versioned_protocol_flow_static.py](tests/test_versioned_protocol_flow_static.py) | full files |
 | CI | [.github/workflows/ci.yml](.github/workflows/ci.yml) | full file |
-| Detailed audit | [docs/PROJECT_AUDIT_2026-05.md](docs/PROJECT_AUDIT_2026-05.md) | companion to this file |
 
 ## 11. Known Gaps & Production Blockers
 
-Short list — see [docs/PROJECT_AUDIT_2026-05.md](docs/PROJECT_AUDIT_2026-05.md) for severity and remediation detail.
-
-- **Clinical content not entered.** Only UTI has rule pathways; all DB clinical tables need reviewer-approved rows with source references before any infection beyond UTI returns recommendations.
-- **FastAPI services are scaffolds.** Each `services/*/app/main.py` is 37–120 lines of demo handlers with hardcoded sample data (`DEMO_USER_ID`, `Dr. Ananya Sharma`, seeded sensitivity tables, hardcoded alerts).
+- **Clinical content not yet activated.** The CSV bundle imports as `pending_review`; no `dataset_release` is `active` until a clinical reviewer signs and activates one. Until then every doctor-facing view correctly returns nothing (fail-closed by design).
+- **Legacy `clinical_recommendations` path.** This older table + its `approved_clinical_recommendations_with_source` view are NOT release/expiry-gated like the rest, and are still read by some mobile Guideline reference sections — flagged for retirement/gating (see the dated CSV-flow audit/plan).
+- **FastAPI services are scaffolds.** Each `services/*/app/main.py` is 37–120 lines of demo handlers with hardcoded sample data; the protocol-engine evaluator is intentionally retired (410).
 - **Mobile bypasses backend.** The app reads Supabase directly, not the FastAPI gateway. Pick one architecture before scaling.
-- **Supabase OTP not production-configured.** Email templates, redirect URLs, rate limits need dashboard setup.
-- **No admin / reviewer UI.** There is no way to enter, diff, or approve clinical content through the app — must be done via SQL today.
-- **CI is minimal.** No frontend/Docker/Expo builds, no deploy pipeline, no migration runner.
+- **No admin / reviewer UI.** Clinical review, correction adjudication, and release activation are SQL/database actions today.
+- **CI is backend-only.** No Expo build, no live-DB integration test for the importer/activation guard, no deploy pipeline.
 - **No legal / clinical / security sign-off recorded.** Required before any patient-facing use.
-- **Hardcoded Supabase project hostname check** in mobile diagnostics — would fail on project migration.
 
 ## 12. Working Norms
 
-- **Never hardcode clinical recommendations** in Python or TypeScript. Clinical pathways belong in [rules/hinduja_protocols.json](rules/hinduja_protocols.json) (risk-stratified protocols) or the Supabase tables (drug/dose metadata). The Python rule evaluator ([shared/clinical/rules.py](shared/clinical/rules.py)) is intentionally data-driven — keep it that way.
-- **Never bypass `review_status`.** Don't add code paths that read non-approved rows for doctors. Don't disable RLS.
-- **Preserve fail-closed behavior.** If you change the evaluator or the mobppear in `mobile/`.
-- **Existing audit docs in [docs/](docs/) are historical snapshots** — don't edit them. New audit findings go in [docs/PROJECT_AUDIT_2026-05.md](docs/PROJECT_AUDIT_2026-05.md) or a newly-dated file.
+- **Never hardcode clinical recommendations** in Python or TypeScript. Clinical content flows from [Hindujacsv/](Hindujacsv/) through the [scripts/hinduja_csv/](scripts/hinduja_csv/) adapters/bundle into the versioned Supabase release and is read through the `approved_current_*` views. Do not reintroduce the retired weighted evaluator or treat [rules/hinduja_protocols.json](rules/hinduja_protocols.json) as a data source.
+- **Never bypass `review_status` or release gating.** Don't add code paths that read non-approved rows, or approved rows from a non-active/expired release, for doctors. Don't disable RLS.
+- **Preserve fail-closed behavior.** If you change the risk classifier or the protocol-scenario lookup, the "no match → no recommendation, show insufficient-data message" path must still trigger, and blank source cells must stay `no_source_therapy` (never an invented placeholder).
+- **Don't put secrets in the mobile bundle.** The Expo build can only see `EXPO_PUBLIC_*` vars. Service-role keys, JWT secrets, and DB URLs must never appear in `mobile/`.
+- **Existing audit docs in [docs/](docs/) are historical snapshots** — don't edit them. New audit findings go in a newly-dated file.

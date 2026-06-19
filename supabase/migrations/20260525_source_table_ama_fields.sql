@@ -33,7 +33,9 @@ create index if not exists clinical_recommendations_ama_lookup_idx
     review_status
   );
 
-create or replace view public.approved_clinical_recommendations_with_source
+drop view if exists public.approved_clinical_recommendations_with_source;
+
+create view public.approved_clinical_recommendations_with_source
 with (security_invoker = true)
 as
 select

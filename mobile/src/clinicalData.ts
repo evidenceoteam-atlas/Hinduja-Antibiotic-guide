@@ -16,6 +16,7 @@ export type SourceBackedRow = {
 
 export type IcmrGuidelineRow = SourceBackedRow & {
   clinical_condition: string;
+  infection_code: "BSI" | "UTI" | "RTI" | "IAI" | "CNS" | "SSTI" | "FN" | "unmapped";
   common_pathogens: string | null;
   empirical_ama: string | null;
   alternate_ama: string | null;
@@ -106,6 +107,8 @@ export type PerioperativeAntibioticDosing = SourceBackedRow & {
   standard_dose: string | null;
   weight_based_dose: string | null;
   bolus_or_infusion_duration: string | null;
+  bolus_duration: string | null;
+  infusion_duration: string | null;
 };
 
 export type PerioperativeNote = SourceBackedRow & {
@@ -127,6 +130,57 @@ export type GuideDocumentMetadata = SourceBackedRow & {
   valid_till: string | null;
   document_index: Array<{ sno: number; description: string; page: string }> | null;
 };
+
+export type CurrentPatientRiskCriterion = SourceBackedRow & {
+  dataset_release_id: string;
+  release_key: string;
+  valid_through: string;
+  criterion_code: "definition" | "hospital_contact" | "antibiotic_exposure" | "co_morbidities";
+  criterion_label: string;
+  type_1: string;
+  type_2: string;
+  type_3: string;
+};
+
+export type ClinicalDataErrorCode =
+  | "permission_denied"
+  | "network_failure"
+  | "schema_failure";
+
+export type ClinicalDataResult<T> =
+  | { status: "found"; data: T }
+  | { status: "empty"; data: T }
+  | { status: "data_error"; code: ClinicalDataErrorCode; message: string };
+
+function clinicalDataError(error: { code?: string; message?: string }): ClinicalDataResult<never> {
+  const code = error.code ?? "";
+  const message = (error.message ?? "").toLowerCase();
+  if (code === "42501" || message.includes("permission") || message.includes("jwt")) {
+    return { status: "data_error", code: "permission_denied", message: "Permission denied while loading approved clinical data." };
+  }
+  if (message.includes("fetch") || message.includes("network") || message.includes("timeout")) {
+    return { status: "data_error", code: "network_failure", message: "Network failure while loading approved clinical data." };
+  }
+  return { status: "data_error", code: "schema_failure", message: "Approved clinical data failed its schema query." };
+}
+
+export async function loadCurrentPatientRiskCriteria(): Promise<
+  ClinicalDataResult<CurrentPatientRiskCriterion[]>
+> {
+  try {
+    const { data, error } = await supabase
+      .from("approved_current_patient_risk_criteria_with_source")
+      .select("*")
+      .order("criterion_code", { ascending: true });
+    if (error) {
+      return clinicalDataError(error);
+    }
+    const rows = asArray(data as CurrentPatientRiskCriterion[] | null);
+    return rows.length > 0 ? { status: "found", data: rows } : { status: "empty", data: [] };
+  } catch (error) {
+    return clinicalDataError(error instanceof Error ? { message: error.message } : {});
+  }
+}
 
 export type AntibiogramDetails = {
   sheets: AntibiogramSheet[];

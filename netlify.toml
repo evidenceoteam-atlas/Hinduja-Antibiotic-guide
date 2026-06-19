@@ -23,9 +23,8 @@
 # on the Production scope. They are baked into the JS bundle at build time;
 # rebuild after changing them.
 
-# Cache headers mirror mobile/vercel.json so the auth-screen HTML is never
-# cached by intermediaries (avoids stale OAuth redirects after a redeploy)
-# while the hashed JS bundles can be cached for a year.
+# Cache headers mirror mobile/vercel.json so the app shell is refreshed after
+# a redeploy while hashed JS bundles can be cached for a year.
 
 [[headers]]
   for = "/"

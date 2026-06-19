@@ -4,9 +4,10 @@
   "contact": "+91-22-2445 1515 | info@hindujahospital.com | www.hindujahospital.com",
   "surveillance_period": "January 2021 – December 2023",
   "valid_till": "December 2025",
-  "dataset_status": "reviewed_ground_truth_not_imported",
+  "dataset_status": "legacy_expired_artifact_not_for_activation",
   "reviewed_dataset_file": "docs/ground_truth/hinduja_antibiotic_guide_2025.reviewed.json",
   "source_file_sha256": "5b7d5ac9230b7a54b3e0897ab510c23738f17eb7ba4f4236555851586943e16c",
+  "superseded_by_source_manifest": "docs/ground_truth/hinduja_csv_manifest.json",
   "expected_section_names": [
     "metadata",
     "icmr_guidelines",
@@ -28,7 +29,8 @@
     "perioperative_antibiotic_dosing": 4
   },
   "notes": [
-    "This Phase 1 artifact preserves the reviewed JSON as the canonical ground-truth dataset.",
-    "No Supabase import, migration, app UI change, or backend behavior change is performed in Phase 1."
+    "This JSON is retained for historical comparison and is not a source asset.",
+    "CSV-backed content is generated from the SHA-256-pinned Hinduja CSV bundle.",
+    "The 2025 guide is expired and cannot be exposed by current doctor-facing views."
   ]
 }
